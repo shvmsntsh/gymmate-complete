@@ -6,7 +6,12 @@ const gymSchema = new mongoose.Schema({
   password: String,
   address: String,
   contactNumber: String,
-  services: [String]
+  services: [String],
+  role: {
+    type: String,
+    enum: ['superadmin', 'admin'],
+    default: 'admin'
+  }
 });
 
 module.exports = mongoose.model('Gym', gymSchema);
