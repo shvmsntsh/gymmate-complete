@@ -1,0 +1,23 @@
+# Node + Vue
+node_modules
+dist
+.vite
+.env*
+
+# Flutter
+build
+.dart_tool
+.packages
+
+# macOS/iOS
+*.xcuserstate
+*.xcworkspace
+*.xcodeproj
+Pods
+DerivedData
+
+# Common
+.DS_Store
+*.lock
+.idea
+*.iml
