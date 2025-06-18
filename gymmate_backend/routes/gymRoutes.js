@@ -24,9 +24,9 @@ router.post('/register', async (req, res) => {
   console.log('📦 Request body:', req.body);
 
   try {
-    const { name, email, password, address, contactNumber, services } = req.body;
+    const { gymName, email, password, address, contactNumber, services } = req.body;
 
-    if (!name || !email) {
+    if (!gymName || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
 
@@ -35,7 +35,15 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Gym already exists' });
     }
 
-    const newGym = new Gym({ name, email, password, address, contactNumber, services });
+    const newGym = new Gym({
+      gymName,
+      email,
+      password,
+      address,
+      contactNumber,
+      services,
+      role: 'member',
+    });
     await newGym.save();
 
     res.status(201).json({ message: 'Gym registered successfully', gym: newGym });
@@ -62,7 +70,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: gym._id, email: gym.email, role: gym.role },
+      { id: gym._id, email: gym.email, role: gym.role, gymId: gym._id },
       process.env.JWT_SECRET || 'defaultsecret',
       { expiresIn: '2h' }
     );
@@ -70,7 +78,7 @@ router.post('/login', async (req, res) => {
       message: 'Login successful',
       token,
       gymId: gym._id,
-      gymName: gym.name,
+      gymName: gym.gymName,
       role: gym.role,
     });
   } catch (error) {
@@ -93,23 +101,29 @@ router.get('/services', async (req, res) => {
 });
 
 // GET /api/gym/members
-// Admins see only their own gym entry; superadmins see all gyms.
+// Updated role-based access control as per instructions
 router.get('/members', authMiddleware, async (req, res) => {
   try {
-    if (req.gymUser.role === 'superadmin') {
-      const gyms = await Gym.find({});
-      return res.status(200).json({ members: gyms });
+    console.log(`🔎 Fetching members for role: ${req.gymUser.role}, gymId: ${req.gymUser.gymId}`);
+
+    let gyms;
+    if (req.gymUser.role === 'superadmin' || req.gymUser.role === 'admin') {
+      gyms = await Gym.find({});
+    } else if (req.gymUser.role === 'member') {
+      gyms = await Gym.find({ _id: req.gymUser.gymId });
     } else {
-      const gym = await Gym.findById(req.gymUser.id);
-      return res.status(200).json({ members: gym ? [gym] : [] });
+      return res.status(403).json({ message: 'Unauthorized' });
     }
+
+    res.status(200).json({ members: gyms });
   } catch (error) {
-    console.error('Error fetching members:', error);
-    return res.status(500).json({ message: 'Error fetching members' });
+    console.error('❌ Error fetching members:', error);
+    res.status(500).json({ message: 'Error fetching members', error: error.message });
   }
 });
 
 // GET /api/gym/all-members (superadmin only)
+
 router.get('/all-members', authMiddleware, async (req, res) => {
   if (req.gymUser.role !== 'superadmin') {
     return res.status(403).json({ message: 'Forbidden: superadmin only' });
@@ -120,6 +134,20 @@ router.get('/all-members', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error fetching all members:', error);
     return res.status(500).json({ message: 'Error fetching all members' });
+  }
+});
+
+// GET /api/gym/self - Returns the current logged-in gym user
+router.get('/self', authMiddleware, async (req, res) => {
+  try {
+    const gym = await Gym.findById(req.gymUser.id);
+    if (!gym) {
+      return res.status(404).json({ message: 'Gym not found' });
+    }
+    res.status(200).json({ member: gym });
+  } catch (error) {
+    console.error('❌ Error fetching self gym info:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 

@@ -26,13 +26,13 @@ app.use('/api/gym', gymRoutes);
 // Registration Route
 app.post('/api/gym/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { gymName, email, password } = req.body;
     const existingGym = await Gym.findOne({ email });
     if (existingGym) {
       return res.status(400).json({ message: 'Gym with this email already exists' });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newGym = new Gym({ ...req.body, password: hashedPassword });
+    const newGym = new Gym({ gymName, email, password: hashedPassword, role: 'member' });
     await newGym.save();
     res.status(201).json({ message: 'Gym registered successfully' });
   } catch (err) {

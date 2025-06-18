@@ -42,7 +42,13 @@ exports.loginGym = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: gym._id, email: gym.email },
+      {
+        id: gym._id,
+        email: gym.email,
+        role: gym.role,
+        gymId: gym._id,
+        gymName: gym.gymName
+      },
       process.env.JWT_SECRET || 'defaultsecret',
       { expiresIn: '2h' }
     );
@@ -50,7 +56,9 @@ exports.loginGym = async (req, res) => {
     res.status(200).json({
       message: 'Login successful',
       token: token,
-      gymId: gym._id
+      gymId: gym._id,
+      role: gym.role,
+      gymName: gym.gymName
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

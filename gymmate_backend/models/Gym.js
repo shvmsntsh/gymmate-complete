@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const gymSchema = new mongoose.Schema({
-  name: String,
+  gymName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: String,
   address: String,
@@ -9,7 +9,7 @@ const gymSchema = new mongoose.Schema({
   services: [String],
   role: {
     type: String,
-    enum: ['superadmin', 'admin'],
+    enum: ['superadmin', 'admin', 'member'],
     default: 'admin'
   }
 });
