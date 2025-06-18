@@ -48,6 +48,7 @@ class _LoginPageState extends State<LoginPage> {
         final token = data['token'] as String?;
         final role = data['role'] as String?;
         final gymId = data['gymId'] as String?;
+        print('🧪 Checking required fields - token: $token, role: $role, gymId: $gymId');
         if (token != null && role != null && gymId != null) {
           // Persist the token, role, and gymId
           await _storage.write(key: 'authToken', value: token);
@@ -58,7 +59,15 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful!')),
         );
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(
+          context,
+          '/home',
+          arguments: {
+            'role': role,
+            'gymId': gymId,
+            'token': token
+          },
+        );
       } else {
         final error = jsonDecode(resp.body);
         _showError('Login failed: ${error['message'] ?? 'Unknown error'}');

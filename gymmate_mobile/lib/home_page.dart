@@ -47,9 +47,14 @@ class _HomePageState extends State<HomePage> {
     final gymId = await storage.read(key: 'gymId');
 
     // Determine endpoint based on user role
-    final endpoint = (role == 'superadmin')
-      ? '/api/gym/all-members'
-      : '/api/gym/members';
+    String endpoint;
+    if (role == 'superadmin') {
+      endpoint = '/api/gym/all-members';
+    } else if (role == 'admin') {
+      endpoint = '/api/gym/members';
+    } else {
+      endpoint = '/api/gym/self'; // new endpoint to return only the user's own info
+    }
 
     final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
 
@@ -60,11 +65,13 @@ class _HomePageState extends State<HomePage> {
 
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
-        List<dynamic> list = data['members'] ?? [];
+        List<dynamic> list;
 
-        // Filter for non-superadmin
-        if (role != 'superadmin' && gymId != null) {
-          list = list.where((m) => m['_id'].toString() == gymId).toList();
+        if (role == 'member') {
+          final member = data['member'];
+          list = member != null ? [member] : [];
+        } else {
+          list = data['members'] ?? [];
         }
 
         setState(() {
@@ -131,10 +138,6 @@ class _HomePageState extends State<HomePage> {
                 if (!mounted) return;
                 Navigator.pushReplacementNamed(context, '/login');
               },
-            ),
-            Tooltip(
-              message: 'Toggle Theme',
-              child: Switch(value: _isDarkMode, onChanged: _toggleTheme),
             ),
           ],
         ),

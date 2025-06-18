@@ -147,14 +147,15 @@ class _RegisterPageState extends State<RegisterPage> {
 
     setState(() => _isLoading = true);
 
-    final url = Uri.parse('http://Shivams-Mac-mini-M1.local:50500/api/gym/register');
+    final url = Uri.parse('http://shivams-mac-mini-m1.local:5050/api/gym/register');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'name': name,
+        'gymName': name,
         'email': email,
         'password': password,
+        'role': 'member',
       }),
     );
 
