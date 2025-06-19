@@ -35,6 +35,20 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Gym already exists' });
     }
 
+    // Determine actual role based on existing gym count and gym name
+    let assignedRole;
+    const totalGyms = await Gym.countDocuments({});
+    if (totalGyms === 0) {
+      assignedRole = 'superadmin'; // First user becomes superadmin
+    } else {
+      const existingGymWithSameName = await Gym.findOne({ gymName });
+      if (existingGymWithSameName) {
+        assignedRole = 'gym_member'; // User registering with existing gym name becomes a member
+      } else {
+        assignedRole = 'gym_owner'; // New gym name means this is a new gym owner
+      }
+    }
+
     const newGym = new Gym({
       gymName,
       email,
@@ -42,9 +56,25 @@ router.post('/register', async (req, res) => {
       address,
       contactNumber,
       services,
-      role: 'member',
+      role: assignedRole,
     });
+
     await newGym.save();
+
+    const { InviteCode } = require('../models/InviteCode');
+    if (req.body.inviteId) {
+      await InviteCode.findByIdAndUpdate(req.body.inviteId, { used: true });
+    } else if (assignedRole !== 'superadmin') {
+      // Check if an invite was used based on gymName and role
+      const invite = await InviteCode.findOne({
+        gymName,
+        role: assignedRole,
+        used: false
+      });
+      if (invite) {
+        await InviteCode.findByIdAndUpdate(invite._id, { used: true });
+      }
+    }
 
     res.status(201).json({ message: 'Gym registered successfully', gym: newGym });
   } catch (error) {
@@ -101,15 +131,16 @@ router.get('/services', async (req, res) => {
 });
 
 // GET /api/gym/members
-// Updated role-based access control as per instructions
 router.get('/members', authMiddleware, async (req, res) => {
   try {
     console.log(`🔎 Fetching members for role: ${req.gymUser.role}, gymId: ${req.gymUser.gymId}`);
 
     let gyms;
-    if (req.gymUser.role === 'superadmin' || req.gymUser.role === 'admin') {
+    if (req.gymUser.role === 'superadmin') {
       gyms = await Gym.find({});
-    } else if (req.gymUser.role === 'member') {
+    } else if (req.gymUser.role === 'gym_owner') {
+      gyms = await Gym.find({ gymId: req.gymUser.gymId, role: 'gym_member' });
+    } else if (req.gymUser.role === 'gym_member') {
       gyms = await Gym.find({ _id: req.gymUser.gymId });
     } else {
       return res.status(403).json({ message: 'Unauthorized' });
@@ -149,6 +180,50 @@ router.get('/self', authMiddleware, async (req, res) => {
     console.error('❌ Error fetching self gym info:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
+});
+
+
+// 📌 Generate a new invite code
+router.post('/generate-invite', authMiddleware, async (req, res) => {
+  const { role } = req.body;
+  const generator = req.gymUser;
+
+  if (
+    (generator.role === 'superadmin' && role === 'gym_owner') ||
+    (generator.role === 'gym_owner' && role === 'gym_member')
+  ) {
+    const code = Math.random().toString(36).substr(2, 8).toUpperCase();
+
+    const { InviteCode } = require('../models/InviteCode');
+    const newCode = new InviteCode({
+      code,
+      role,
+      gymId: generator.gymId,
+      generatedBy: generator.id,
+    });
+
+    await newCode.save();
+    return res.status(201).json({ code });
+  } else {
+    return res.status(403).json({ message: 'Unauthorized to generate code for this role' });
+  }
+});
+
+// 📌 Validate invite code
+router.post('/validate-invite', async (req, res) => {
+  const { code } = req.body;
+
+  const { InviteCode } = require('../models/InviteCode');
+  const invite = await InviteCode.findOne({ code, used: false });
+  if (!invite) {
+    return res.status(400).json({ message: 'Invalid or expired invite code' });
+  }
+
+  res.status(200).json({
+    role: invite.role,
+    gymId: invite.gymId,
+    inviteId: invite._id,
+  });
 });
 
 // Export the router to be mounted in the main app under '/api/gym'

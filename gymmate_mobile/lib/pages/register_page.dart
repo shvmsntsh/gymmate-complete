@@ -9,6 +9,7 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final TextEditingController _inviteCodeCtrl = TextEditingController();
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passwordCtrl = TextEditingController();
@@ -40,8 +41,16 @@ class _RegisterPageState extends State<RegisterPage> {
         builder: (context) => Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: const Text('T3 Fitness - Register'),
-        centerTitle: true,
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/ttt_logo.png', // make sure this path matches your asset
+              height: 36,
+            ),
+            const SizedBox(width: 12),
+            const Text('The Training Theory'),
+          ],
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -66,6 +75,16 @@ class _RegisterPageState extends State<RegisterPage> {
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     children: [
+                      TextField(
+                        controller: _inviteCodeCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Invite Code',
+                          prefixIcon: const Icon(Icons.vpn_key),
+                          filled: true,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       TextField(
                         controller: _nameCtrl,
                         decoration: InputDecoration(
@@ -134,43 +153,76 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _register() async {
-    final name = _nameCtrl.text.trim();
+    final gymName = _nameCtrl.text.trim();
     final email = _emailCtrl.text.trim();
     final password = _passwordCtrl.text.trim();
+    final inviteCode = _inviteCodeCtrl.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    if (gymName.isEmpty || email.isEmpty || password.isEmpty || inviteCode.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('❌ All fields are required')),
+        const SnackBar(content: Text('❌ All fields including invite code are required')),
       );
       return;
     }
 
     setState(() => _isLoading = true);
 
-    final url = Uri.parse('http://shivams-mac-mini-m1.local:5050/api/gym/register');
-    final response = await http.post(
-      url,
+    String role = '';
+    String? gymId;
+
+    if (inviteCode == '123456') {
+      // Hardcoded superadmin code
+      role = 'superadmin';
+    } else {
+      // Step 1: Validate Invite Code
+      final validateUrl = Uri.parse('http://shivams-mac-mini-m1.local:5050/api/invite/validate');
+      final validateResp = await http.post(
+        validateUrl,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'code': inviteCode}),
+      );
+
+      if (validateResp.statusCode != 200) {
+        debugPrint('❌ validateResp.body: ${validateResp.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Invalid or expired invite code')),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final inviteData = jsonDecode(validateResp.body);
+      role = inviteData['role'];
+      gymId = inviteData['gymId'];
+    }
+
+    // Step 2: Register with invite info
+    final registerUrl = Uri.parse('http://shivams-mac-mini-m1.local:5050/api/gym/register');
+    final registerResp = await http.post(
+      registerUrl,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'gymName': name,
+        'gymName': gymName,
         'email': email,
         'password': password,
-        'role': 'member',
+        'role': role,
+        'gymId': gymId,
+        'inviteCode': inviteCode,
       }),
     );
 
     setState(() => _isLoading = false);
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final body = jsonDecode(response.body);
+    if (registerResp.statusCode >= 200 && registerResp.statusCode < 300) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('✅ Registration successful!')),
       );
       Navigator.pushReplacementNamed(context, '/login');
     } else {
-      final body = jsonDecode(response.body);
+      debugPrint('❌ registerResp.body: ${registerResp.body}');
+      final error = jsonDecode(registerResp.body);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Error: ${body['message'] ?? 'Unknown error'}')),
+        SnackBar(content: Text('❌ Error: ${error['message'] ?? 'Unknown error'}')),
       );
     }
   }

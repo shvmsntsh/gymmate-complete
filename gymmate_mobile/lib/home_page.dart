@@ -7,6 +7,8 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../api/api_config.dart';
 import 'widgets/dashboard_charts.dart';
+import 'pages/invite_code_list_page.dart';
+import 'pages/invite_generator_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -53,7 +55,7 @@ class _HomePageState extends State<HomePage> {
     } else if (role == 'admin') {
       endpoint = '/api/gym/members';
     } else {
-      endpoint = '/api/gym/self'; // new endpoint to return only the user's own info
+      endpoint = '/api/gym/self'; // new endpoint to return only the logged-in gym_member's own info
     }
 
     final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
@@ -67,7 +69,7 @@ class _HomePageState extends State<HomePage> {
         final data = jsonDecode(resp.body);
         List<dynamic> list;
 
-        if (role == 'member') {
+        if (role == 'gym_member') {
           final member = data['member'];
           list = member != null ? [member] : [];
         } else {
@@ -78,6 +80,7 @@ class _HomePageState extends State<HomePage> {
           _members = list;
           _error = null;
         });
+        print('📊 Loaded ${_members.length} members for role: $role');
       } else {
         throw 'Status ${resp.statusCode}: ${resp.body}';
       }
@@ -121,14 +124,40 @@ class _HomePageState extends State<HomePage> {
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
+      routes: {
+        '/invite-list': (context) => InviteCodeListPage(),
+        '/invite': (context) => InviteGeneratorPage(),
+      },
       home: Scaffold(
         appBar: AppBar(
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Image.asset(
+              'assets/images/ttt_logo.png', // Adjust path if logo is in another folder
+              width: 36,
+              height: 36,
+            ),
+          ),
           title: const Text(
             'GymMate Dashboard',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           centerTitle: true,
           actions: [
+            IconButton(
+              icon: const Icon(Icons.card_giftcard),
+              tooltip: 'Generate Invite Code',
+              onPressed: () {
+                Navigator.pushNamed(context, '/invite');
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.list_alt),
+              tooltip: 'View Invite Codes',
+              onPressed: () {
+                Navigator.pushNamed(context, '/invite-list');
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.power_settings_new),
               tooltip: 'Logout',
@@ -163,6 +192,20 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ],
                           ),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.list),
+                            label: const Text('View Invite Codes'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/invite-list');
+                            },
+                          ),
+                          const SizedBox(height: 16),
                           const SizedBox(height: 24),
                           const Align(
                             alignment: Alignment.centerLeft,

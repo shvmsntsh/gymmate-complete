@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'home_page.dart';
 import 'pages/login_page.dart';
 import 'pages/register_page.dart';
+import 'pages/invite_generator_page.dart';
+import 'pages/invite_code_list_page.dart';
+import 'pages/splash_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,11 +18,23 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      home: SplashScreen(nextScreen: LoginPage()),
       initialRoute: '/login',
       routes: {
         '/login': (context) => LoginPage(),
         '/register': (context) => RegisterPage(),
         '/home': (context) => HomePage(),
+        '/invite-generator': (context) => InviteGeneratorPage(),
+        '/invite': (context) => InviteGeneratorPage(),
+        '/invite-list': (context) => InviteCodeListPage(),
+      },
+      onUnknownRoute: (settings) {
+        debugPrint('❌ Unknown route: \${settings.name}');
+        return MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: Center(child: Text('Unknown route: \${settings.name}')),
+          ),
+        );
       },
       theme: ThemeData(
         brightness: Brightness.dark,

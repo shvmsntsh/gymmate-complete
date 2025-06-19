@@ -8,9 +8,10 @@ const gymSchema = new mongoose.Schema({
   contactNumber: String,
   services: [String],
   role: {
+    
     type: String,
-    enum: ['superadmin', 'admin', 'member'],
-    default: 'admin'
+    enum: ['superadmin', 'gym_owner', 'gym_member'],
+    default: 'gym_owner'
   }
 });
 

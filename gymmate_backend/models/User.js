@@ -1,31 +1,41 @@
 const mongoose = require('mongoose');
 
-const gymSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema({
+  // Full name of the user (owner or member)
   name: {
     type: String,
     required: true,
   },
-  ownerName: String,
+  // Email used for login
   email: {
     type: String,
     required: true,
     unique: true,
   },
-  phone: String,
-  address: String,
-  registrationDate: {
+  // Hashed password
+  password: {
+    type: String,
+    required: true,
+  },
+  // Role determines access level:
+  // 'admin' = central builder's office (superadmin)
+  // 'gym_owner' = society secretary (manages one gym)
+  // 'gym_member' = flat owner (can only see own record)
+  role: {
+    type: String,
+    enum: ['admin', 'gym_owner', 'gym_member'],
+    default: 'gym_owner',
+  },
+  // Reference to associated Gym (only for gym_owner and gym_member)
+  gymId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Gym',
+  },
+  // Date the user joined
+  joinDate: {
     type: Date,
     default: Date.now,
-  },
-  facilities: [String], // e.g., ['gym', 'pool', 'cafe', 'parking']
-  offers: [
-    {
-      title: String,
-      description: String,
-      price: Number,
-      durationInDays: Number,
-    }
-  ]
+  }
 });
 
-module.exports = mongoose.model('Gym', gymSchema);
+module.exports = mongoose.model('User', userSchema);

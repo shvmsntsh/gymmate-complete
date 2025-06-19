@@ -4,6 +4,7 @@ import '../api/api_config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../utils/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -54,20 +55,30 @@ class _LoginPageState extends State<LoginPage> {
           await _storage.write(key: 'authToken', value: token);
           await _storage.write(key: 'userRole', value: role);
           await _storage.write(key: 'gymId', value: gymId);
+          AuthService.setLoginData(
+            token: token,
+            role: role,
+            gymName: data['gymName'] ?? 'Unknown Gym',
+            gymId: gymId ?? '',
+          );
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful!')),
         );
-        Navigator.pushReplacementNamed(
-          context,
-          '/home',
-          arguments: {
-            'role': role,
-            'gymId': gymId,
-            'token': token
-          },
-        );
+        if (role == 'superadmin' || role == 'gym_owner' || role == 'gym_member') {
+          Navigator.pushReplacementNamed(
+            context,
+            '/home',
+            arguments: {
+              'role': role,
+              'gymId': gymId,
+              'token': token
+            },
+          );
+        } else {
+          _showError('Unauthorized role. Please contact support.');
+        }
       } else {
         final error = jsonDecode(resp.body);
         _showError('Login failed: ${error['message'] ?? 'Unknown error'}');
@@ -116,7 +127,19 @@ Widget build(BuildContext context) {
         appBar: AppBar(
           elevation: 0,
           backgroundColor: Colors.transparent,
-          title: const Text('T3 Fitness - Login'),
+          automaticallyImplyLeading: false,
+          title: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Image.asset(
+                  'assets/images/ttt_logo.png',
+                  height: 32,
+                ),
+              ),
+              const Text('T3 Fitness - Login'),
+            ],
+          ),
         ),
         body: Center(
           child: SingleChildScrollView(

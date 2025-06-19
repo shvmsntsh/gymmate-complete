@@ -1,9 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const Gym = require('./models/Gym');
 const gymRoutes = require('./routes/gymRoutes');
+const inviteRoutes = require('./routes/inviteRoutes');
+const { authenticateToken } = require('./middleware/authMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -22,21 +25,49 @@ mongoose.connect('mongodb://127.0.0.1:27017/gymmate', {
 
 // Mount gym routes for services and other gym-related endpoints
 app.use('/api/gym', gymRoutes);
+app.use('/api/invite', require('./routes/inviteRoutes'));
 
 // Registration Route
 app.post('/api/gym/register', async (req, res) => {
+  const { gymName, email, password, inviteCode } = req.body;
   try {
-    const { gymName, email, password } = req.body;
     const existingGym = await Gym.findOne({ email });
     if (existingGym) {
       return res.status(400).json({ message: 'Gym with this email already exists' });
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newGym = new Gym({ gymName, email, password: hashedPassword, role: 'member' });
+    const InviteCode = require('./models/InviteCode');
+
+    let role = 'member';
+    let gymId = null;
+
+    if (inviteCode) {
+      const inviteDoc = await InviteCode.findOne({ code: inviteCode, used: false });
+      if (!inviteDoc) {
+        return res.status(400).json({ message: 'Invalid or already used invite code' });
+      }
+
+      role = inviteDoc.role;
+      gymId = inviteDoc.gymId;
+
+      await InviteCode.updateOne(
+        { code: inviteCode },
+        {
+          used: true,
+          updatedAt: new Date(),
+          usedBy: email
+        }
+      );
+      console.log(`✅ Invite code ${inviteCode} marked as used by ${email}`);
+    }
+
+    const newGym = new Gym({ gymName, email, password: hashedPassword, role, gymId });
     await newGym.save();
+
     res.status(201).json({ message: 'Gym registered successfully' });
   } catch (err) {
-    console.error(err);
+    console.error('❌ Registration failed:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -116,12 +147,22 @@ app.get('/api/admin/dashboard', async (req, res) => {
 });
 
 // List Members Endpoint
-app.get('/api/members', async (req, res) => {
+app.get('/api/members', authenticateToken, async (req, res) => {
   console.log('🔍 /api/members endpoint hit');
   try {
-    const gyms = await Gym.find({}, 'name email contactNumber');
+    const user = req.user;
+    let gyms;
+
+    if (user.role === 'superadmin') {
+      gyms = await Gym.find({}, 'gymName email contactNumber role');
+    } else if (user.role === 'gym_owner') {
+      gyms = await Gym.find({ gymName: user.gymName, role: 'gym_member' }, 'gymName email contactNumber role');
+    } else {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
     const members = gyms.map(gym => ({
-      gymName: gym.name,
+      gymName: gym.gymName,
       email: gym.email,
       contact: gym.contactNumber
     }));
