@@ -12,13 +12,14 @@ class InviteCodeListPage extends StatefulWidget {
 class _InviteCodeListPageState extends State<InviteCodeListPage> {
   List<dynamic> inviteCodes = [];
   bool isLoading = true;
-  bool showOnlyUnused = false;
   String? error;
 
   @override
   void initState() {
     super.initState();
-    fetchInviteCodes();
+    fetchInviteCodes().then((_) {
+      print('🔄 fetchInviteCodes called in initState');
+    });
   }
 
   Future<void> fetchInviteCodes() async {
@@ -35,7 +36,7 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
         'Authorization': 'Bearer $token',
       };
 
-      final uri = Uri.parse('http://192.168.1.25:5050/api/invite/list');
+      final uri = Uri.parse('http://shivams-mac-mini-m1.local:5050/api/invite/list');
       print('🌐 Sending GET to $uri with headers: $headers');
 
       final response = await http.get(uri, headers: headers);
@@ -55,6 +56,7 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
         });
       } else {
         print('⚠️ Failed with status: ${response.statusCode}');
+        print('📡 Body on failure: ${response.body}');
         setState(() {
           error = 'Failed to load invite codes';
           isLoading = false;
@@ -86,25 +88,52 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          Text("Only unused"),
-                          Switch(
-                            value: showOnlyUnused,
-                            onChanged: (value) {
+                          ElevatedButton.icon(
+                            onPressed: () async {
                               setState(() {
-                                showOnlyUnused = value;
-                                print('🔄 Filter toggled: showOnlyUnused = $showOnlyUnused');
+                                isLoading = true;
+                                error = null;
                               });
+
+                              try {
+                                final token = await AuthService.getToken();
+                                final role = await AuthService.getRole();
+                                final gymName = await AuthService.getGymName();
+
+                                final requestRole = role == 'superadmin' ? 'gym_owner' : 'gym_member';
+                                final response = await AuthService.generateInviteCode(
+                                  token: token!,
+                                  role: requestRole,
+                                  gymName: gymName!,
+                                );
+
+                                if (response != null && response.containsKey('code')) {
+                                  print('✅ New invite code generated: ${response['code']}');
+                                  await fetchInviteCodes(); // Refresh list right after generation
+                                  print('🔄 fetchInviteCodes called after generation');
+                                } else {
+                                  print('⚠️ Failed to generate code: $response');
+                                  setState(() => error = 'Failed to generate invite code');
+                                }
+                              } catch (e) {
+                                print('❌ Error generating invite code: $e');
+                                setState(() => error = 'Error generating invite code');
+                              } finally {
+                                setState(() => isLoading = false);
+                              }
                             },
+                            icon: Icon(Icons.add),
+                            label: Text('Generate Code'),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.black87),
                           ),
+                          SizedBox(width: 10),
                         ],
                       ),
                       const SizedBox(height: 10),
                       Expanded(
                         child: Builder(
                           builder: (context) {
-                            final filteredCodes = showOnlyUnused
-                                ? inviteCodes.where((c) => c['used'] == false).toList()
-                                : inviteCodes;
+                            final filteredCodes = inviteCodes;
 
                             return ListView.builder(
                               itemCount: filteredCodes.length,

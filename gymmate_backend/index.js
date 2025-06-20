@@ -78,6 +78,10 @@ app.post('/api/gym/login', async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, gym.password);
+    if (isMatch) {
+      gym.lastLoginAt = new Date();
+      await gym.save();
+    }
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }

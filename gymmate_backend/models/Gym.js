@@ -8,11 +8,18 @@ const gymSchema = new mongoose.Schema({
   contactNumber: String,
   services: [String],
   role: {
-    
     type: String,
     enum: ['superadmin', 'gym_owner', 'gym_member'],
     default: 'gym_owner'
-  }
+  },
+  lastLoginAt: {
+    type: Date,
+    default: null
+  },
+  loginTimestamps: [{
+    type: Date,
+    default: Date.now
+  }]
 });
 
 module.exports = mongoose.model('Gym', gymSchema);

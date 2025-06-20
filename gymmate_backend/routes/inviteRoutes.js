@@ -75,7 +75,13 @@ router.post('/validate', async (req, res) => {
     return res.status(400).json({ error: 'Invalid or expired invite code.' });
   }
 
-  return res.status(200).json({ message: 'Valid invite code.', role: invite.role, gymName: invite.gymName });
+  const gym = await Gym.findById(invite.gymId);
+  return res.status(200).json({
+    message: 'Valid invite code.',
+    role: invite.role,
+    gym: gym || null,
+    gymId: invite.gymId?.toString() || null
+  });
 });
 
 // POST /api/invite/generate - Generate a new invite code

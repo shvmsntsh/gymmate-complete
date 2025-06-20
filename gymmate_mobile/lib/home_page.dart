@@ -22,6 +22,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   String? _error;
   List<dynamic> _members = [];
+  List<charts.Series<ChartData, String>> _chartSeries = [];
 
   @override
   void initState() {
@@ -52,7 +53,7 @@ class _HomePageState extends State<HomePage> {
     String endpoint;
     if (role == 'superadmin') {
       endpoint = '/api/gym/all-members';
-    } else if (role == 'admin') {
+    } else if (role == 'gym_owner' || role == 'admin') {
       endpoint = '/api/gym/members';
     } else {
       endpoint = '/api/gym/self'; // new endpoint to return only the logged-in gym_member's own info
@@ -80,6 +81,10 @@ class _HomePageState extends State<HomePage> {
           _members = list;
           _error = null;
         });
+        final identifier = (role == 'gym_member')
+            ? await storage.read(key: 'userEmail')
+            : await storage.read(key: 'gymId');
+        _chartSeries = createGymSampleData(role ?? '', list, identifier ?? '');
         print('📊 Loaded ${_members.length} members for role: $role');
       } else {
         throw 'Status ${resp.statusCode}: ${resp.body}';
@@ -95,24 +100,51 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  List<charts.Series<ChartData, String>> createGymSampleData() {
-    final data = [
-      ChartData('Mon', 5),
-      ChartData('Tue', 10),
-      ChartData('Wed', 7),
-      ChartData('Thu', 12),
-      ChartData('Fri', 8),
-      ChartData('Sat', 6),
-      ChartData('Sun', 4),
-    ];
+  List<charts.Series<ChartData, String>> createGymSampleData(String role, List<dynamic> members, String currentUserIdentifier) {
+    Map<String, int> counts = {
+      'Mon': 0,
+      'Tue': 0,
+      'Wed': 0,
+      'Thu': 0,
+      'Fri': 0,
+      'Sat': 0,
+      'Sun': 0,
+    };
+
+    for (var m in members) {
+      DateTime date = DateTime.tryParse(m['createdAt'] ?? '') ?? DateTime.now();
+      String day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.weekday % 7];
+      if (role == 'superadmin' && m['role'] == 'gym_owner') {
+        counts[day] = counts[day]! + 1;
+      } else if (role == 'gym_owner' && m['role'] == 'gym_member') {
+        counts[day] = counts[day]! + 1;
+      } else if (role == 'gym_member') {
+          final logins = m['loginTimestamps'] as List<dynamic>? ?? [];
+          for (final login in logins) {
+            final parsed = DateTime.tryParse(login);
+            if (parsed != null) {
+              final now = DateTime.now();
+              final weekStart = now.subtract(Duration(days: now.weekday - 1));
+              final weekEnd = weekStart.add(const Duration(days: 6));
+              if (!parsed.isBefore(weekStart) && !parsed.isAfter(weekEnd)) {
+                final loginDay = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][parsed.weekday % 7];
+                counts[loginDay] = counts[loginDay]! + 1;
+              }
+            }
+          }
+      }
+    }
+
+    final data = counts.entries.map((e) => ChartData(e.key, e.value)).toList();
 
     return [
       charts.Series<ChartData, String>(
-        id: 'GymStats',
-        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+        id: 'Stats',
         domainFn: (ChartData stats, _) => stats.day,
         measureFn: (ChartData stats, _) => stats.count,
         data: data,
+        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+        labelAccessorFn: (ChartData row, _) => '${row.count}',
       )
     ];
   }
@@ -144,18 +176,23 @@ class _HomePageState extends State<HomePage> {
           ),
           centerTitle: true,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.card_giftcard),
-              tooltip: 'Generate Invite Code',
-              onPressed: () {
-                Navigator.pushNamed(context, '/invite');
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.list_alt),
-              tooltip: 'View Invite Codes',
-              onPressed: () {
-                Navigator.pushNamed(context, '/invite-list');
+            FutureBuilder<String?>(
+              future: const FlutterSecureStorage().read(key: 'userRole'),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return SizedBox.shrink();
+                }
+                final role = snapshot.data;
+                if (role != 'gym_member') {
+                  return IconButton(
+                    icon: const Icon(Icons.card_giftcard),
+                    tooltip: 'Generate Invite Code',
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/invite');
+                    },
+                  );
+                }
+                return SizedBox.shrink();
               },
             ),
             IconButton(
@@ -192,19 +229,6 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ],
                           ),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.list),
-                            label: const Text('View Invite Codes'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/invite-list');
-                            },
-                          ),
                           const SizedBox(height: 16),
                           const SizedBox(height: 24),
                           const Align(
@@ -217,9 +241,9 @@ class _HomePageState extends State<HomePage> {
                             child: SizedBox(
                               height: 344,
                               child: DashboardChart(
-                                seriesList: createGymSampleData(),
+                                seriesList: _chartSeries,
                                 animate: true,
-                                title: 'Weekly Check-ins',
+                                title: 'Weekly Registrations',
                               ),
                             ),
                           ),

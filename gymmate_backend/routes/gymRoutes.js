@@ -117,6 +117,22 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET || 'defaultsecret',
       { expiresIn: '2h' }
     );
+
+    if (gym.role === 'gym_member') {
+      const now = new Date();
+      const update = {
+        $set: { lastLoginAt: now },
+        $push: {
+          loginTimestamps: {
+            $each: [now],
+            $position: 0,
+            $slice: 100
+          }
+        }
+      };
+      await Gym.findByIdAndUpdate(gym._id, update, { new: true });
+    }
+
     return res.status(200).json({
       message: 'Login successful',
       token,
@@ -152,7 +168,8 @@ router.get('/members', authMiddleware, async (req, res) => {
     if (req.gymUser.role === 'superadmin') {
       gyms = await Gym.find({});
     } else if (req.gymUser.role === 'gym_owner') {
-      gyms = await Gym.find({ gymId: req.gymUser.gymId, role: 'gym_member' });
+      const owner = await Gym.findById(req.gymUser.gymId);
+      gyms = await Gym.find({ role: 'gym_member', gymName: owner.gymName });
     } else if (req.gymUser.role === 'gym_member') {
       gyms = await Gym.find({ _id: req.gymUser.gymId });
     } else {
@@ -192,6 +209,46 @@ router.get('/self', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching self gym info:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+// GET /api/gym/login-stats - Returns login counts per day for current week
+router.get('/login-stats', authMiddleware, async (req, res) => {
+  try {
+    if (req.gymUser.role !== 'gym_member') {
+      return res.status(403).json({ message: 'Forbidden: gym_member only' });
+    }
+
+    const gym = await Gym.findById(req.gymUser.id);
+    if (!gym || !Array.isArray(gym.loginTimestamps)) {
+      return res.status(200).json({ logins: [] });
+    }
+
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const loginCounts = Array(7).fill(0);
+
+    gym.loginTimestamps.forEach(timestamp => {
+      const date = new Date(timestamp);
+      if (date >= startOfWeek && date <= now) {
+        const dayIndex = date.getDay();
+        loginCounts[dayIndex]++;
+      }
+    });
+
+    const result = daysOfWeek.map((day, index) => ({
+      day,
+      count: loginCounts[index]
+    }));
+
+    return res.status(200).json({ logins: result });
+  } catch (error) {
+    console.error('❌ Error generating login stats:', error);
+    return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 
@@ -237,6 +294,20 @@ router.post('/validate-invite', async (req, res) => {
     gymId: invite.gymId,
     inviteId: invite._id,
   });
+});
+
+// GET /api/gym/:id - Return gym document by ID
+router.get('/:id', async (req, res) => {
+  try {
+    const gym = await Gym.findById(req.params.id);
+    if (!gym) {
+      return res.status(404).json({ message: 'Gym not found' });
+    }
+    res.status(200).json(gym); // Send raw gym document
+  } catch (error) {
+    console.error('❌ Error fetching gym by ID:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
 });
 
 // Export the router to be mounted in the main app under '/api/gym'
