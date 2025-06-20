@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   static const String baseUrl = 'http://shivams-mac-mini-m1.local:5050';
+  // Make sure your iPhone is connected to the same Wi-Fi network as the Mac running the backend server.
+  // Ensure Info.plist has NSAppTransportSecurity settings to allow arbitrary loads (for non-HTTPS calls).
 
   static Future<Map<String, dynamic>?> generateInviteCode({
     required String token,
@@ -17,6 +19,7 @@ class AuthService {
     print('🧾 Headers: Authorization: Bearer $token');
 
     try {
+      print('🛰️ Sending POST request to generate invite code...');
       final response = await http.post(
         url,
         headers: {
@@ -28,6 +31,7 @@ class AuthService {
           'gymName': gymName,
         }),
       );
+      print('✅ Received response from invite code API.');
 
       print('📥 Status Code: ${response.statusCode}');
       print('📥 Raw Body: ${response.body}');
@@ -68,6 +72,7 @@ class AuthService {
     print('🧾 Headers: Authorization: Bearer $token');
 
     try {
+      print('🛰️ Sending GET request to fetch invite codes...');
       final response = await http.get(
         url,
         headers: {
@@ -75,6 +80,7 @@ class AuthService {
           'Authorization': 'Bearer $token',
         },
       );
+      print('✅ Received response from invite code list API.');
 
       print('📥 Status Code: ${response.statusCode}');
       print('📥 Raw Body: ${response.body}');

@@ -192,12 +192,21 @@ class _RegisterPageState extends State<RegisterPage> {
       }
 
       final inviteData = jsonDecode(validateResp.body);
+      debugPrint('📨 Invite code data: $inviteData');
       role = inviteData['role'];
       gymId = inviteData['gymId'];
     }
 
-    // Step 2: Register with invite info
+    // Step 2: Register with invite info (with debugging)
     final registerUrl = Uri.parse('http://shivams-mac-mini-m1.local:5050/api/gym/register');
+    debugPrint('📤 Sending registration data: ${jsonEncode({
+      'gymName': gymName,
+      'email': email,
+      'password': password,
+      'role': role,
+      'gymId': gymId,
+      'inviteCode': inviteCode,
+    })}');
     final registerResp = await http.post(
       registerUrl,
       headers: {'Content-Type': 'application/json'},
@@ -210,6 +219,8 @@ class _RegisterPageState extends State<RegisterPage> {
         'inviteCode': inviteCode,
       }),
     );
+    debugPrint('📬 Received registration response: ${registerResp.body}');
+    debugPrint('📬 Status Code: ${registerResp.statusCode}');
 
     setState(() => _isLoading = false);
 
@@ -219,7 +230,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       Navigator.pushReplacementNamed(context, '/login');
     } else {
-      debugPrint('❌ registerResp.body: ${registerResp.body}');
+      debugPrint('❌ Full register response: ${registerResp.body}');
       final error = jsonDecode(registerResp.body);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ Error: ${error['message'] ?? 'Unknown error'}')),

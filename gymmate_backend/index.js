@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const Gym = require('./models/Gym');
 const gymRoutes = require('./routes/gymRoutes');
 const inviteRoutes = require('./routes/inviteRoutes');
+const { markInviteCodeAsUsed } = require('./models/InviteCode');
 const { authenticateToken } = require('./middleware/authMiddleware');
 
 const app = express();
@@ -30,6 +31,7 @@ app.use('/api/invite', require('./routes/inviteRoutes'));
 // Registration Route
 app.post('/api/gym/register', async (req, res) => {
   const { gymName, email, password, inviteCode } = req.body;
+  console.log(`📨 Received invite code: ${inviteCode}`);
   try {
     const existingGym = await Gym.findOne({ email });
     if (existingGym) {
@@ -37,29 +39,23 @@ app.post('/api/gym/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const InviteCode = require('./models/InviteCode');
 
     let role = 'member';
     let gymId = null;
 
     if (inviteCode) {
-      const inviteDoc = await InviteCode.findOne({ code: inviteCode, used: false });
+      console.log('🔍 Validating invite code in backend for:', inviteCode);
+
+      const inviteDoc = await markInviteCodeAsUsed(inviteCode, email);
       if (!inviteDoc) {
+        console.log(`❌ Invite code ${inviteCode} not found or already used`);
         return res.status(400).json({ message: 'Invalid or already used invite code' });
       }
 
+      console.log('✅ Invite code used and updated via model:', inviteDoc);
+
       role = inviteDoc.role;
       gymId = inviteDoc.gymId;
-
-      await InviteCode.updateOne(
-        { code: inviteCode },
-        {
-          used: true,
-          updatedAt: new Date(),
-          usedBy: email
-        }
-      );
-      console.log(`✅ Invite code ${inviteCode} marked as used by ${email}`);
     }
 
     const newGym = new Gym({ gymName, email, password: hashedPassword, role, gymId });

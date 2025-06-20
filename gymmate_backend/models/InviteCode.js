@@ -10,10 +10,14 @@ const inviteCodeSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 });
 
+console.log('📦 InviteCode model loaded');
+
 const InviteCode = mongoose.model('InviteCode', inviteCodeSchema);
 
 async function markInviteCodeAsUsed(inviteCode, email) {
+  console.log(`🔍 Searching for invite code: ${inviteCode}`);
   const inviteDoc = await InviteCode.findOne({ code: inviteCode, used: false });
+  console.log('✅ Invite code document found:', inviteDoc);
 
   if (!inviteDoc) {
     throw new Error('Invalid or already used invite code');
@@ -24,17 +28,22 @@ async function markInviteCodeAsUsed(inviteCode, email) {
   inviteDoc.usedBy = email;
 
   try {
-    await inviteDoc.save();
+    const saved = await inviteDoc.save();
     console.log(`✅ Invite code ${inviteCode} marked as used by ${email}`);
+    console.log('📄 Saved InviteCode document:', saved.toObject());
   } catch (saveErr) {
     console.error(`❌ Failed to save invite code usage:`, saveErr);
+    console.error('🚨 Current inviteDoc state before save failure:', inviteDoc.toObject());
     throw new Error('Failed to mark invite code as used');
   }
 
-  return {
+  const result = {
     role: inviteDoc.role,
     gymId: inviteDoc.gymId
   };
+
+  console.log('📤 Returning invite info:', result);
+  return result;
 }
 
 module.exports = {

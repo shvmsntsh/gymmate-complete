@@ -62,18 +62,31 @@ router.post('/register', async (req, res) => {
     await newGym.save();
 
     const { InviteCode } = require('../models/InviteCode');
+    let invite;
     if (req.body.inviteId) {
-      await InviteCode.findByIdAndUpdate(req.body.inviteId, { used: true });
-    } else if (assignedRole !== 'superadmin') {
-      // Check if an invite was used based on gymName and role
-      const invite = await InviteCode.findOne({
-        gymName,
+      invite = await InviteCode.findById(req.body.inviteId);
+    } else if (assignedRole !== 'superadmin' && req.body.inviteCode) {
+      invite = await InviteCode.findOne({
+        code: req.body.inviteCode,
         role: assignedRole,
         used: false
       });
-      if (invite) {
-        await InviteCode.findByIdAndUpdate(invite._id, { used: true });
-      }
+    }
+
+    if (invite) {
+      console.log(`✅ Marking invite code ${invite.code} as used by ${email}`);
+      await InviteCode.updateOne(
+        { _id: invite._id },
+        {
+          $set: {
+            used: true,
+            usedBy: email,
+            updatedAt: new Date()
+          }
+        }
+      );
+    } else {
+      console.log('⚠️ No valid invite code matched for update.');
     }
 
     res.status(201).json({ message: 'Gym registered successfully', gym: newGym });

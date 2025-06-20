@@ -4,8 +4,20 @@
 <dict>
 	<key>NSAppTransportSecurity</key>
 	<dict>
-  		<key>NSAllowsArbitraryLoads</key>
-  		<true/>
+	  <key>NSAllowsLocalNetworking</key>
+	  <true/>
+	  <key>NSAllowsArbitraryLoads</key>
+	  <true/>
+	  <key>NSExceptionDomains</key>
+	  <dict>
+	    <key>shivams-mac-mini-m1.local</key>
+	    <dict>
+	      <key>NSExceptionAllowsInsecureHTTPLoads</key>
+	      <true/>
+	      <key>NSIncludesSubdomains</key>
+	      <true/>
+	    </dict>
+	  </dict>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app needs access to devices on your local network to communicate with the GymMate backend.</string>
