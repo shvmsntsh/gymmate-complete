@@ -1,83 +1,136 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'home_page.dart';
-import 'pages/login_page.dart';
-import 'pages/register_page.dart';
-import 'pages/invite_generator_page.dart';
-import 'pages/invite_code_list_page.dart';
-import 'pages/splash_screen.dart';
+import 'package:gymmate_mobile/pages/home_page.dart';
+import 'package:gymmate_mobile/pages/login_page.dart';
+import 'package:gymmate_mobile/pages/onboarding/onboarding_flow.dart';
+import 'package:gymmate_mobile/pages/register_page.dart';
+import 'package:gymmate_mobile/providers/onboarding_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:animated_splash_screen/animated_splash_screen.dart';
+import 'package:gymmate_mobile/theme.dart';
+import 'services/auth_service.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProxyProvider<AuthService, OnboardingProvider>(
+          create: (_) => OnboardingProvider(),
+          update: (_, auth, onboarding) =>
+              onboarding!..update(auth.token, auth.userId),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: SplashScreen(nextScreen: LoginPage()),
-      initialRoute: '/login',
-      routes: {
-        '/login': (context) => LoginPage(),
-        '/register': (context) => RegisterPage(),
-        '/home': (context) => HomePage(),
-        '/invite-generator': (context) => InviteGeneratorPage(),
-        '/invite': (context) => InviteGeneratorPage(),
-        '/invite-list': (context) => InviteCodeListPage(),
-      },
-      onUnknownRoute: (settings) {
-        debugPrint('❌ Unknown route: \${settings.name}');
-        return MaterialPageRoute(
-          builder: (context) => Scaffold(
-            body: Center(child: Text('Unknown route: \${settings.name}')),
-          ),
-        );
-      },
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF121212),
-        primaryColor: const Color(0xFF00CFE8),
-        colorScheme: ColorScheme.dark(
-          primary: Color(0xFF00CFE8),
-          secondary: Color(0xFF1E1E1E),
-          surface: Color(0xFF1E1E1E),
-        ),
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-          titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-          bodyMedium: TextStyle(fontSize: 16, color: Colors.white70),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFF2A2A2A),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide.none,
-          ),
-          hintStyle: const TextStyle(color: Colors.white54),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00CFE8),
-            foregroundColor: Colors.black,
-            minimumSize: const Size.fromHeight(48),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      title: 'GymMate',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      home: AnimatedSplashScreen(
+        splash: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/images/ttt_logo.png', height: 120),
+              const SizedBox(height: 16),
+              const Text('GymMate',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+            ],
           ),
         ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF00CFE8),
-            textStyle: const TextStyle(decoration: TextDecoration.underline),
-          ),
-        ),
+        nextScreen: const AuthChecker(),
+        splashTransition: SplashTransition.fadeTransition,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        duration: 1500,
       ),
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
+        '/home': (context) => const HomePage(),
+        '/onboarding': (context) => const OnboardingFlow(),
+      },
     );
   }
 }
+
+class AuthChecker extends StatefulWidget {
+  const AuthChecker({Key? key}) : super(key: key);
+
+  @override
+  State<AuthChecker> createState() => _AuthCheckerState();
+}
+
+class _AuthCheckerState extends State<AuthChecker> {
+  bool _isLoading = true;
+  bool _isLoggedIn = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final isLoggedIn = await authService.isLoggedIn().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print('⏰ AuthChecker: Timeout occurred, defaulting to not logged in');
+          return false;
+        },
+      );
+      
+      print('🔍 AuthChecker: Auth check completed - isLoggedIn: $isLoggedIn');
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoggedIn = isLoggedIn;
+        });
+      }
+    } catch (e) {
+      print('❌ AuthChecker: Error during auth check: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    print('🔍 AuthChecker: Building with isLoading: $_isLoading, isLoggedIn: $_isLoggedIn, error: $_error');
+    
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    
+    if (_error != null) {
+      print('🔍 AuthChecker: Error occurred, showing login page');
+      return const LoginPage();
+    }
+    
+    if (_isLoggedIn) {
+      print('🔍 AuthChecker: User is logged in, navigating to HomePage');
+      return const HomePage();
+    } else {
+      print('🔍 AuthChecker: User is not logged in, showing LoginPage');
+      return const LoginPage();
+    }
+  }
+} 

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../utils/auth_service.dart';
+import 'package:gymmate_mobile/services/auth_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:gymmate_mobile/api/api_config.dart';
 
 class InviteCodeListPage extends StatefulWidget {
   @override
@@ -13,61 +14,74 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
   List<dynamic> inviteCodes = [];
   bool isLoading = true;
   String? error;
+  final AuthService _authService = AuthService();
+  Map<String, dynamic>? _currentUser;
 
   @override
   void initState() {
     super.initState();
-    fetchInviteCodes().then((_) {
-      print('🔄 fetchInviteCodes called in initState');
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
+    
+    _currentUser = await _authService.getUser();
+    if (_currentUser != null) {
+      // The backend endpoint for this doesn't exist yet.
+      // I will leave this blank for now.
+      // await fetchInviteCodes(); 
+    }
+    
+    setState(() {
+      isLoading = false;
     });
   }
 
-  Future<void> fetchInviteCodes() async {
+  Future<void> _generateCode() async {
+    if (_currentUser == null) return;
+
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
+
     try {
-      final token = await AuthService.getToken();
-      final role = await AuthService.getRole();
-      final gymId = await AuthService.getGymId();
+      final token = await _authService.getToken();
+      final role = _currentUser!['role'];
+      final roleToGenerate = role == 'superadmin' ? 'gym_owner' : 'gym_member';
 
-      print('🔐 Token: $token');
-      print('👤 Role: $role');
-      print('🏋️ GymId: $gymId');
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/invite/generate'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'roleToGenerate': roleToGenerate}),
+      );
 
-      final headers = {
-        'Authorization': 'Bearer $token',
-      };
-
-      final uri = Uri.parse('http://shivams-mac-mini-m1.local:5050/api/invite/list');
-      print('🌐 Sending GET to $uri with headers: $headers');
-
-      final response = await http.get(uri, headers: headers);
-      print('📦 Headers: ${response.headers}');
-
-      print('📡 Status: ${response.statusCode}');
-      print('📡 Body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        final List<dynamic> codes = decoded['codes'];
-        print('✅ Successfully decoded ${codes.length} codes');
-
-        setState(() {
-          inviteCodes = codes;
-          isLoading = false;
-        });
+      if (response.statusCode == 201) {
+        // Refresh list
+        // await fetchInviteCodes();
       } else {
-        print('⚠️ Failed with status: ${response.statusCode}');
-        print('📡 Body on failure: ${response.body}');
+        final data = jsonDecode(response.body);
         setState(() {
-          error = 'Failed to load invite codes';
-          isLoading = false;
+          error = data['message'] ?? 'Failed to generate code';
         });
       }
     } catch (e) {
-      print('❌ Exception during fetch: $e');
       setState(() {
-        error = '❌ Error: $e';
-        isLoading = false;
+        error = 'An error occurred during code generation.';
       });
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -76,6 +90,13 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Your Invite Codes'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add),
+            onPressed: _generateCode,
+            tooltip: 'Generate New Code',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -85,50 +106,6 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
                 ? Center(child: Text(error!, style: TextStyle(color: Colors.red)))
                 : Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () async {
-                              setState(() {
-                                isLoading = true;
-                                error = null;
-                              });
-
-                              try {
-                                final token = await AuthService.getToken();
-                                final role = await AuthService.getRole();
-                                final gymName = await AuthService.getGymName();
-
-                                final requestRole = role == 'superadmin' ? 'gym_owner' : 'gym_member';
-                                final response = await AuthService.generateInviteCode(
-                                  token: token!,
-                                  role: requestRole,
-                                  gymName: gymName!,
-                                );
-
-                                if (response != null && response.containsKey('code')) {
-                                  print('✅ New invite code generated: ${response['code']}');
-                                  await fetchInviteCodes(); // Refresh list right after generation
-                                  print('🔄 fetchInviteCodes called after generation');
-                                } else {
-                                  print('⚠️ Failed to generate code: $response');
-                                  setState(() => error = 'Failed to generate invite code');
-                                }
-                              } catch (e) {
-                                print('❌ Error generating invite code: $e');
-                                setState(() => error = 'Error generating invite code');
-                              } finally {
-                                setState(() => isLoading = false);
-                              }
-                            },
-                            icon: Icon(Icons.add),
-                            label: Text('Generate Code'),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.black87),
-                          ),
-                          SizedBox(width: 10),
-                        ],
-                      ),
                       const SizedBox(height: 10),
                       Expanded(
                         child: Builder(

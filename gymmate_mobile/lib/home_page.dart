@@ -5,10 +5,12 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:provider/provider.dart';
 import '../api/api_config.dart';
 import 'widgets/dashboard_charts.dart';
 import 'pages/invite_code_list_page.dart';
 import 'pages/invite_generator_page.dart';
+import 'services/auth_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -23,6 +25,7 @@ class _HomePageState extends State<HomePage> {
   String? _error;
   List<dynamic> _members = [];
   List<charts.Series<ChartData, String>> _chartSeries = [];
+  String role = '';
 
   @override
   void initState() {
@@ -43,28 +46,42 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadMembers() async {
+    print('🏠 HomePage._loadMembers() called');
     setState(() => _isLoading = true);
+    
+    final authService = Provider.of<AuthService>(context, listen: false);
     final storage = const FlutterSecureStorage();
-    final token = await storage.read(key: 'authToken');
-    final role = await storage.read(key: 'userRole');
+    
+    role = await storage.read(key: 'userRole') ?? '';
+    final token = authService.token; // Use token from AuthService
     final gymId = await storage.read(key: 'gymId');
-
-    // Determine endpoint based on user role
+    
+    print('🔑 Token from AuthService: $token');
+    print('🔑 Role read from storage in HomePage: $role');
+    print('🔑 GymId read from storage in HomePage: $gymId');
+    
+    // Determine endpoint based on user role - use new user-based endpoints
     String endpoint;
     if (role == 'superadmin') {
-      endpoint = '/api/gym/all-members';
+      endpoint = '/api/auth/all-members';
     } else if (role == 'gym_owner' || role == 'admin') {
-      endpoint = '/api/gym/members';
+      endpoint = '/api/auth/members';
     } else {
-      endpoint = '/api/gym/self'; // new endpoint to return only the logged-in gym_member's own info
+      endpoint = '/api/auth/self'; // new endpoint to return only the logged-in gym_member's own info
     }
 
     final url = Uri.parse('${ApiConfig.baseUrl}$endpoint');
+    print('🌐 Making API call to: $url');
+    print('🌐 With token: $token');
+    print('🌐 With role: $role');
 
     try {
       final resp = await http
           .get(url, headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'})
           .timeout(const Duration(seconds: 10));
+
+      print('🌐 API response status: ${resp.statusCode}');
+      print('🌐 API response body: ${resp.body}');
 
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
@@ -84,9 +101,19 @@ class _HomePageState extends State<HomePage> {
         final identifier = (role == 'gym_member')
             ? await storage.read(key: 'userEmail')
             : await storage.read(key: 'gymId');
-        _chartSeries = createGymSampleData(role ?? '', list, identifier ?? '');
+        _chartSeries = createGymSampleData(role, list, identifier ?? '');
         print('📊 Loaded ${_members.length} members for role: $role');
       } else {
+        // If token is invalid or expired, log out the user
+        if (resp.statusCode == 401 || resp.statusCode == 403) {
+          print('🔒 Token expired or invalid. Logging out.');
+          await authService.logout(); // Use AuthService logout
+          
+          // Use a post-frame callback to ensure navigation happens after build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).pushReplacementNamed('/login');
+          });
+        }
         throw 'Status ${resp.statusCode}: ${resp.body}';
       }
     } on TimeoutException {
@@ -199,8 +226,8 @@ class _HomePageState extends State<HomePage> {
               icon: const Icon(Icons.power_settings_new),
               tooltip: 'Logout',
               onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.remove('authToken');
+                final storage = const FlutterSecureStorage();
+                await storage.deleteAll(); // Clear all stored credentials
                 if (!mounted) return;
                 Navigator.pushReplacementNamed(context, '/login');
               },
@@ -243,7 +270,7 @@ class _HomePageState extends State<HomePage> {
                               child: DashboardChart(
                                 seriesList: _chartSeries,
                                 animate: true,
-                                title: 'Weekly Registrations',
+                                title: role == 'gym_member' ? 'Weekly Check-ins' : 'Weekly Registrations',
                               ),
                             ),
                           ),
