@@ -2,22 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Gym = require('../models/Gym');
 const jwt = require('jsonwebtoken');
-
-// Authentication middleware to verify JWT and attach gym info
-function authMiddleware(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Authorization header missing or malformed' });
-  }
-  const token = authHeader.split(' ')[1];
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'defaultsecret');
-    req.gymUser = payload;  // { id, email, role }
-    next();
-  } catch (err) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
-  }
-}
+const { authenticateToken } = require('../middleware/authMiddleware');
 
 router.post('/register', async (req, res) => {
   console.log('🔔 Received POST /register');
@@ -29,6 +14,14 @@ router.post('/register', async (req, res) => {
     if (!gymName || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
+
+    // 🧹 Clean up falsy/null diet, workout, fitnessGoals fields and log them
+    ['diet', 'workout', 'fitnessGoals'].forEach(field => {
+      if (!req.body[field]) {
+        console.log(`🧹 Cleaning up falsy or null field: ${field}`);
+        delete req.body[field];
+      }
+    });
 
     const existingGym = await Gym.findOne({ email });
     if (existingGym) {
@@ -49,7 +42,7 @@ router.post('/register', async (req, res) => {
       }
     }
 
-    const newGym = new Gym({
+    const newGymData = {
       gymName,
       email,
       password,
@@ -57,7 +50,14 @@ router.post('/register', async (req, res) => {
       contactNumber,
       services,
       role: assignedRole,
-    });
+    };
+
+    if (req.body.diet) newGymData.diet = req.body.diet;
+    if (req.body.workout) newGymData.workout = req.body.workout;
+    if (req.body.fitnessGoals) newGymData.fitnessGoals = req.body.fitnessGoals;
+
+    console.log('🛠 Final gym data to be saved:', newGymData);
+    const newGym = new Gym(newGymData);
 
     await newGym.save();
 
@@ -160,18 +160,18 @@ router.get('/services', async (req, res) => {
 });
 
 // GET /api/gym/members
-router.get('/members', authMiddleware, async (req, res) => {
+router.get('/members', authenticateToken, async (req, res) => {
   try {
-    console.log(`🔎 Fetching members for role: ${req.gymUser.role}, gymId: ${req.gymUser.gymId}`);
+    console.log(`🔎 Fetching members for role: ${req.user.role}, gymId: ${req.user.gymId}`);
 
     let gyms;
-    if (req.gymUser.role === 'superadmin') {
+    if (req.user.role === 'superadmin') {
       gyms = await Gym.find({});
-    } else if (req.gymUser.role === 'gym_owner') {
-      const owner = await Gym.findById(req.gymUser.gymId);
+    } else if (req.user.role === 'gym_owner') {
+      const owner = await Gym.findById(req.user.gymId);
       gyms = await Gym.find({ role: 'gym_member', gymName: owner.gymName });
-    } else if (req.gymUser.role === 'gym_member') {
-      gyms = await Gym.find({ _id: req.gymUser.gymId });
+    } else if (req.user.role === 'gym_member') {
+      gyms = await Gym.find({ _id: req.user.gymId });
     } else {
       return res.status(403).json({ message: 'Unauthorized' });
     }
@@ -184,9 +184,8 @@ router.get('/members', authMiddleware, async (req, res) => {
 });
 
 // GET /api/gym/all-members (superadmin only)
-
-router.get('/all-members', authMiddleware, async (req, res) => {
-  if (req.gymUser.role !== 'superadmin') {
+router.get('/all-members', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'superadmin') {
     return res.status(403).json({ message: 'Forbidden: superadmin only' });
   }
   try {
@@ -199,9 +198,9 @@ router.get('/all-members', authMiddleware, async (req, res) => {
 });
 
 // GET /api/gym/self - Returns the current logged-in gym user
-router.get('/self', authMiddleware, async (req, res) => {
+router.get('/self', authenticateToken, async (req, res) => {
   try {
-    const gym = await Gym.findById(req.gymUser.id);
+    const gym = await Gym.findById(req.user.id);
     if (!gym) {
       return res.status(404).json({ message: 'Gym not found' });
     }
@@ -213,13 +212,13 @@ router.get('/self', authMiddleware, async (req, res) => {
 });
 
 // GET /api/gym/login-stats - Returns login counts per day for current week
-router.get('/login-stats', authMiddleware, async (req, res) => {
+router.get('/login-stats', authenticateToken, async (req, res) => {
   try {
-    if (req.gymUser.role !== 'gym_member') {
+    if (req.user.role !== 'gym_member') {
       return res.status(403).json({ message: 'Forbidden: gym_member only' });
     }
 
-    const gym = await Gym.findById(req.gymUser.id);
+    const gym = await Gym.findById(req.user.id);
     if (!gym || !Array.isArray(gym.loginTimestamps)) {
       return res.status(200).json({ logins: [] });
     }
@@ -254,9 +253,9 @@ router.get('/login-stats', authMiddleware, async (req, res) => {
 
 
 // 📌 Generate a new invite code
-router.post('/generate-invite', authMiddleware, async (req, res) => {
+router.post('/generate-invite', authenticateToken, async (req, res) => {
   const { role } = req.body;
-  const generator = req.gymUser;
+  const generator = req.user;
 
   if (
     (generator.role === 'superadmin' && role === 'gym_owner') ||
@@ -306,6 +305,26 @@ router.get('/:id', async (req, res) => {
     res.status(200).json(gym); // Send raw gym document
   } catch (error) {
     console.error('❌ Error fetching gym by ID:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+// ✅ Update onboarding data (diet, workout, goals)
+router.put('/onboarding', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'gym_member') {
+      return res.status(403).json({ message: 'Only gym_members can update onboarding data' });
+    }
+
+    const updateFields = {};
+    if (req.body.diet) updateFields.diet = req.body.diet;
+    if (req.body.workout) updateFields.workout = req.body.workout;
+    if (req.body.fitnessGoals) updateFields.fitnessGoals = req.body.fitnessGoals;
+
+    const updated = await Gym.findByIdAndUpdate(req.user.id, { $set: updateFields }, { new: true });
+
+    return res.status(200).json({ message: 'Onboarding data updated', gym: updated });
+  } catch (error) {
+    console.error('❌ Error updating onboarding data:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });

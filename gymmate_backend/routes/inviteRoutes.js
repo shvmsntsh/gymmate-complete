@@ -70,6 +70,20 @@ router.post('/validate', async (req, res) => {
     return res.status(400).json({ error: 'Invite code is required.' });
   }
 
+  // Handle the special superadmin code "123456"
+  if (code === '123456') {
+    const userCount = await User.countDocuments();
+    if (userCount > 0) {
+      return res.status(400).json({ error: 'Superadmin already exists.' });
+    }
+    return res.status(200).json({
+      message: 'Valid superadmin invite code.',
+      role: 'superadmin',
+      gym: null,
+      gymId: null
+    });
+  }
+
   const invite = await InviteCode.findOne({ code, used: false });
   if (!invite) {
     return res.status(400).json({ error: 'Invalid or expired invite code.' });

@@ -18,12 +18,13 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   // Role determines access level:
-  // 'admin' = central builder's office (superadmin)
+  // 'superadmin' = central builder's office (superadmin)
+  // 'admin' = central builder's office (admin)
   // 'gym_owner' = society secretary (manages one gym)
   // 'gym_member' = flat owner (can only see own record)
   role: {
     type: String,
-    enum: ['admin', 'gym_owner', 'gym_member'],
+    enum: ['superadmin', 'admin', 'gym_owner', 'gym_member'],
     default: 'gym_owner',
   },
   // Reference to associated Gym (only for gym_owner and gym_member)
@@ -35,6 +36,142 @@ const userSchema = new mongoose.Schema({
   joinDate: {
     type: Date,
     default: Date.now,
+  },
+
+  // 🎮 GAMIFIED ONBOARDING EXTENSIONS
+  
+  // Onboarding Progress Tracking
+  onboardingProgress: {
+    isCompleted: { type: Boolean, default: false },
+    currentStep: { type: Number, default: 0 },
+    stepsCompleted: { type: [Number], default: [] },
+    startedAt: { type: Date, default: null },
+    completedAt: { type: Date, default: null },
+    totalSteps: { type: Number, default: 7 }, // Total onboarding steps
+  },
+  
+  // Extended Profile Information
+  profile: {
+    age: { type: Number, min: 13, max: 120 },
+    gender: { 
+      type: String, 
+      enum: ['male', 'female', 'other', 'prefer_not_to_say', null],
+      default: null 
+    },
+    weight: { type: Number, min: 20, max: 500 }, // in kg
+    height: { type: Number, min: 100, max: 250 }, // in cm
+    avatar: { type: String, default: 'default_user.png' },
+    bio: { type: String, maxlength: 200 },
+    phoneNumber: { type: String, default: null },
+  },
+  
+  // Fitness Goals (Multi-select)
+  fitnessGoals: [{
+    type: String,
+    enum: ['muscle_gain', 'fat_loss', 'endurance', 'flexibility', 'strength', 'general_fitness', 'weight_maintenance', null]
+  }],
+  
+  // Diet Preferences
+  dietPreferences: {
+    type: { 
+      type: String, 
+      enum: ['vegetarian', 'non_vegetarian', 'vegan', 'keto', 'paleo', 'mediterranean', 'other', null],
+      default: null 
+    },
+    allergies: [String], // Common allergies: nuts, dairy, gluten, etc.
+    dailyMeals: { type: Number, min: 1, max: 8, default: 3 },
+    waterIntake: { type: Number, default: 8 }, // glasses per day
+    restrictions: [String], // diabetes, hypertension, etc.
+  },
+  
+  // Workout Habits & Preferences
+  workoutHabits: {
+    preferredTime: { 
+      type: String, 
+      enum: ['early_morning', 'morning', 'afternoon', 'evening', 'night', 'flexible', null],
+      default: null 
+    },
+    favoriteExercises: [{ 
+      type: String,
+      enum: ['cardio', 'weight_training', 'yoga', 'pilates', 'swimming', 'cycling', 'running', 'crossfit', 'martial_arts', 'dance', 'sports', null]
+    }],
+    currentActivityLevel: { 
+      type: String, 
+      enum: ['sedentary', 'lightly_active', 'moderately_active', 'very_active', 'extremely_active', null],
+      default: null 
+    },
+    workoutsPerWeek: { type: Number, min: 0, max: 14, default: 0 },
+    sessionDuration: { type: Number, default: 60 }, // minutes
+    hasInjuries: { type: Boolean, default: false },
+    injuryDetails: { type: String, default: null },
+  },
+  
+  // 🎮 Gamification System
+  gamification: {
+    totalXP: { type: Number, default: 0 },
+    level: { type: Number, default: 1 },
+    
+    // Badge System
+    badges: [{
+      id: { type: String, required: true }, // badge identifier
+      name: { type: String, required: true }, // display name
+      description: { type: String, required: true },
+      category: { 
+        type: String, 
+        enum: ['starter', 'milestone', 'special', 'achievement'],
+        required: true 
+      },
+      iconUrl: { type: String, default: null },
+      unlockedAt: { type: Date, required: true },
+      xpAwarded: { type: Number, default: 0 },
+    }],
+    
+    // Streaks & Engagement
+    streaks: {
+      current: { type: Number, default: 0 }, // current login streak
+      longest: { type: Number, default: 0 }, // longest streak achieved
+      lastLoginDate: { type: Date, default: null },
+    },
+    
+    // Achievement Progress
+    achievements: {
+      profileCompletion: { type: Number, default: 0 }, // percentage
+      onboardingProgress: { type: Number, default: 0 }, // percentage
+      firstWorkoutLogged: { type: Boolean, default: false },
+      firstGoalSet: { type: Boolean, default: false },
+    }
+  },
+
+  // 🏆 First Challenge System
+  firstChallenge: {
+    isAccepted: { type: Boolean, default: false },
+    type: { 
+      type: String,
+      enum: ['7_day_checkin', 'first_workout', 'profile_photo', 'goal_setting', null],
+      default: null
+    },
+    startDate: { type: Date, default: null },
+    endDate: { type: Date, default: null },
+    progress: { type: Number, default: 0 }, // 0-100
+    isCompleted: { type: Boolean, default: false },
+    completedAt: { type: Date, default: null },
+  },
+
+  // 📱 Device & Preferences
+  preferences: {
+    theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+    language: { type: String, default: 'en' },
+    notifications: {
+      workout: { type: Boolean, default: true },
+      achievements: { type: Boolean, default: true },
+      social: { type: Boolean, default: true },
+      marketing: { type: Boolean, default: false },
+    },
+    units: {
+      weight: { type: String, enum: ['kg', 'lbs'], default: 'kg' },
+      height: { type: String, enum: ['cm', 'ft'], default: 'cm' },
+      distance: { type: String, enum: ['km', 'miles'], default: 'km' },
+    }
   }
 });
 

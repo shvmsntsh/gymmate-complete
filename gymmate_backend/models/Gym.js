@@ -19,7 +19,29 @@ const gymSchema = new mongoose.Schema({
   loginTimestamps: [{
     type: Date,
     default: Date.now
-  }]
+  }],
+  profile: {
+    name: { type: String },
+    age: { type: Number },
+    gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+    height: { type: Number }, // in cm
+    weight: { type: Number }  // in kg
+  },
+  diet: {
+    type: String,
+    enum: ['Vegetarian', 'Vegan', 'Non-Vegetarian', 'Keto', 'Paleo', 'Other'],
+    default: undefined
+  },
+  workout: {
+    type: String,
+    enum: ['Strength', 'Cardio', 'Yoga', 'CrossFit', 'Mixed', 'Other'],
+    default: undefined
+  },
+  fitnessGoals: [String],
+  onboardingStep: {
+    type: Number,
+    default: 0
+  }
 });
 
 module.exports = mongoose.model('Gym', gymSchema);
