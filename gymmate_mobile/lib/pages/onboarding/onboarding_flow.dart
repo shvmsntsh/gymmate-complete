@@ -113,12 +113,15 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   }
 
   List<Widget> _buildStepPages() {
+    final provider = Provider.of<OnboardingProvider>(context, listen: false);
+    final userId = provider.userId;
+    final token = provider.token;
     return [
       const WelcomeStep(),
       const ProfileStep(),
       const GoalsStep(),
-      const DietStep(),
-      const WorkoutStep(),
+      DietStep(userId: userId ?? '', token: token ?? ''),
+      WorkoutStep(userId: userId ?? '', token: token ?? ''),
       const ChallengeStep(),
       const CompletionStep(),
     ];

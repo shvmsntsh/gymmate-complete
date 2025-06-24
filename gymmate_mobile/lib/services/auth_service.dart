@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:gymmate_mobile/api/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService with ChangeNotifier {
   final _storage = const FlutterSecureStorage();
@@ -85,12 +86,12 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  Future<void> logout() async {
-    _token = null;
-    _userId = null;
-    _isInitialized = false; // Reset initialization flag
-    await _storage.deleteAll();
-    notifyListeners();
+  static Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    // Also clear FlutterSecureStorage
+    const storage = FlutterSecureStorage();
+    await storage.deleteAll();
   }
 
   Future<String?> getToken() async {
@@ -154,5 +155,9 @@ class AuthService with ChangeNotifier {
     } else {
       throw Exception('Failed to register: ${response.body}');
     }
+  }
+
+  Future<Map<String, dynamic>?> getCurrentUser() async {
+    return await getUser();
   }
 } 

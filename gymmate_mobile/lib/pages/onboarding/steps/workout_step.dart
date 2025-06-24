@@ -4,16 +4,18 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../providers/onboarding_provider.dart';
 
 class WorkoutStep extends StatefulWidget {
-  const WorkoutStep({Key? key}) : super(key: key);
+  final String? userId;
+  final String? token;
+  const WorkoutStep({Key? key, this.userId, this.token}) : super(key: key);
 
   @override
   State<WorkoutStep> createState() => _WorkoutStepState();
 }
 
 class _WorkoutStepState extends State<WorkoutStep> {
-  final _formKey = GlobalKey<FormState>();
   String? _activityLevel;
-  final Set<String> _workoutDays = {};
+  int _workoutsPerWeek = 0;
+  final Set<String> _favoriteExercises = {};
   TimeOfDay? _preferredTime;
 
   final _exerciseTypes = const [
@@ -31,23 +33,36 @@ class _WorkoutStepState extends State<WorkoutStep> {
   }
 
   void _onSave() {
-    if (!_formKey.currentState!.validate()) {
+    if (_activityLevel == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your activity level.')),
+      );
       return;
     }
-    _formKey.currentState!.save();
 
     final provider = context.read<OnboardingProvider>();
     final data = {
       'currentActivityLevel': _activityLevel,
-      'workoutDays': _workoutDays.toList(),
-      'preferredTime': _preferredTime?.format(context),
+      'favoriteExercises': _favoriteExercises.toList(),
+      'preferredTime': _preferredTime != null ? _getTimeEnum(_preferredTime!) : null,
+      'workoutsPerWeek': _workoutsPerWeek,
     };
     provider.saveStepProgress(5, data);
     provider.nextStep();
   }
 
+  String _getTimeEnum(TimeOfDay time) {
+    final hour = time.hour;
+    if (hour < 6) return 'early_morning';
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    if (hour < 21) return 'evening';
+    return 'night';
+  }
+
   @override
   Widget build(BuildContext context) {
+    print('WorkoutStep build called');
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -74,13 +89,7 @@ class _WorkoutStepState extends State<WorkoutStep> {
                   _buildSectionHeader('Favorite Exercise Types'),
                   _buildExerciseChips(),
                   const SizedBox(height: 40),
-                  ElevatedButton(
-                    onPressed: _onSave,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
-                    child: const Text('Save & Continue'),
-                  ),
+                  _buildContinueButton(context),
                 ],
               ),
             ),
@@ -158,17 +167,13 @@ class _WorkoutStepState extends State<WorkoutStep> {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         Slider(
-          value: _workoutDays.length.toDouble(),
+          value: _workoutsPerWeek.toDouble(),
           min: 0,
           max: 7,
           divisions: 7,
-          label: _workoutDays.length.toString(),
+          label: _workoutsPerWeek.toString(),
           onChanged: (value) => setState(() {
-            _workoutDays.clear();
-            // This is a placeholder, just to have the right number of days
-            for (int i = 0; i < value.round(); i++) {
-              _workoutDays.add('Day ${i + 1}');
-            }
+            _workoutsPerWeek = value.round();
           }),
         ),
       ],
@@ -200,7 +205,7 @@ class _WorkoutStepState extends State<WorkoutStep> {
       spacing: 8,
       runSpacing: 8,
       children: _exerciseTypes.map((exercise) {
-        final isSelected = _workoutDays.contains(exercise['id']);
+        final isSelected = _favoriteExercises.contains(exercise['id']);
         return FilterChip(
           label: Text(exercise['name'] as String),
           avatar: Icon(exercise['icon'] as IconData, size: 18),
@@ -208,14 +213,31 @@ class _WorkoutStepState extends State<WorkoutStep> {
           onSelected: (selected) {
             setState(() {
               if (selected) {
-                _workoutDays.add(exercise['id'] as String);
+                _favoriteExercises.add(exercise['id'] as String);
               } else {
-                _workoutDays.remove(exercise['id'] as String);
+                _favoriteExercises.remove(exercise['id'] as String);
               }
             });
           },
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildContinueButton(BuildContext context) {
+    final provider = context.watch<OnboardingProvider>();
+    return ElevatedButton(
+      onPressed: _activityLevel == null || provider.isLoading ? null : _onSave,
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 50),
+      ),
+      child: provider.isLoading
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            )
+          : const Text('Save & Continue'),
     );
   }
 } 

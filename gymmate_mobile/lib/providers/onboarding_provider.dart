@@ -13,7 +13,7 @@ class OnboardingProvider with ChangeNotifier {
   bool _isLoading = false;
   bool _isCompleted = false;
   int _currentStep = 1;
-  int _totalSteps = 7; // Define total steps
+  final int _totalSteps = 7; // Define total steps
   double _progress = 0.0;
   String? _error;
   
@@ -33,6 +33,8 @@ class OnboardingProvider with ChangeNotifier {
   int get level => _level;
   List<Badge> get badges => _badges;
   String? get lastBadgeUnlocked => _lastBadgeUnlocked;
+  String? get userId => _userId;
+  String? get token => _token;
 
   void update(String? token, String? userId) {
     _token = token;

@@ -52,6 +52,7 @@ class _GoalsStepState extends State<GoalsStep> {
 
   @override
   Widget build(BuildContext context) {
+    print('GoalsStep build called');
     return Scaffold(
       body: SafeArea(
         child: Padding(

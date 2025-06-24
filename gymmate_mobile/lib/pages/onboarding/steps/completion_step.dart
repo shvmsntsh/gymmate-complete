@@ -36,14 +36,19 @@ class _CompletionStepState extends State<CompletionStep> {
     });
   }
 
-  void _completeOnboarding() {
+  void _completeOnboarding() async {
     final provider = context.read<OnboardingProvider>();
-    provider.completeOnboarding();
-    // After completion, the AuthChecker in main.dart should navigate to the home page.
+    await provider.completeOnboarding();
+    
+    // After completion, navigate to home page
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    print('CompletionStep build called');
     final provider = context.watch<OnboardingProvider>();
 
     return Scaffold(

@@ -4,14 +4,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../providers/onboarding_provider.dart';
 
 class DietStep extends StatefulWidget {
-  const DietStep({Key? key}) : super(key: key);
+  final String? userId;
+  final String? token;
+  const DietStep({Key? key, this.userId, this.token}) : super(key: key);
 
   @override
   State<DietStep> createState() => _DietStepState();
 }
 
 class _DietStepState extends State<DietStep> {
-  final _formKey = GlobalKey<FormState>();
   String? _dietType;
   String? _allergies;
   int _dailyMeals = 3;
@@ -27,6 +28,14 @@ class _DietStepState extends State<DietStep> {
     {'id': 'other', 'name': 'Other', 'icon': '❓'},
   ];
 
+  final List<String> _dietOptions = [
+    'High Protein',
+    'Balanced',
+    'Low Carb',
+    'Vegetarian',
+    'Vegan'
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -34,15 +43,17 @@ class _DietStepState extends State<DietStep> {
   }
 
   void _onSave() {
-    if (!_formKey.currentState!.validate()) {
+    if (_dietType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a diet type.')),
+      );
       return;
     }
-    _formKey.currentState!.save();
 
     final provider = context.read<OnboardingProvider>();
     final data = {
-      'dietType': _dietType,
-      'allergies': _allergies,
+      'type': _dietType,
+      'allergies': _allergies != null && _allergies!.isNotEmpty ? [_allergies] : [],
       'dailyMeals': _dailyMeals,
       'waterIntake': _waterIntake,
     };
@@ -118,7 +129,7 @@ class _DietStepState extends State<DietStep> {
           width: isSelected ? 2.0 : 1.0,
         ),
       ),
-      color: isSelected ? colorScheme.primary.withOpacity(0.1) : colorScheme.surface,
+      color: isSelected ? colorScheme.primary.withAlpha(102) : colorScheme.surface,
       child: InkWell(
         onTap: () => setState(() => _dietType = diet['id']),
         borderRadius: BorderRadius.circular(16),
@@ -147,12 +158,19 @@ class _DietStepState extends State<DietStep> {
   }
 
   Widget _buildContinueButton(BuildContext context) {
+    final provider = context.watch<OnboardingProvider>();
     return ElevatedButton(
-      onPressed: _onSave,
+      onPressed: _dietType == null || provider.isLoading ? null : _onSave,
       style: ElevatedButton.styleFrom(
         minimumSize: const Size(double.infinity, 50),
       ),
-      child: const Text('Save & Continue'),
+      child: provider.isLoading
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            )
+          : const Text('Save & Continue'),
     );
   }
 } 

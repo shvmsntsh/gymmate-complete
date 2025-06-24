@@ -27,6 +27,7 @@ class _ProfileStepState extends State<ProfileStep> {
 
   @override
   Widget build(BuildContext context) {
+    print('ProfileStep build called');
     return Scaffold(
       body: SafeArea(
         child: Form(
@@ -188,9 +189,9 @@ class _ProfileStepState extends State<ProfileStep> {
 
     final provider = context.read<OnboardingProvider>();
     final data = {
-      'displayName': _displayName,
+      'name': _displayName,
       'age': _age,
-      'gender': _gender,
+      'gender': _gender?.toLowerCase().replaceAll(' ', '_'),
       'weight': _weight,
       'height': _height,
     };

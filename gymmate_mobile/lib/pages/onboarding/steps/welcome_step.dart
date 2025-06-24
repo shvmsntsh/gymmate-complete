@@ -3,33 +3,18 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../providers/onboarding_provider.dart';
 
-class WelcomeStep extends StatelessWidget {
+class WelcomeStep extends StatefulWidget {
   const WelcomeStep({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+  State<WelcomeStep> createState() => _WelcomeStepState();
+}
 
-    return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
-              _buildHeader(context, textTheme),
-              const SizedBox(height: 48),
-              ..._buildFeatureCards(context),
-              const SizedBox(height: 48),
-              _buildStartButton(context),
-              const SizedBox(height: 20),
-            ],
-          ).animate().fadeIn(duration: 500.ms),
-        ),
-      ),
-    );
+class _WelcomeStepState extends State<WelcomeStep> {
+  @override
+  Widget build(BuildContext context) {
+    // TODO: Implement your WelcomeStep UI here
+    return Container();
   }
 
   Widget _buildHeader(BuildContext context, TextTheme textTheme) {

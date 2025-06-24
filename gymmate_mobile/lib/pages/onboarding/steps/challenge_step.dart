@@ -52,6 +52,7 @@ class _ChallengeStepState extends State<ChallengeStep> {
 
   @override
   Widget build(BuildContext context) {
+    print('ChallengeStep build called');
     return Scaffold(
       body: SafeArea(
         child: Padding(

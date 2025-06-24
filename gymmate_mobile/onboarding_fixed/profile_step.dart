@@ -6,6 +6,7 @@ import 'fitness_goal_step.dart';
 class ProfileStep extends StatefulWidget {
   final String userId;
   const ProfileStep({Key? key, required this.userId}) : super(key: key);
+  const ProfileStep({Key? key}) : super(key: key);
 
   @override
   State<ProfileStep> createState() => _ProfileStepState();
@@ -142,9 +143,7 @@ class _ProfileStepState extends State<ProfileStep> {
                                   print("✅ Profile updated successfully");
                                   await Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (context) => FitnessGoalStep(userId: widget.userId),
-                                    ),
+                                    MaterialPageRoute(builder: (context) => const FitnessGoalStepPage()),
                                   );
                                 } else {
                                   print("❌ Failed to update profile: ${response.body}");

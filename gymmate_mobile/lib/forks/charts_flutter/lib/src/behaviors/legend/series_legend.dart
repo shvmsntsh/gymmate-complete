@@ -287,20 +287,17 @@ class SeriesLegend<D> extends ChartBehavior<D> {
   }
 
   @override
-  int get hashCode {
-    return Object.hash(
-        selectionModelType,
-        contentBuilder,
-        position,
-        outsideJustification,
-        insideJustification,
-        defaultHiddenSeries,
-        showMeasures,
-        legendDefaultMeasure,
-        measureFormatter,
-        secondaryMeasureFormatter,
-        entryTextStyle);
-  }
+  int get hashCode => Object.hash(
+      selectionModelType,
+      contentBuilder,
+      position,
+      outsideJustification,
+      insideJustification,
+      showMeasures,
+      legendDefaultMeasure,
+      measureFormatter,
+      secondaryMeasureFormatter,
+      entryTextStyle);
 }
 
 /// Flutter specific wrapper on the common Legend for building content.
