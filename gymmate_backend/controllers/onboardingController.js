@@ -1,4 +1,4 @@
-const Gym = require('../models/Gym');
+const User = require('../models/User');
 
 // 🎮 Gamification Constants
 const XP_REWARDS = {
@@ -60,15 +60,15 @@ const BADGES = {
 const getOnboardingStatus = async (req, res) => {
   try {
     const userId = req.user.id;
-    const gym = await Gym.findById(userId);
+    const user = await User.findById(userId);
     
-    if (!gym) {
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Ensure onboardingProgress object exists
-    if (!gym.onboardingProgress) {
-      gym.onboardingProgress = {
+    if (!user.onboardingProgress) {
+      user.onboardingProgress = {
         isCompleted: false,
         currentStep: 0,
         stepsCompleted: [],
@@ -79,8 +79,8 @@ const getOnboardingStatus = async (req, res) => {
     }
 
     // Ensure gamification object exists
-    if (!gym.gamification) {
-      gym.gamification = {
+    if (!user.gamification) {
+      user.gamification = {
         totalXP: 0,
         level: 1,
         badges: [],
@@ -89,21 +89,21 @@ const getOnboardingStatus = async (req, res) => {
       };
     }
 
-    await gym.save();
+    await user.save();
 
     const onboardingData = {
-      isCompleted: gym.onboardingProgress.isCompleted,
-      currentStep: gym.onboardingProgress.currentStep,
-      stepsCompleted: gym.onboardingProgress.stepsCompleted,
-      totalSteps: gym.onboardingProgress.totalSteps,
-      progress: Math.round((gym.onboardingProgress.stepsCompleted.length / 7) * 100),
-      startedAt: gym.onboardingProgress.startedAt,
-      completedAt: gym.onboardingProgress.completedAt,
+      isCompleted: user.onboardingProgress.isCompleted,
+      currentStep: user.onboardingProgress.currentStep,
+      stepsCompleted: user.onboardingProgress.stepsCompleted,
+      totalSteps: user.onboardingProgress.totalSteps,
+      progress: Math.round((user.onboardingProgress.stepsCompleted.length / 7) * 100),
+      startedAt: user.onboardingProgress.startedAt,
+      completedAt: user.onboardingProgress.completedAt,
       gamification: {
-        totalXP: gym.gamification.totalXP,
-        level: gym.gamification.level,
-        badges: gym.gamification.badges,
-        achievements: gym.gamification.achievements
+        totalXP: user.gamification.totalXP,
+        level: user.gamification.level,
+        badges: user.gamification.badges,
+        achievements: user.gamification.achievements
       }
     };
 
@@ -118,15 +118,15 @@ const getOnboardingStatus = async (req, res) => {
 const startOnboarding = async (req, res) => {
   try {
     const userId = req.user.id;
-    const gym = await Gym.findById(userId);
+    const user = await User.findById(userId);
     
-    if (!gym) {
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Ensure onboardingProgress object exists
-    if (!gym.onboardingProgress) {
-      gym.onboardingProgress = {
+    if (!user.onboardingProgress) {
+      user.onboardingProgress = {
         isCompleted: false,
         currentStep: 0,
         stepsCompleted: [],
@@ -137,8 +137,8 @@ const startOnboarding = async (req, res) => {
     }
 
     // Ensure gamification object exists
-    if (!gym.gamification) {
-      gym.gamification = {
+    if (!user.gamification) {
+      user.gamification = {
         totalXP: 0,
         level: 1,
         badges: [],
@@ -148,24 +148,24 @@ const startOnboarding = async (req, res) => {
     }
 
     // Initialize onboarding if not already started
-    if (!gym.onboardingProgress.startedAt) {
-      gym.onboardingProgress.isCompleted = false;
-      gym.onboardingProgress.currentStep = 1;
-      gym.onboardingProgress.stepsCompleted = [];
-      gym.onboardingProgress.startedAt = new Date();
-      gym.onboardingProgress.completedAt = null;
-      gym.onboardingProgress.totalSteps = 7;
+    if (!user.onboardingProgress.startedAt) {
+      user.onboardingProgress.isCompleted = false;
+      user.onboardingProgress.currentStep = 1;
+      user.onboardingProgress.stepsCompleted = [];
+      user.onboardingProgress.startedAt = new Date();
+      user.onboardingProgress.completedAt = null;
+      user.onboardingProgress.totalSteps = 7;
 
       // Award welcome XP and badge
-      await awardXP(gym, XP_REWARDS.step_1_welcome);
-      await awardBadge(gym, BADGES.first_steps);
+      await awardXP(user, XP_REWARDS.step_1_welcome);
+      await awardBadge(user, BADGES.first_steps);
 
-      await gym.save();
+      await user.save();
     }
 
     res.status(200).json({
       message: 'Onboarding started successfully!',
-      currentStep: gym.onboardingProgress.currentStep,
+      currentStep: user.onboardingProgress.currentStep,
       xpAwarded: XP_REWARDS.step_1_welcome,
       badgeUnlocked: BADGES.first_steps
     });
@@ -185,14 +185,14 @@ const saveStepProgress = async (req, res) => {
       return res.status(400).json({ message: 'Step and data are required' });
     }
 
-    const gym = await Gym.findById(userId);
-    if (!gym) {
+    const user = await User.findById(userId);
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Ensure onboardingProgress object exists
-    if (!gym.onboardingProgress) {
-      gym.onboardingProgress = {
+    if (!user.onboardingProgress) {
+      user.onboardingProgress = {
         isCompleted: false,
         currentStep: 0,
         stepsCompleted: [],
@@ -203,8 +203,8 @@ const saveStepProgress = async (req, res) => {
     }
 
     // Ensure gamification object exists
-    if (!gym.gamification) {
-      gym.gamification = {
+    if (!user.gamification) {
+      user.gamification = {
         totalXP: 0,
         level: 1,
         badges: [],
@@ -220,88 +220,88 @@ const saveStepProgress = async (req, res) => {
     // Process different steps
     switch (step) {
       case 2: // Profile Setup
-        gym.profile = { ...gym.profile, ...data };
-        if (!gym.onboardingProgress.stepsCompleted.includes(2)) {
+        user.profile = { ...user.profile, ...data };
+        if (!user.onboardingProgress.stepsCompleted.includes(2)) {
           xpAwarded = XP_REWARDS.step_2_profile;
-          await awardXP(gym, xpAwarded);
-          gym.onboardingProgress.stepsCompleted.push(2);
+          await awardXP(user, xpAwarded);
+          user.onboardingProgress.stepsCompleted.push(2);
         }
         break;
 
       case 3: // Fitness Goals
-        gym.fitnessGoals = data.goals || [];
-        if (!gym.onboardingProgress.stepsCompleted.includes(3)) {
+        user.fitnessGoals = data.goals || [];
+        if (!user.onboardingProgress.stepsCompleted.includes(3)) {
           xpAwarded = XP_REWARDS.step_3_goals;
-          await awardXP(gym, xpAwarded);
-          badgeUnlocked = await awardBadge(gym, BADGES.goal_setter);
-          gym.onboardingProgress.stepsCompleted.push(3);
+          await awardXP(user, xpAwarded);
+          badgeUnlocked = await awardBadge(user, BADGES.goal_setter);
+          user.onboardingProgress.stepsCompleted.push(3);
         }
         break;
 
       case 4: // Diet Preferences
-        gym.dietPreferences = { ...gym.dietPreferences, ...data };
-        if (!gym.onboardingProgress.stepsCompleted.includes(4)) {
+        user.dietPreferences = { ...user.dietPreferences, ...data };
+        if (!user.onboardingProgress.stepsCompleted.includes(4)) {
           xpAwarded = XP_REWARDS.step_4_diet;
-          await awardXP(gym, xpAwarded);
-          badgeUnlocked = await awardBadge(gym, BADGES.health_conscious);
-          gym.onboardingProgress.stepsCompleted.push(4);
+          await awardXP(user, xpAwarded);
+          badgeUnlocked = await awardBadge(user, BADGES.health_conscious);
+          user.onboardingProgress.stepsCompleted.push(4);
         }
         break;
 
       case 5: // Workout Habits
-        gym.workoutHabits = { ...gym.workoutHabits, ...data };
-        if (!gym.onboardingProgress.stepsCompleted.includes(5)) {
+        user.workoutHabits = { ...user.workoutHabits, ...data };
+        if (!user.onboardingProgress.stepsCompleted.includes(5)) {
           xpAwarded = XP_REWARDS.step_5_workout;
-          await awardXP(gym, xpAwarded);
-          badgeUnlocked = await awardBadge(gym, BADGES.workout_warrior);
-          gym.onboardingProgress.stepsCompleted.push(5);
+          await awardXP(user, xpAwarded);
+          badgeUnlocked = await awardBadge(user, BADGES.workout_warrior);
+          user.onboardingProgress.stepsCompleted.push(5);
         }
         break;
 
       case 6: // First Challenge
-        gym.firstChallenge = { ...gym.firstChallenge, ...data, isAccepted: true, startDate: new Date() };
-        if (!gym.onboardingProgress.stepsCompleted.includes(6)) {
+        user.firstChallenge = { ...user.firstChallenge, ...data, isAccepted: true, startDate: new Date() };
+        if (!user.onboardingProgress.stepsCompleted.includes(6)) {
           xpAwarded = XP_REWARDS.step_6_challenge;
-          await awardXP(gym, xpAwarded);
-          badgeUnlocked = await awardBadge(gym, BADGES.challenge_accepted);
-          gym.onboardingProgress.stepsCompleted.push(6);
+          await awardXP(user, xpAwarded);
+          badgeUnlocked = await awardBadge(user, BADGES.challenge_accepted);
+          user.onboardingProgress.stepsCompleted.push(6);
         }
         break;
 
       case 7: // Completion
-        if (!gym.onboardingProgress.stepsCompleted.includes(7)) {
-          gym.onboardingProgress.isCompleted = true;
-          gym.onboardingProgress.completedAt = new Date();
+        if (!user.onboardingProgress.stepsCompleted.includes(7)) {
+          user.onboardingProgress.isCompleted = true;
+          user.onboardingProgress.completedAt = new Date();
           xpAwarded = XP_REWARDS.step_7_completion;
-          await awardXP(gym, xpAwarded);
-          badgeUnlocked = await awardBadge(gym, BADGES.onboarding_complete);
-          gym.onboardingProgress.stepsCompleted.push(7);
+          await awardXP(user, xpAwarded);
+          badgeUnlocked = await awardBadge(user, BADGES.onboarding_complete);
+          user.onboardingProgress.stepsCompleted.push(7);
         }
         break;
     }
 
     // Update current step
-    if (step > gym.onboardingProgress.currentStep) {
-      gym.onboardingProgress.currentStep = step;
+    if (step > user.onboardingProgress.currentStep) {
+      user.onboardingProgress.currentStep = step;
     }
 
     // Check for level up
-    const oldLevel = gym.gamification.level;
-    levelUp = calculateLevel(gym) > oldLevel;
+    const oldLevel = user.gamification.level;
+    levelUp = calculateLevel(user) > oldLevel;
 
-    await gym.save();
+    await user.save();
 
     res.status(200).json({
       message: 'Progress saved successfully!',
-      currentStep: gym.onboardingProgress.currentStep,
-      stepsCompleted: gym.onboardingProgress.stepsCompleted,
-      progress: Math.round((gym.onboardingProgress.stepsCompleted.length / 7) * 100),
+      currentStep: user.onboardingProgress.currentStep,
+      stepsCompleted: user.onboardingProgress.stepsCompleted,
+      progress: Math.round((user.onboardingProgress.stepsCompleted.length / 7) * 100),
       xpAwarded,
-      totalXP: gym.gamification.totalXP,
-      level: gym.gamification.level,
+      totalXP: user.gamification.totalXP,
+      level: user.gamification.level,
       levelUp,
       badgeUnlocked,
-      isCompleted: gym.onboardingProgress.isCompleted
+      isCompleted: user.onboardingProgress.isCompleted
     });
   } catch (error) {
     console.error('❌ Error saving step progress:', error);
@@ -313,19 +313,19 @@ const saveStepProgress = async (req, res) => {
 const getUserBadges = async (req, res) => {
   try {
     const userId = req.user.id;
-    const gym = await Gym.findById(userId);
+    const user = await User.findById(userId);
     
-    if (!gym) {
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const badges = gym.gamification?.badges || [];
+    const badges = user.gamification?.badges || [];
     
     res.status(200).json({
       badges,
       totalBadges: badges.length,
-      totalXP: gym.gamification?.totalXP || 0,
-      level: gym.gamification?.level || 1
+      totalXP: user.gamification?.totalXP || 0,
+      level: user.gamification?.level || 1
     });
   } catch (error) {
     console.error('❌ Error fetching badges:', error);
@@ -337,16 +337,16 @@ const getUserBadges = async (req, res) => {
 const getUserProgress = async (req, res) => {
   try {
     const userId = req.user.id;
-    const gym = await Gym.findById(userId)
+    const user = await User.findById(userId)
       .select('gamification onboardingProgress preferences profile fitnessGoals');
 
-    if (!gym) {
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Ensure onboardingProgress object exists
-    if (!gym.onboardingProgress) {
-      gym.onboardingProgress = {
+    if (!user.onboardingProgress) {
+      user.onboardingProgress = {
         isCompleted: false,
         currentStep: 0,
         stepsCompleted: [],
@@ -357,8 +357,8 @@ const getUserProgress = async (req, res) => {
     }
 
     // Ensure gamification object exists
-    if (!gym.gamification) {
-      gym.gamification = {
+    if (!user.gamification) {
+      user.gamification = {
         totalXP: 0,
         level: 1,
         badges: [],
@@ -368,21 +368,27 @@ const getUserProgress = async (req, res) => {
     }
 
     // Ensure other objects exist
-    if (!gym.preferences) gym.preferences = { theme: 'light' };
-    if (!gym.profile) gym.profile = {};
-    if (!gym.fitnessGoals) gym.fitnessGoals = [];
+    if (!user.preferences) {
+      user.preferences = { theme: 'light' };
+    }
+    if (!user.profile) {
+      user.profile = {};
+    }
+    if (!user.fitnessGoals) {
+      user.fitnessGoals = [];
+    }
 
-    await gym.save();
+    await user.save();
 
     const progressData = {
-      totalXP: gym.gamification.totalXP,
-      level: gym.gamification.level,
-      badges: gym.gamification.badges,
-      isOnboardingComplete: gym.onboardingProgress.isCompleted,
-      onboardingProgress: Math.round((gym.onboardingProgress.stepsCompleted.length / 7) * 100),
-      theme: gym.preferences.theme,
-      profile: gym.profile,
-      fitnessGoals: gym.fitnessGoals,
+      totalXP: user.gamification.totalXP,
+      level: user.gamification.level,
+      badges: user.gamification.badges,
+      isOnboardingComplete: user.onboardingProgress.isCompleted,
+      onboardingProgress: Math.round((user.onboardingProgress.stepsCompleted.length / 7) * 100),
+      theme: user.preferences.theme,
+      profile: user.profile,
+      fitnessGoals: user.fitnessGoals,
     };
     
     res.status(200).json(progressData);
@@ -396,14 +402,14 @@ const getUserProgress = async (req, res) => {
 const resetOnboarding = async (req, res) => {
   try {
     const userId = req.user.id;
-    const gym = await Gym.findById(userId);
+    const user = await User.findById(userId);
 
-    if (!gym) {
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Reset onboarding and gamification data
-    gym.onboardingProgress = {
+    user.onboardingProgress = {
       isCompleted: false,
       currentStep: 0,
       stepsCompleted: [],
@@ -411,7 +417,7 @@ const resetOnboarding = async (req, res) => {
       completedAt: null,
       totalSteps: 7,
     };
-    gym.gamification = {
+    user.gamification = {
       totalXP: 0,
       level: 1,
       badges: [],
@@ -419,7 +425,7 @@ const resetOnboarding = async (req, res) => {
       achievements: {},
     };
     
-    await gym.save();
+    await user.save();
     
     res.status(200).json({ message: 'Onboarding has been reset successfully.' });
   } catch (error) {
@@ -432,15 +438,15 @@ const resetOnboarding = async (req, res) => {
 const completeOnboarding = async (req, res) => {
   try {
     const userId = req.user.id;
-    const gym = await Gym.findById(userId);
+    const user = await User.findById(userId);
 
-    if (!gym) {
+    if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Ensure onboardingProgress object exists
-    if (!gym.onboardingProgress) {
-      gym.onboardingProgress = {
+    if (!user.onboardingProgress) {
+      user.onboardingProgress = {
         isCompleted: false,
         currentStep: 0,
         stepsCompleted: [],
@@ -451,8 +457,8 @@ const completeOnboarding = async (req, res) => {
     }
 
     // Ensure gamification object exists
-    if (!gym.gamification) {
-      gym.gamification = {
+    if (!user.gamification) {
+      user.gamification = {
         totalXP: 0,
         level: 1,
         badges: [],
@@ -462,29 +468,29 @@ const completeOnboarding = async (req, res) => {
     }
 
     // Mark onboarding as completed
-    gym.onboardingProgress.isCompleted = true;
-    gym.onboardingProgress.completedAt = new Date();
-    gym.onboardingProgress.currentStep = 7;
+    user.onboardingProgress.isCompleted = true;
+    user.onboardingProgress.completedAt = new Date();
+    user.onboardingProgress.currentStep = 7;
     
-    if (!gym.onboardingProgress.stepsCompleted.includes(7)) {
-      gym.onboardingProgress.stepsCompleted.push(7);
+    if (!user.onboardingProgress.stepsCompleted.includes(7)) {
+      user.onboardingProgress.stepsCompleted.push(7);
     }
 
     // Award completion XP and badge
     const xpAwarded = XP_REWARDS.step_7_completion;
-    await awardXP(gym, xpAwarded);
-    const badgeUnlocked = await awardBadge(gym, BADGES.onboarding_complete);
+    await awardXP(user, xpAwarded);
+    const badgeUnlocked = await awardBadge(user, BADGES.onboarding_complete);
 
-    await gym.save();
+    await user.save();
 
     res.status(200).json({
       message: 'Onboarding completed successfully!',
       isCompleted: true,
       xpAwarded,
-      totalXP: gym.gamification.totalXP,
-      level: gym.gamification.level,
+      totalXP: user.gamification.totalXP,
+      level: user.gamification.level,
       badgeUnlocked,
-      completedAt: gym.onboardingProgress.completedAt
+      completedAt: user.onboardingProgress.completedAt
     });
   } catch (error) {
     console.error('❌ Error completing onboarding:', error);
@@ -493,24 +499,24 @@ const completeOnboarding = async (req, res) => {
 };
 
 // 🏆 Helper Functions
-async function awardXP(gym, xp) {
-  if (!gym.gamification) {
-    gym.gamification = { totalXP: 0, level: 1, badges: [], streaks: { current: 0, longest: 0 }, achievements: {} };
+async function awardXP(user, xp) {
+  if (!user.gamification) {
+    user.gamification = { totalXP: 0, level: 1, badges: [], streaks: { current: 0, longest: 0 }, achievements: {} };
   }
   
-  gym.gamification.totalXP += xp;
-  gym.gamification.level = calculateLevel(gym);
+  user.gamification.totalXP += xp;
+  user.gamification.level = calculateLevel(user);
   
   return xp;
 }
 
-async function awardBadge(gym, badgeData) {
-  if (!gym.gamification) {
-    gym.gamification = { totalXP: 0, level: 1, badges: [], streaks: { current: 0, longest: 0 }, achievements: {} };
+async function awardBadge(user, badgeData) {
+  if (!user.gamification) {
+    user.gamification = { totalXP: 0, level: 1, badges: [], streaks: { current: 0, longest: 0 }, achievements: {} };
   }
 
   // Check if badge already exists
-  const existingBadge = gym.gamification.badges.find(b => b.id === badgeData.id);
+  const existingBadge = user.gamification.badges.find(b => b.id === badgeData.id);
   if (existingBadge) {
     return null;
   }
@@ -521,12 +527,12 @@ async function awardBadge(gym, badgeData) {
     xpAwarded: 0
   };
 
-  gym.gamification.badges.push(newBadge);
+  user.gamification.badges.push(newBadge);
   return newBadge;
 }
 
-function calculateLevel(gym) {
-  const xp = gym.gamification?.totalXP || 0;
+function calculateLevel(user) {
+  const xp = user.gamification?.totalXP || 0;
   // Level calculation: Level 1 = 0-99 XP, Level 2 = 100-299 XP, etc.
   return Math.floor(xp / 100) + 1;
 }

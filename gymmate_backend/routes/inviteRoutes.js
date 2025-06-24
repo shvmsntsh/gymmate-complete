@@ -6,8 +6,8 @@ const Gym = require('../models/Gym');
 const { InviteCode } = require('../models/InviteCode');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { generateInviteCode } = require('../controllers/gymController');
-const { listInviteCodes } = require('../controllers/inviteController');
+const { generateInviteCode: gymControllerGenerate, createGymAndOwnerInvite } = require('../controllers/gymController');
+const { listInviteCodes, generateInviteCode: inviteControllerGenerate } = require('../controllers/inviteController');
 
 
 // POST /api/gym/register - Register a new user with invite code
@@ -67,6 +67,7 @@ router.post('/register', async (req, res) => {
 router.post('/validate', async (req, res) => {
   const { code } = req.body;
   if (!code) {
+    console.error('❌ Invite code is required');
     return res.status(400).json({ error: 'Invite code is required.' });
   }
 
@@ -74,6 +75,7 @@ router.post('/validate', async (req, res) => {
   if (code === '123456') {
     const userCount = await User.countDocuments();
     if (userCount > 0) {
+      console.error('❌ Superadmin already exists.');
       return res.status(400).json({ error: 'Superadmin already exists.' });
     }
     return res.status(200).json({
@@ -84,67 +86,51 @@ router.post('/validate', async (req, res) => {
     });
   }
 
-  const invite = await InviteCode.findOne({ code, used: false });
-  if (!invite) {
-    return res.status(400).json({ error: 'Invalid or expired invite code.' });
+  try {
+    const invite = await InviteCode.findOne({ code });
+    if (!invite) {
+      console.error('❌ Invalid invite code:', code);
+      return res.status(400).json({ error: 'Invalid invite code.' });
+    }
+    if (invite.used) {
+      console.error('❌ Invite code already used:', code);
+      return res.status(400).json({ error: 'Invite code already used.' });
+    }
+    if (!invite.gymId) {
+      console.error('❌ Invite code does not reference a valid gym:', code);
+      return res.status(400).json({ error: 'Invite code does not reference a valid gym.' });
+    }
+    const gym = await Gym.findById(invite.gymId);
+    if (!gym) {
+      console.error('❌ Gym not found for invite code:', code, 'with gymId:', invite.gymId);
+      return res.status(400).json({ error: 'Gym not found for this invite code.' });
+    }
+    console.log('✅ Invite code validated:', code, 'for gym:', gym.gymName);
+    res.status(200).json({
+      message: 'Valid invite code.',
+      role: invite.role,
+      gym: { gymName: gym.gymName, _id: gym._id },
+      gymId: gym._id
+    });
+  } catch (err) {
+    console.error('❌ Error validating invite code:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
-
-  const gym = await Gym.findById(invite.gymId);
-  return res.status(200).json({
-    message: 'Valid invite code.',
-    role: invite.role,
-    gym: gym || null,
-    gymId: invite.gymId?.toString() || null
-  });
 });
 
 // POST /api/invite/generate - Generate a new invite code
-router.post('/generate', authenticateToken, async (req, res) => {
-  try {
-    const { role, gymName } = req.body;
-    const user = req.user;
-
-    if (!role || !gymName) {
-      return res.status(400).json({ message: 'Role and gymName are required' });
-    }
-
-    // Only superadmin can create gym_owner codes, and gym_owner can create gym_member codes
-    if (user.role === 'superadmin' && role !== 'gym_owner') {
-      return res.status(403).json({ message: 'Superadmin can only generate codes for gym_owner' });
-    }
-    if (user.role === 'gym_owner' && role !== 'gym_member') {
-      return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member' });
-    }
-
-    let finalGymName = gymName;
-    if (user.role !== 'superadmin') {
-      const gym = await Gym.findById(user.gymId);
-      finalGymName = gym?.gymName || 'Unknown Gym';
-    }
-
-    console.log('📥 Invite Generation Request:', { role, gymName: finalGymName, gymId: req.user.gymId });
-    console.log('👤 User:', user.email, '🏢 Role:', user.role, '🏋️ Gym:', finalGymName);
-
-    const code = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const newCode = new InviteCode({
-      code,
-      role,
-      gymId: req.user.gymId,
-      gymName: finalGymName,
-      used: false
-    });
-
-    await newCode.save();
-    console.log('✅ Invite Code Saved:', newCode);
-    res.status(201).json({ message: 'Invite code generated', code });
-    console.log('🎯 Code generated and returned to client:', code);
-  } catch (error) {
-    console.error('Error generating invite code:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
-  }
-});
+router.post('/generate', authenticateToken, inviteControllerGenerate);
 
 // GET /api/invite/list - List all invite codes based on role
 router.get('/list', authenticateToken, listInviteCodes);
+
+// Superadmin: create gym and gym_owner invite in one step
+router.post('/superadmin-create', authenticateToken, async (req, res, next) => {
+  if (!req.user || req.user.role !== 'superadmin') {
+    console.error('❌ Only superadmin can access this endpoint');
+    return res.status(403).json({ error: 'Only superadmin can create gyms and owner invites.' });
+  }
+  return createGymAndOwnerInvite(req, res, next);
+});
 
 module.exports = router;

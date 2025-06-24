@@ -3,11 +3,17 @@ const mongoose = require('mongoose');
 const inviteCodeSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
   role: { type: String, required: true },
-  gymId: { type: mongoose.Schema.Types.ObjectId, ref: 'Gym' },
+  gymId: { type: mongoose.Schema.Types.ObjectId, ref: 'Gym', required: function() { return this.role === 'gym_member'; } },
+  gymName: { type: String },
   used: { type: Boolean, default: false },
   usedBy: { type: String, default: null },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+}, { timestamps: true });
+
+inviteCodeSchema.post('save', function(error, doc, next) {
+  if (error) {
+    console.error('❌ InviteCode schema validation error:', error);
+  }
+  next(error);
 });
 
 console.log('📦 InviteCode model loaded');

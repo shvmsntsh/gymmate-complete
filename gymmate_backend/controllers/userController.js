@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Gym = require('../models/Gym');
 const { InviteCode } = require('../models/InviteCode');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
@@ -103,27 +104,41 @@ exports.login = async (req, res) => {
     return res.status(401).json({ message: 'Invalid credentials.' });
   }
 
+  let gymName = null;
+  if (user.gymId) {
+    const gym = await Gym.findById(user.gymId);
+    if (gym) {
+      gymName = gym.gymName;
+    }
+  }
+
   const token = jwt.sign(
     {
       id: user._id,
       email: user.email,
       role: user.role,
       gymId: user.gymId,
+      gymName: gymName,
     },
     JWT_SECRET,
     { expiresIn: '2h' }
   );
 
   console.log('✅ Login successful for', email);
+  const userPayload = {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    gymId: user.gymId,
+    gymName: gymName,
+  };
+
+  console.log('📦 Sending user payload:', JSON.stringify(userPayload, null, 2));
+
   res.json({
     token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      gymId: user.gymId,
-    },
+    user: userPayload,
   });
 };
 
@@ -143,7 +158,7 @@ exports.generateInviteCode = async (req, res) => {
     return res.status(400).json({ message: 'A target role for the invite code is required.' });
   }
 
-  // Superadmin can create gym_owners
+  // Superadmin can create gym_owners (no gymId required)
   if (generator.role === 'superadmin' && roleToGenerate === 'gym_owner') {
     console.log('🔑 Superadmin generating gym_owner code...');
     try {
@@ -162,7 +177,7 @@ exports.generateInviteCode = async (req, res) => {
     }
   }
 
-  // Gym owners can create gym_members
+  // Gym owners can create gym_members (must have gymId)
   if (generator.role === 'gym_owner' && roleToGenerate === 'gym_member') {
     console.log('🔑 Gym owner generating gym_member code...');
     if (!generator.gymId) {

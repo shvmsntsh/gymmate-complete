@@ -3,6 +3,7 @@ const router = express.Router();
 const Gym = require('../models/Gym');
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/authMiddleware');
+const bcrypt = require('bcrypt');
 
 router.post('/register', async (req, res) => {
   console.log('🔔 Received POST /register');
@@ -13,6 +14,16 @@ router.post('/register', async (req, res) => {
 
     if (!gymName || !email) {
       return res.status(400).json({ message: 'Name and email are required' });
+    }
+
+    if (!req.body.gymName) {
+      return res.status(400).json({ message: 'Gym name is required' });
+    }
+    if (!req.body.address) {
+      return res.status(400).json({ message: 'Address is required' });
+    }
+    if (!req.body.phone) {
+      return res.status(400).json({ message: 'Phone number is required' });
     }
 
     // 🧹 Clean up falsy/null diet, workout, fitnessGoals fields and log them
@@ -42,19 +53,29 @@ router.post('/register', async (req, res) => {
       }
     }
 
+    let hashedPassword = password;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
     const newGymData = {
       gymName,
       email,
-      password,
+      password: hashedPassword,
       address,
       contactNumber,
       services,
       role: assignedRole,
     };
 
-    if (req.body.diet) newGymData.diet = req.body.diet;
-    if (req.body.workout) newGymData.workout = req.body.workout;
-    if (req.body.fitnessGoals) newGymData.fitnessGoals = req.body.fitnessGoals;
+    if (req.body.diet) {
+      newGymData.diet = req.body.diet;
+    }
+    if (req.body.workout) {
+      newGymData.workout = req.body.workout;
+    }
+    if (req.body.fitnessGoals) {
+      newGymData.fitnessGoals = req.body.fitnessGoals;
+    }
 
     console.log('🛠 Final gym data to be saved:', newGymData);
     const newGym = new Gym(newGymData);
@@ -316,9 +337,15 @@ router.put('/onboarding', authenticateToken, async (req, res) => {
     }
 
     const updateFields = {};
-    if (req.body.diet) updateFields.diet = req.body.diet;
-    if (req.body.workout) updateFields.workout = req.body.workout;
-    if (req.body.fitnessGoals) updateFields.fitnessGoals = req.body.fitnessGoals;
+    if (req.body.diet) {
+      updateFields.diet = req.body.diet;
+    }
+    if (req.body.workout) {
+      updateFields.workout = req.body.workout;
+    }
+    if (req.body.fitnessGoals) {
+      updateFields.fitnessGoals = req.body.fitnessGoals;
+    }
 
     const updated = await Gym.findByIdAndUpdate(req.user.id, { $set: updateFields }, { new: true });
 

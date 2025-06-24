@@ -42,6 +42,13 @@ const gymSchema = new mongoose.Schema({
     type: Number,
     default: 0
   }
+}, { timestamps: true });
+
+gymSchema.post('save', function(error, doc, next) {
+  if (error) {
+    console.error('❌ Gym schema validation error:', error);
+  }
+  next(error);
 });
 
 module.exports = mongoose.model('Gym', gymSchema);

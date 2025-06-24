@@ -31,6 +31,7 @@ const userSchema = new mongoose.Schema({
   gymId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Gym',
+    required: function() { return this.role !== 'superadmin'; }
   },
   // Date the user joined
   joinDate: {
@@ -173,6 +174,13 @@ const userSchema = new mongoose.Schema({
       distance: { type: String, enum: ['km', 'miles'], default: 'km' },
     }
   }
+}, { timestamps: true });
+
+userSchema.post('save', function(error, doc, next) {
+  if (error) {
+    console.error('❌ User schema validation error:', error);
+  }
+  next(error);
 });
 
 module.exports = mongoose.model('User', userSchema);
