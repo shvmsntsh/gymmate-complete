@@ -42,8 +42,8 @@ class _LoginPageState extends State<LoginPage> {
             content: Text(error.toString().replaceFirst("Exception: ", "Login failed: ")), 
             backgroundColor: Colors.red,
           ),
-        );
-      }
+          );
+        }
     } finally {
       if (mounted) {
         setState(() {
@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
+      }
 
   @override
   void didChangeDependencies() {
@@ -160,18 +160,18 @@ class _LoginPageState extends State<LoginPage> {
                   _isLoading
                       ? const CircularProgressIndicator()
                       : ElevatedButton(
-                          onPressed: _isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
+                    onPressed: _isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                           child: const Text(
                             'Login',
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
-                        ),
+                  ),
                   const SizedBox(height: 24),
 
                   // Register Link

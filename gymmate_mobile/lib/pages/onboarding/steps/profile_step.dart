@@ -1,201 +1,175 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../providers/onboarding_provider.dart';
 
-class ProfileStep extends StatefulWidget {
-  const ProfileStep({Key? key}) : super(key: key);
+class ProfileStep extends StatelessWidget {
+  final VoidCallback onNext;
 
-  @override
-  State<ProfileStep> createState() => _ProfileStepState();
-}
-
-class _ProfileStepState extends State<ProfileStep> {
-  final _formKey = GlobalKey<FormState>();
-  String _displayName = '';
-  int? _age;
-  String? _gender;
-  double? _weight;
-  double? _height;
-
-  final List<String> _genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
-
-  @override
-  void initState() {
-    super.initState();
-  }
+  const ProfileStep({
+    super.key,
+    required this.onNext,
+  });
 
   @override
   Widget build(BuildContext context) {
-    print('ProfileStep build called');
-    return Scaffold(
-      body: SafeArea(
-        child: Form(
+    final _formKey = GlobalKey<FormState>();
+    final provider = Provider.of<OnboardingProvider>(context, listen: false);
+    final heightController = TextEditingController(text: provider.height > 0 ? provider.height.toString() : '');
+    final weightController = TextEditingController(text: provider.weight > 0 ? provider.weight.toString() : '');
+    final ageController = TextEditingController(text: provider.age > 0 ? provider.age.toString() : '');
+    String? selectedGender = provider.gender;
+
+    return Consumer<OnboardingProvider>(
+      builder: (context, provider, _) {
+        return Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+            padding: const EdgeInsets.all(16),
             children: [
-              _buildHeader(context),
-              const SizedBox(height: 32),
-              ..._buildFormFields(),
-              const SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: _onSave,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: const Text('Save & Continue'),
+              Text(
+                'Let’s Begin With You',
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
-            ].animate(interval: 100.ms).fadeIn(duration: 400.ms).slideX(begin: 0.2),
+              const SizedBox(height: 8),
+              Text(
+                'We’ll start by learning a few basics about you',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 24),
+              TextFormField(
+                controller: heightController,
+                decoration: const InputDecoration(
+                  labelText: 'Height (cm)',
+                  hintText: 'Enter your height',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  final v = double.tryParse(value ?? '');
+                  if (v == null || v <= 0) return 'Please enter a valid height';
+                  return null;
+                },
+                onChanged: (value) => provider.setHeight(double.tryParse(value) ?? 0),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: weightController,
+                decoration: const InputDecoration(
+                  labelText: 'Weight (kg)',
+                  hintText: 'Enter your weight',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  final v = double.tryParse(value ?? '');
+                  if (v == null || v <= 0) return 'Please enter a valid weight';
+                  return null;
+                },
+                onChanged: (value) => provider.setWeight(double.tryParse(value) ?? 0),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: ageController,
+                decoration: const InputDecoration(
+                  labelText: 'Age',
+                  hintText: 'Enter your age',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  final v = int.tryParse(value ?? '');
+                  if (v == null || v <= 0) return 'Please enter a valid age';
+                  return null;
+                },
+                onChanged: (value) => provider.setAge(int.tryParse(value) ?? 0),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Gender',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildGenderCard(
+                      context,
+                      icon: Icons.male,
+                      label: 'Male',
+                      isSelected: provider.gender == 'male',
+                      onTap: () {
+                        provider.setGender('male');
+                        selectedGender = 'male';
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildGenderCard(
+                      context,
+                      icon: Icons.female,
+                      label: 'Female',
+                      isSelected: provider.gender == 'female',
+                      onTap: () {
+                        provider.setGender('female');
+                        selectedGender = 'female';
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState?.validate() != true || provider.gender == null || provider.gender!.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please fill all fields and select a gender.')),
+                    );
+                    return;
+                  }
+                  onNext();
+                },
+                child: const Text('Continue'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGenderCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 32,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: isSelected ? FontWeight.bold : null,
+                    ),
+              ),
+            ],
           ),
         ),
       ),
     );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Tell us about yourself',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'This helps us personalize your fitness experience.',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildFormFields() {
-    return [
-      _buildNameField(),
-      const SizedBox(height: 20),
-      _buildAgeField(),
-      const SizedBox(height: 20),
-      _buildGenderField(),
-      const SizedBox(height: 20),
-      _buildWeightField(),
-      const SizedBox(height: 20),
-      _buildHeightField(),
-    ];
-  }
-
-  Widget _buildNameField() {
-    return TextFormField(
-      initialValue: _displayName,
-      decoration: const InputDecoration(
-        labelText: 'Display Name',
-        prefixIcon: Icon(Icons.person_outline_rounded),
-      ),
-      validator: (value) => (value?.trim().isEmpty ?? true) ? 'Please enter your name' : null,
-      onSaved: (value) => _displayName = value!.trim(),
-    );
-  }
-
-  Widget _buildAgeField() {
-    return TextFormField(
-      initialValue: _age?.toString(),
-      keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'Age',
-        prefixIcon: Icon(Icons.cake_outlined),
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) return 'Please enter your age';
-        final age = int.tryParse(value);
-        if (age == null || age < 13 || age > 120) return 'Please enter a valid age (13-120)';
-        return null;
-      },
-      onSaved: (value) => _age = int.tryParse(value!),
-    );
-  }
-
-  Widget _buildGenderField() {
-    return DropdownButtonFormField<String>(
-      value: _gender,
-      decoration: const InputDecoration(
-        labelText: 'Gender',
-        prefixIcon: Icon(Icons.wc_rounded),
-      ),
-      items: _genderOptions.map((gender) {
-        return DropdownMenuItem(
-          value: gender,
-          child: Text(_getGenderDisplayName(gender)),
-        );
-      }).toList(),
-      onChanged: (value) => setState(() => _gender = value),
-      validator: (value) => (value == null || value.isEmpty) ? 'Please select your gender' : null,
-      onSaved: (value) => _gender = value,
-    );
-  }
-
-  Widget _buildWeightField() {
-    return TextFormField(
-      initialValue: _weight?.toString(),
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: const InputDecoration(
-        labelText: 'Weight',
-        prefixIcon: Icon(Icons.monitor_weight_outlined),
-        suffixText: 'kg',
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) return 'Please enter your weight';
-        final weight = double.tryParse(value);
-        if (weight == null || weight < 20 || weight > 500) return 'Please enter a valid weight (20-500 kg)';
-        return null;
-      },
-      onSaved: (value) => _weight = double.tryParse(value!),
-    );
-  }
-
-  Widget _buildHeightField() {
-    return TextFormField(
-      initialValue: _height?.toString(),
-      keyboardType: TextInputType.number,
-      decoration: const InputDecoration(
-        labelText: 'Height',
-        prefixIcon: Icon(Icons.height_rounded),
-        suffixText: 'cm',
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) return 'Please enter your height';
-        final height = double.tryParse(value);
-        if (height == null || height < 100 || height > 250) return 'Please enter a valid height (100-250 cm)';
-        return null;
-      },
-      onSaved: (value) => _height = double.tryParse(value!),
-    );
-  }
-
-  String _getGenderDisplayName(String gender) {
-    switch (gender) {
-      case 'Male': return 'Male';
-      case 'Female': return 'Female';
-      case 'Other': return 'Other';
-      case 'Prefer not to say': return 'Prefer not to say';
-      default: return gender;
-    }
-  }
-
-  void _onSave() {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    _formKey.currentState!.save();
-
-    final provider = context.read<OnboardingProvider>();
-    final data = {
-      'name': _displayName,
-      'age': _age,
-      'gender': _gender?.toLowerCase().replaceAll(' ', '_'),
-      'weight': _weight,
-      'height': _height,
-    };
-    provider.saveStepProgress(2, data);
-    provider.nextStep();
   }
 }

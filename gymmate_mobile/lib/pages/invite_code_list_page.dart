@@ -108,18 +108,18 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
       builder: (context) => AlertDialog(
         title: const Text('Invite Code Generated'),
         content: Column(
-          mainAxisSize: MainAxisSize.min,
+                          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+                          children: [
             Text('Share this code with a new ${role == 'gym_owner' ? 'gym owner' : 'gym member'}:'),
             const SizedBox(height: 16),
             SelectableText(
               code,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        actions: [
+                            ),
+                          ],
+                        ),
+              actions: [
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: code));
@@ -130,13 +130,13 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
             },
             child: const Text('Copy'),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Close'),
+                  ),
+              ],
       ),
-    );
+        );
   }
 
   @override
@@ -151,24 +151,24 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
+          child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+            children: [
                     const Icon(Icons.error_outline,
                         color: Colors.red, size: 50),
                     const SizedBox(height: 16),
                     Text(
                       'Error: ${snapshot.error}',
                       textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
+                ),
+              const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _refreshList,
                       child: const Text('Try Again'),
                     )
-                  ],
-                ),
-              ),
+            ],
+          ),
+        ),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -196,9 +196,9 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
             final codes = snapshot.data!;
             return RefreshIndicator(
               onRefresh: () async => _refreshList(),
-              child: ListView.builder(
+            child: ListView.builder(
                 itemCount: codes.length,
-                itemBuilder: (context, index) {
+              itemBuilder: (context, index) {
                   final code = codes[index];
                   return ListTile(
                     leading: Icon(

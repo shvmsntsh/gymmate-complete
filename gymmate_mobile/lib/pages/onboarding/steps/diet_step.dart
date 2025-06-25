@@ -1,176 +1,150 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../providers/onboarding_provider.dart';
 
-class DietStep extends StatefulWidget {
-  final String? userId;
-  final String? token;
-  const DietStep({Key? key, this.userId, this.token}) : super(key: key);
 
-  @override
-  State<DietStep> createState() => _DietStepState();
-}
-
-class _DietStepState extends State<DietStep> {
-  String? _dietType;
-  String? _allergies;
-  int _dailyMeals = 3;
-  double _waterIntake = 2.0;
-
-  final List<Map<String, String>> _dietTypes = [
-    {'id': 'vegetarian', 'name': 'Vegetarian', 'icon': '🥗'},
-    {'id': 'non_vegetarian', 'name': 'Non-Vegetarian', 'icon': '🍗'},
-    {'id': 'vegan', 'name': 'Vegan', 'icon': '🥑'},
-    {'id': 'keto', 'name': 'Keto', 'icon': '🥩'},
-    {'id': 'paleo', 'name': 'Paleo', 'icon': '🍖'},
-    {'id': 'mediterranean', 'name': 'Mediterranean', 'icon': '🐟'},
-    {'id': 'other', 'name': 'Other', 'icon': '❓'},
-  ];
-
-  final List<String> _dietOptions = [
-    'High Protein',
-    'Balanced',
-    'Low Carb',
-    'Vegetarian',
-    'Vegan'
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    // State is now self-contained, not loading from provider.
-  }
-
-  void _onSave() {
-    if (_dietType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a diet type.')),
-      );
-      return;
-    }
-
-    final provider = context.read<OnboardingProvider>();
-    final data = {
-      'type': _dietType,
-      'allergies': _allergies != null && _allergies!.isNotEmpty ? [_allergies] : [],
-      'dailyMeals': _dailyMeals,
-      'waterIntake': _waterIntake,
-    };
-    provider.saveStepProgress(4, data);
-    provider.nextStep();
-  }
+class DietStep extends StatelessWidget {
+  final VoidCallback onNext;
+  const DietStep({
+    Key? key,
+    required this.onNext,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
-              _buildHeader(context),
-              const SizedBox(height: 32),
-              Expanded(
-                child: _buildDietOptions(),
+    final dietTypes = [
+      {'icon': Icons.restaurant_menu, 'label': 'Vegetarian', 'value': 'vegetarian', 'desc': 'Plant-based diet with dairy and eggs'},
+      {'icon': Icons.grass, 'label': 'Vegan', 'value': 'vegan', 'desc': 'Strictly plant-based diet'},
+      {'icon': Icons.set_meal, 'label': 'Non-Vegetarian', 'value': 'non_vegetarian', 'desc': 'Includes all food groups'},
+      {'icon': Icons.food_bank, 'label': 'Flexible', 'value': 'flexible', 'desc': 'No specific dietary restrictions'},
+    ];
+
+    return Consumer<OnboardingProvider>(
+      builder: (context, provider, _) {
+        final selectedType = provider.dietPreferences['type'];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 32),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Diet Preferences',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(height: 24),
-              _buildContinueButton(context),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                'Tell us about your eating habits',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                children: dietTypes.map((diet) => _buildDietCard(
+                  context,
+                  icon: diet['icon'] as IconData,
+                  title: diet['label'] as String,
+                  description: diet['desc'] as String,
+                  isSelected: selectedType == diet['value'],
+                  onSelect: () {
+                    provider.setDietPreferences({
+                      ...provider.dietPreferences,
+                      'type': diet['value'],
+                    });
+                  },
+                )).toList(),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  if (provider.dietPreferences['type'] == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please select a diet preference.')),
+                    );
+                    return;
+                  }
+                  onNext();
+                },
+                child: const Text('Continue'),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Your Diet Preferences',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Tell us about your dietary habits to get better recommendations.',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
-        ),
-      ],
-    ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.2);
-  }
-
-  Widget _buildDietOptions() {
-    return ListView(
-      children: _dietTypes.map((diet) {
-        final isSelected = _dietType == diet['id'];
-        return _buildDietCard(diet, isSelected)
-            .animate()
-            .fadeIn(delay: (200 + _dietTypes.indexOf(diet) * 50).ms)
-            .slideX(begin: 0.5, curve: Curves.easeOutCubic);
-      }).toList(),
-    );
-  }
-
-  Widget _buildDietCard(Map<String, String> diet, bool isSelected) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
+  Widget _buildDietCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+    required bool isSelected,
+    required VoidCallback onSelect,
+  }) {
     return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isSelected ? colorScheme.primary : theme.dividerColor,
-          width: isSelected ? 2.0 : 1.0,
-        ),
-      ),
-      color: isSelected ? colorScheme.primary.withAlpha(102) : colorScheme.surface,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
-        onTap: () => setState(() => _dietType = diet['id']),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        onTap: onSelect,
+        child: Container(
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Text(diet['icon']!, style: const TextStyle(fontSize: 24)),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  size: 24,
+                ),
+              ),
               const SizedBox(width: 16),
               Expanded(
-                child: Text(
-                  diet['name']!,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? colorScheme.primary : theme.textTheme.bodyLarge?.color,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: isSelected ? FontWeight.bold : null,
+                          ),
+                    ),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
+                    ),
+                  ],
                 ),
               ),
               if (isSelected)
-                Icon(Icons.check_circle_rounded, color: colorScheme.primary),
+                Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildContinueButton(BuildContext context) {
-    final provider = context.watch<OnboardingProvider>();
-    return ElevatedButton(
-      onPressed: _dietType == null || provider.isLoading ? null : _onSave,
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 50),
-      ),
-      child: provider.isLoading
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 3),
-            )
-          : const Text('Save & Continue'),
     );
   }
 } 

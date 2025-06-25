@@ -94,15 +94,34 @@ class _RegisterPageState extends State<RegisterPage> {
 
       try {
         print('🔑 [RegisterPage] Calling AuthProvider.register...');
-        await Provider.of<AuthProvider>(context, listen: false).register(registrationData);
-        print('🔑 [RegisterPage] Registration successful, waiting for UI to update.');
-        // No manual navigation here; UI will update via provider.
+        final registrationSuccess = await Provider.of<AuthProvider>(context, listen: false).register(registrationData);
+        
+        if (registrationSuccess) {
+          print('🔑 [RegisterPage] Registration and auto-login successful.');
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const MainNavigationScaffold()),
+              (route) => false,
+            );
+          }
+        } else {
+          print('🔑 [RegisterPage] Registration succeeded but auto-login failed.');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Registration successful! Please log in manually.'),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            );
+            // Navigate to login page for manual login
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+            );
+          }
+        }
       } catch (e) {
         print('🔑 [RegisterPage] Registration failed: $e');
         if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Registration failed: ${e.toString()}'),

@@ -1,243 +1,230 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../providers/onboarding_provider.dart';
 
-class WorkoutStep extends StatefulWidget {
-  final String? userId;
-  final String? token;
-  const WorkoutStep({Key? key, this.userId, this.token}) : super(key: key);
+class WorkoutStep extends StatelessWidget {
+  final VoidCallback onNext;
 
-  @override
-  State<WorkoutStep> createState() => _WorkoutStepState();
-}
-
-class _WorkoutStepState extends State<WorkoutStep> {
-  String? _activityLevel;
-  int _workoutsPerWeek = 0;
-  final Set<String> _favoriteExercises = {};
-  TimeOfDay? _preferredTime;
-
-  final _exerciseTypes = const [
-    {'id': 'cardio', 'name': 'Cardio', 'icon': Icons.directions_run_rounded},
-    {'id': 'weight_training', 'name': 'Weights', 'icon': Icons.fitness_center_rounded},
-    {'id': 'yoga', 'name': 'Yoga', 'icon': Icons.self_improvement_rounded},
-    {'id': 'swimming', 'name': 'Swimming', 'icon': Icons.pool_rounded},
-    {'id': 'crossfit', 'name': 'CrossFit', 'icon': Icons.sports_gymnastics_rounded},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    // No longer loading data from provider on init.
-  }
-
-  void _onSave() {
-    if (_activityLevel == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your activity level.')),
-      );
-      return;
-    }
-
-    final provider = context.read<OnboardingProvider>();
-    final data = {
-      'currentActivityLevel': _activityLevel,
-      'favoriteExercises': _favoriteExercises.toList(),
-      'preferredTime': _preferredTime != null ? _getTimeEnum(_preferredTime!) : null,
-      'workoutsPerWeek': _workoutsPerWeek,
-    };
-    provider.saveStepProgress(5, data);
-    provider.nextStep();
-  }
-
-  String _getTimeEnum(TimeOfDay time) {
-    final hour = time.hour;
-    if (hour < 6) return 'early_morning';
-    if (hour < 12) return 'morning';
-    if (hour < 17) return 'afternoon';
-    if (hour < 21) return 'evening';
-    return 'night';
-  }
+  const WorkoutStep({
+    super.key,
+    required this.onNext,
+  });
 
   @override
   Widget build(BuildContext context) {
-    print('WorkoutStep build called');
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: _buildHeader(context),
+    final activityLevels = [
+      {'label': 'Sedentary', 'value': 'sedentary'},
+      {'label': 'Lightly Active', 'value': 'lightly_active'},
+      {'label': 'Moderately Active', 'value': 'moderately_active'},
+      {'label': 'Very Active', 'value': 'very_active'},
+      {'label': 'Extremely Active', 'value': 'extremely_active'},
+    ];
+    final preferredTimes = [
+      {'label': 'Early Morning', 'value': 'early_morning'},
+      {'label': 'Morning', 'value': 'morning'},
+      {'label': 'Afternoon', 'value': 'afternoon'},
+      {'label': 'Evening', 'value': 'evening'},
+      {'label': 'Night', 'value': 'night'},
+      {'label': 'Flexible', 'value': 'flexible'},
+    ];
+    final exerciseTypes = [
+      {'label': 'Cardio', 'value': 'cardio'},
+      {'label': 'Weight Training', 'value': 'weight_training'},
+      {'label': 'Yoga', 'value': 'yoga'},
+      {'label': 'Swimming', 'value': 'swimming'},
+      {'label': 'CrossFit', 'value': 'crossfit'},
+    ];
+
+    return Consumer<OnboardingProvider>(
+      builder: (context, provider, _) {
+        final habits = provider.workoutHabits;
+        final favoriteExercises = List<String>.from(habits['favoriteExercises'] ?? []);
+        return Scaffold(
+          body: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text(
+                  'Workout Preferences',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tell us about your workout style',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 24),
+                Text('Activity Level', style: Theme.of(context).textTheme.titleMedium),
+                Wrap(
+                  spacing: 8,
+                  children: activityLevels.map((level) => ChoiceChip(
+                    label: Text(level['label']!),
+                    selected: habits['currentActivityLevel'] == level['value'],
+                    onSelected: (_) {
+                      provider.setWorkoutHabits({
+                        ...habits,
+                        'currentActivityLevel': level['value'],
+                      });
+                    },
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                Text('Preferred Time', style: Theme.of(context).textTheme.titleMedium),
+                Wrap(
+                  spacing: 8,
+                  children: preferredTimes.map((time) => ChoiceChip(
+                    label: Text(time['label']!),
+                    selected: habits['preferredTime'] == time['value'],
+                    onSelected: (_) {
+                      provider.setWorkoutHabits({
+                        ...habits,
+                        'preferredTime': time['value'],
+                      });
+                    },
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                Text('Favorite Exercises', style: Theme.of(context).textTheme.titleMedium),
+                Wrap(
+                  spacing: 8,
+                  children: exerciseTypes.map((ex) => FilterChip(
+                    label: Text(ex['label']!),
+                    selected: favoriteExercises.contains(ex['value']),
+                    onSelected: (selected) {
+                      final favs = List<String>.from(favoriteExercises);
+                      if (selected) {
+                        if (!favs.contains(ex['value'])) favs.add(ex['value']!);
+                      } else {
+                        favs.remove(ex['value']);
+                      }
+                      provider.setWorkoutHabits({
+                        ...habits,
+                        'favoriteExercises': favs,
+                        'preferredTime': habits['preferredTime'],
+                        'currentActivityLevel': habits['currentActivityLevel'],
+                        'workoutsPerWeek': habits['workoutsPerWeek'] ?? 0,
+                        'sessionDuration': habits['sessionDuration'] ?? 60,
+                        'hasInjuries': habits['hasInjuries'] ?? false,
+                        'injuryDetails': habits['injuryDetails'],
+                      });
+                    },
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                Text('Workouts Per Week', style: Theme.of(context).textTheme.titleMedium),
+                Slider(
+                  value: (habits['workoutsPerWeek'] is num && (habits['workoutsPerWeek'] ?? 0) >= 1)
+                      ? (habits['workoutsPerWeek'] as num).toDouble()
+                      : 1.0,
+                  min: 1,
+                  max: 14,
+                  divisions: 14,
+                  label: '${habits['workoutsPerWeek'] ?? 1}',
+                  onChanged: (value) {
+                    provider.setWorkoutHabits({
+                      ...habits,
+                      'workoutsPerWeek': value.round(),
+                      'favoriteExercises': favoriteExercises,
+                      'preferredTime': habits['preferredTime'],
+                      'currentActivityLevel': habits['currentActivityLevel'],
+                      'sessionDuration': habits['sessionDuration'] ?? 60,
+                      'hasInjuries': habits['hasInjuries'] ?? false,
+                      'injuryDetails': habits['injuryDetails'],
+                    });
+                  },
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    String? error;
+                    if (habits['currentActivityLevel'] == null) {
+                      error = 'Please select your activity level.';
+                    } else if (habits['preferredTime'] == null) {
+                      error = 'Please select your preferred workout time.';
+                    } else if ((habits['workoutsPerWeek'] ?? 0) <= 0) {
+                      error = 'Please set how many workouts you do per week.';
+                    } else if (habits['favoriteExercises'] == null || (habits['favoriteExercises'] as List).isEmpty) {
+                      error = 'Please select at least one favorite exercise.';
+                    }
+                    if (error != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error)),
+                      );
+                      return;
+                    }
+                    onNext();
+                  },
+                  child: const Text('Continue'),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                children: [
-                  _buildSectionHeader('Preferred Workout Time'),
-                  _buildTimePicker(context),
-                  const SizedBox(height: 24),
-                  _buildSectionHeader('Current Activity Level'),
-                  _buildActivityLevelSelector(),
-                  const SizedBox(height: 24),
-                  _buildSectionHeader('Workouts per Week'),
-                  _buildWorkoutDaysSelector(),
-                  const SizedBox(height: 24),
-                  _buildSectionHeader('Favorite Exercise Types'),
-                  _buildExerciseChips(),
-                  const SizedBox(height: 40),
-                  _buildContinueButton(context),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        Text(
-          'Your Workout Habits',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'When and how do you like to exercise?',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
-        ),
-      ],
-    ).animate().fadeIn(duration: 400.ms);
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildTimePicker(BuildContext context) {
-    return ListTile(
-      title: const Text('Preferred Workout Time'),
-      subtitle: Text(_preferredTime?.format(context) ?? 'Tap to select'),
-      trailing: const Icon(Icons.access_time),
-      onTap: () async {
-        final time = await showTimePicker(
-          context: context,
-          initialTime: _preferredTime ?? const TimeOfDay(hour: 17, minute: 0),
+          ),
         );
-        if (time != null) {
-          setState(() {
-            _preferredTime = time;
-          });
-        }
       },
     );
   }
 
-  Widget _buildActivityLevelSelector() {
-    const levels = {
-      'sedentary': 'Sedentary', 'lightly_active': 'Lightly Active',
-      'moderately_active': 'Moderately Active', 'very_active': 'Very Active'
-    };
-    return _buildChipSelector(
-      options: levels,
-      selectedOption: _activityLevel,
-      onSelected: (value) => setState(() => _activityLevel = value),
-    );
-  }
-
-  Widget _buildWorkoutDaysSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'How many days per week?',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        Slider(
-          value: _workoutsPerWeek.toDouble(),
-          min: 0,
-          max: 7,
-          divisions: 7,
-          label: _workoutsPerWeek.toString(),
-          onChanged: (value) => setState(() {
-            _workoutsPerWeek = value.round();
-          }),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChipSelector({
-    required Map<String, String> options,
-    required String? selectedOption,
-    required ValueChanged<String> onSelected,
+  Widget _buildWorkoutCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+    required bool isSelected,
+    required VoidCallback onSelect,
   }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: options.entries.map((entry) {
-        final isSelected = selectedOption == entry.key;
-        return ChoiceChip(
-          label: Text(entry.value),
-          selected: isSelected,
-          onSelected: (_) => onSelected(entry.key),
-          showCheckmark: false,
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildExerciseChips() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _exerciseTypes.map((exercise) {
-        final isSelected = _favoriteExercises.contains(exercise['id']);
-        return FilterChip(
-          label: Text(exercise['name'] as String),
-          avatar: Icon(exercise['icon'] as IconData, size: 18),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              if (selected) {
-                _favoriteExercises.add(exercise['id'] as String);
-              } else {
-                _favoriteExercises.remove(exercise['id'] as String);
-              }
-            });
-          },
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildContinueButton(BuildContext context) {
-    final provider = context.watch<OnboardingProvider>();
-    return ElevatedButton(
-      onPressed: _activityLevel == null || provider.isLoading ? null : _onSave,
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 50),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: InkWell(
+        onTap: onSelect,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: isSelected ? FontWeight.bold : null,
+                          ),
+                    ),
+                    Text(
+                      description,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSelected)
+                Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+            ],
+          ),
+        ),
       ),
-      child: provider.isLoading
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 3),
-            )
-          : const Text('Save & Continue'),
     );
   }
-} 
+}

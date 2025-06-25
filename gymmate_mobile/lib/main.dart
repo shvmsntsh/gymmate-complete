@@ -42,16 +42,16 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           navigatorKey: navigatorKey,
           title: 'Gymmate',
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
-          debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        debugShowCheckedModeBanner: false,
           home: authProvider.isAuth ? const MainNavigationScaffold() : const LoginPage(),
-          routes: {
-            '/login': (context) => const LoginPage(),
-            '/register': (context) => const RegisterPage(),
-            '/onboarding': (context) => const OnboardingFlow(),
-          },
+        routes: {
+          '/login': (context) => const LoginPage(),
+          '/register': (context) => const RegisterPage(),
+          '/onboarding': (context) => const OnboardingFlow(),
+        },
         );
       },
     );
@@ -68,7 +68,7 @@ class SplashScreen extends StatelessWidget {
         child: CircularProgressIndicator(),
       ),
     );
-  }
+    }
 }
 
 Future<bool> showLogoutConfirmation(BuildContext context) async {
@@ -108,6 +108,15 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       // Still loading user info, show spinner
       return const Center(child: CircularProgressIndicator());
     }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // For gym_member, check onboarding status
+    if (role == 'gym_member' && !authProvider.hasCompletedOnboarding) {
+      print('[NAV] New gym member detected, showing onboarding flow');
+      return const OnboardingFlow();
+    }
+
     switch (role) {
       case 'superadmin':
         print('[NAV] Showing Superadmin Dashboard');
@@ -145,9 +154,9 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: () async {
               print('[LOGOUT] AppBar logout button clicked. Showing confirmation dialog.');
               final confirmed = await showLogoutConfirmation(context);
               print('[LOGOUT] Confirmation dialog result: ${confirmed == true ? 'YES' : 'NO'}');
@@ -167,8 +176,8 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
               } else {
                 print('[LOGOUT] NO clicked. Staying on dashboard.');
               }
-            },
-          ),
+                  },
+                ),
         ],
       ),
       body: _widgetOptions[_selectedIndex],
