@@ -444,6 +444,46 @@ const completeOnboarding = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Read onboarding data from request body
+    const { profile, fitnessGoals, dietPreferences, workoutHabits, firstChallenge } = req.body;
+    console.log('[Onboarding] Incoming data:', req.body);
+
+    if (!profile || !fitnessGoals || !dietPreferences || !workoutHabits || !firstChallenge) {
+      return res.status(400).json({ message: 'Missing required onboarding fields.' });
+    }
+
+    // Save onboarding data to user document with fallback/defaults
+    user.profile = {
+      ...user.profile,
+      ...profile,
+      age: Math.max(profile.age || 18, 13),
+      height: Math.max(profile.height || 170, 100),
+      weight: Math.max(profile.weight || 70, 20),
+    };
+
+    user.fitnessGoals = fitnessGoals;
+
+    user.dietPreferences = {
+      ...user.dietPreferences,
+      ...dietPreferences,
+      waterIntake: dietPreferences.waterIntake || 8,
+      dailyMeals: dietPreferences.dailyMeals || 3,
+      allergies: dietPreferences.allergies || [],
+      restrictions: dietPreferences.restrictions || [],
+    };
+
+    user.workoutHabits = {
+      ...user.workoutHabits,
+      ...workoutHabits,
+      workoutsPerWeek: workoutHabits.workoutsPerWeek || 3,
+      sessionDuration: workoutHabits.sessionDuration || 60,
+      hasInjuries: workoutHabits.hasInjuries || false,
+      injuryDetails: workoutHabits.injuryDetails || null,
+      favoriteExercises: workoutHabits.favoriteExercises || [],
+    };
+
+    user.firstChallenge = { ...user.firstChallenge, ...firstChallenge, isAccepted: true, startDate: new Date() };
+
     // Ensure onboardingProgress object exists
     if (!user.onboardingProgress) {
       user.onboardingProgress = {
@@ -456,7 +496,6 @@ const completeOnboarding = async (req, res) => {
       };
     }
 
-    // Ensure gamification object exists
     if (!user.gamification) {
       user.gamification = {
         totalXP: 0,
@@ -467,16 +506,15 @@ const completeOnboarding = async (req, res) => {
       };
     }
 
-    // Mark onboarding as completed
     user.onboardingProgress.isCompleted = true;
     user.onboardingProgress.completedAt = new Date();
     user.onboardingProgress.currentStep = 7;
-    
     if (!user.onboardingProgress.stepsCompleted.includes(7)) {
       user.onboardingProgress.stepsCompleted.push(7);
     }
 
-    // Award completion XP and badge
+    user.hasCompletedOnboarding = true;
+
     const xpAwarded = XP_REWARDS.step_7_completion;
     await awardXP(user, xpAwarded);
     const badgeUnlocked = await awardBadge(user, BADGES.onboarding_complete);

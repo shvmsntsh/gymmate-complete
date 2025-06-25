@@ -46,12 +46,12 @@ exports.generateInviteCode = async (req, res) => {
     // Superadmin can only create gym_owner codes
     if (currentUser.role === 'superadmin' && roleToGenerate !== 'gym_owner') {
       return res.status(403).json({ message: 'Superadmin can only generate codes for gym_owner' });
-    }
+      }
 
     // Gym owner can only create gym_member codes
     if (currentUser.role === 'gym_owner' && roleToGenerate !== 'gym_member') {
       return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member' });
-    }
+      }
     
     // For a gym_owner creating an invite, we need their gymId
     let gymId = null;

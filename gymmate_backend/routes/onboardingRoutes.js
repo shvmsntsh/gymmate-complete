@@ -10,6 +10,7 @@ const {
   resetOnboarding,
   completeOnboarding
 } = require('../controllers/onboardingController');
+const User = require('../models/User');
 
 // 🔐 All onboarding routes require authentication
 router.use(authenticateToken);

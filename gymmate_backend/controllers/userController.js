@@ -12,11 +12,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-developmen
  * This function handles the core logic for user creation based on invitation codes.
  */
 exports.register = async (req, res) => {
-  const { name, email, password, inviteCode } = req.body;
-
+  let { name, email, password, inviteCode } = req.body;
   if (!name || !email || !password || !inviteCode) {
     return res.status(400).json({ message: 'Name, email, password, and invite code are required.' });
   }
+  email = email.trim().toLowerCase();
 
   // Handle the very first superadmin registration
   if (inviteCode === '123456') {
@@ -24,57 +24,106 @@ exports.register = async (req, res) => {
     if (userCount > 0) {
       return res.status(403).json({ message: 'Superadmin already exists.' });
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
+    // Check for duplicate email
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'An account with this email already exists.' });
+    }
+    // DO NOT hash password here, let pre-save hook handle it
     const newUser = new User({
       name,
       email,
-      password: hashedPassword,
+      password, // plain password
       role: 'superadmin',
     });
-
     await newUser.save();
-    return res.status(201).json({ message: 'Superadmin registered successfully.' });
+    // Generate token and return user object (like login)
+    const token = jwt.sign(
+      {
+        id: newUser._id,
+        email: newUser.email,
+        role: newUser.role,
+        gymId: newUser.gymId,
+      },
+      JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+    return res.status(201).json({
+      message: 'Superadmin registered successfully.',
+      token,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        gymId: newUser.gymId,
+      },
+    });
   }
 
   // For all other users, validate the invite code
   const code = await InviteCode.findOne({ code: inviteCode });
-
   if (!code || code.used) {
     return res.status(400).json({ message: 'Invalid or already used invitation code.' });
   }
-
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return res.status(400).json({ message: 'An account with this email already exists.' });
   }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
   const newUser = new User({
     name,
     email,
-    password: hashedPassword,
+    password, // plain password
     role: code.role,
     gymId: code.gymId,
   });
-
   await newUser.save();
-
   // If the new user is a gym owner, their gymId should be their own ID.
   if (newUser.role === 'gym_owner' && !newUser.gymId) {
-    newUser.gymId = newUser._id;
-    await newUser.save();
-    console.log(`🔗 Assigned gymId ${newUser._id} to new gym_owner ${newUser.email}`);
+    try {
+      const gymName = req.body.gymName || `${newUser.name}'s Gym`;
+      const gym = new Gym({
+        gymName,
+        email: newUser.email,
+        owner: newUser._id,
+      });
+      await gym.save();
+      newUser.gymId = gym._id;
+      await newUser.save();
+      console.log(`✅ Created gym ${gym._id} for gym_owner ${newUser.email}`);
+    } catch (err) {
+      console.error('❌ Failed to create gym for gym_owner:', err);
+      // Optionally, remove the user if gym creation fails
+      await User.findByIdAndDelete(newUser._id);
+      return res.status(500).json({ message: 'Failed to create gym for gym owner. Registration aborted.' });
+    }
   }
-
   // Mark the code as used atomically
   code.used = true;
   code.usedBy = newUser._id;
   await code.save();
-
-  res.status(201).json({ message: `User registered successfully as ${code.role}.` });
+  // Generate token and return user object (like login)
+  const token = jwt.sign(
+    {
+      id: newUser._id,
+      email: newUser.email,
+      role: newUser.role,
+      gymId: newUser.gymId,
+    },
+    JWT_SECRET,
+    { expiresIn: '2h' }
+  );
+  res.status(201).json({
+    message: `User registered successfully as ${code.role}.`,
+    token,
+    user: {
+      id: newUser._id,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      gymId: newUser.gymId,
+    },
+  });
 };
 
 /**
@@ -83,27 +132,24 @@ exports.register = async (req, res) => {
  */
 exports.login = async (req, res) => {
   console.log('🔑 /api/auth/login endpoint hit');
-  const { email, password } = req.body;
+  let { email, password } = req.body;
   console.log('Login attempt:', { email });
-
   if (!email || !password) {
     console.log('❌ Missing email or password');
     return res.status(400).json({ message: 'Email and password are required.' });
   }
-
+  email = email.trim().toLowerCase();
   const user = await User.findOne({ email });
   if (!user) {
     console.log('❌ User not found');
     return res.status(401).json({ message: 'Invalid credentials.' });
   }
-
   const passwordMatch = await bcrypt.compare(password, user.password);
   console.log('Password match:', passwordMatch);
   if (!passwordMatch) {
     console.log('❌ Invalid password');
     return res.status(401).json({ message: 'Invalid credentials.' });
   }
-
   let gymName = null;
   if (user.gymId) {
     const gym = await Gym.findById(user.gymId);
@@ -111,7 +157,6 @@ exports.login = async (req, res) => {
       gymName = gym.gymName;
     }
   }
-
   const token = jwt.sign(
     {
       id: user._id,
@@ -123,19 +168,16 @@ exports.login = async (req, res) => {
     JWT_SECRET,
     { expiresIn: '2h' }
   );
-
   console.log('✅ Login successful for', email);
   const userPayload = {
-    id: user._id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    gymId: user.gymId,
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      gymId: user.gymId,
     gymName: gymName,
   };
-
   console.log('📦 Sending user payload:', JSON.stringify(userPayload, null, 2));
-
   res.json({
     token,
     user: userPayload,

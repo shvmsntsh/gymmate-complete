@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   // Full name of the user (owner or member)
@@ -31,7 +32,7 @@ const userSchema = new mongoose.Schema({
   gymId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Gym',
-    required: function() { return this.role !== 'superadmin'; }
+    required: function() { return this.role === 'gym_member'; }
   },
   // Date the user joined
   joinDate: {
@@ -69,7 +70,7 @@ const userSchema = new mongoose.Schema({
   // Fitness Goals (Multi-select)
   fitnessGoals: [{
     type: String,
-    enum: ['muscle_gain', 'fat_loss', 'endurance', 'flexibility', 'strength', 'general_fitness', 'weight_maintenance', null]
+    enum: ['muscle_gain', 'fat_loss', 'endurance', 'flexibility', 'strength', 'general_fitness', 'weight_maintenance', 'muscle', null]
   }],
   
   // Diet Preferences
@@ -173,8 +174,38 @@ const userSchema = new mongoose.Schema({
       height: { type: String, enum: ['cm', 'ft'], default: 'cm' },
       distance: { type: String, enum: ['km', 'miles'], default: 'km' },
     }
+  },
+
+  hasCompletedOnboarding: {
+    type: Boolean,
+    default: false,
+    required: function() {
+      return this.role === 'gym_member';
+    }
   }
 }, { timestamps: true });
+
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  const isMatch = await bcrypt.compare(candidatePassword, this.password);
+  if (!isMatch) {
+    console.warn('⚠️ Password mismatch for user:', this.email);
+  }
+  return isMatch;
+};
 
 userSchema.post('save', function(error, doc, next) {
   if (error) {
