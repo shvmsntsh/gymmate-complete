@@ -14,6 +14,8 @@ import 'package:gymmate_mobile/pages/gym_member_dashboard_page.dart';
 import 'theme.dart';
 import 'package:gymmate_mobile/services/auth_service.dart';
 import 'package:gymmate_mobile/main.dart';
+import 'pages/progress_page.dart';
+import 'pages/plan_page.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -136,31 +138,76 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final role = authProvider.userRole;
+    final userRole = authProvider.userData?['role'] as String? ?? '';
+    final isGymMember = userRole == 'gym_member';
 
-    final List<Widget> _widgetOptions = [
-      _getDashboardForRole(role),
-      const InviteCodeListPage(),
-      const ProfilePage(),
+    // Check for onboarding status for gym members
+    if (isGymMember && !authProvider.hasCompletedOnboarding) {
+      return const OnboardingFlow();
+    }
+
+    List<Widget> pages = [
+      if (userRole == 'gym_member')
+        const GymMemberDashboardPage()
+      else if (userRole == 'gym_owner')
+        const GymOwnerDashboardPage()
+      else
+        const AdminDashboardPage(),
     ];
 
-    final List<String> titles = [
-      'Dashboard',
-      'View Invites',
-      'Profile',
+    List<BottomNavigationBarItem> items = [
+      const BottomNavigationBarItem(
+        icon: Icon(Icons.dashboard),
+        label: 'Dashboard',
+      ),
     ];
+
+    // Add Progress/Invites based on role
+    if (isGymMember) {
+      pages.add(const ProgressPage());
+      items.add(const BottomNavigationBarItem(
+        icon: Icon(Icons.show_chart),
+        label: 'Progress',
+      ));
+    } else {
+      pages.add(const InviteCodeListPage());
+      items.add(const BottomNavigationBarItem(
+        icon: Icon(Icons.vpn_key),
+        label: 'Invites',
+      ));
+    }
+
+    // Add Plan page only for gym members
+    if (isGymMember) {
+      pages.add(const PlanPage());
+      items.add(const BottomNavigationBarItem(
+        icon: Icon(Icons.calendar_today),
+        label: 'Plan',
+      ));
+    }
+
+    // Add Profile page for all roles
+    pages.add(const ProfilePage());
+    items.add(const BottomNavigationBarItem(
+      icon: Icon(Icons.person),
+      label: 'Profile',
+    ));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[_selectedIndex]),
+        title: Text(pages[_selectedIndex].toString()),
         actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: () async {
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
               print('[LOGOUT] AppBar logout button clicked. Showing confirmation dialog.');
               final confirmed = await showLogoutConfirmation(context);
-              print('[LOGOUT] Confirmation dialog result: ${confirmed == true ? 'YES' : 'NO'}');
+              print('[LOGOUT] Confirmation dialog result: \\${confirmed == true ? 'YES' : 'NO'}');
               if (confirmed) {
+                // Reset selected index before logging out to prevent out of bounds error
+                setState(() {
+                  _selectedIndex = 0;
+                });
                 await Provider.of<AuthProvider>(context, listen: false).logout();
                 await AuthService.logout();
                 print('[LOGOUT] Session cleared. Navigating to /login using navigatorKey.');
@@ -171,38 +218,33 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
                   );
                   print('[LOGOUT] Navigation to /login triggered.');
                 } catch (e, st) {
-                  print('[LOGOUT][ERROR] Navigation to /login failed: $e\n$st');
+                  print('[LOGOUT][ERROR] Navigation to /login failed: \\${e}\\n\\${st}');
                 }
               } else {
                 print('[LOGOUT] NO clicked. Staying on dashboard.');
               }
-                  },
-                ),
+            },
+          ),
         ],
       ),
-      body: _widgetOptions[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_rounded),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.card_membership_rounded),
-            label: 'Invites',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          print('[NAV] Tab changed to $index');
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+      body: pages[_selectedIndex],
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          canvasColor: const Color(0xFF2C2C2E),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: const Color(0xFF2C2C2E),
+          selectedItemColor: Colors.cyan,
+          unselectedItemColor: Colors.white54,
+          items: items,
+        ),
       ),
     );
   }

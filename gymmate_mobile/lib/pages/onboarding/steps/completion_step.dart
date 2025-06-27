@@ -4,6 +4,8 @@ import 'package:gymmate_mobile/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import 'dart:math';
+import '../../../main.dart';
+import '../../../pages/plan_page.dart';
 // Removed import of 'base_step.dart'
 
 class CompletionStep extends StatelessWidget {
@@ -80,7 +82,7 @@ class _CompletionContentState extends State<_CompletionContent> {
       children: [
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+          children: [
             const Icon(
               Icons.check_circle_outline,
               size: 120,
@@ -97,9 +99,9 @@ class _CompletionContentState extends State<_CompletionContent> {
             const SizedBox(height: 16),
             const Text(
               'You\'ve filled the onboarding details.',
-          textAlign: TextAlign.center,
+              textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
-        ),
+            ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () async {
@@ -116,11 +118,20 @@ class _CompletionContentState extends State<_CompletionContent> {
 
                 bool success = await provider.completeOnboarding(token);
                 if (success) {
-                  widget.onNext();
+                  await authProvider.completeOnboarding();
+                  if (context.mounted) {
+                    // Navigate to the plan page and remove all previous routes
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const PlanPage()),
+                      (route) => false,
+                    );
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to complete onboarding')),
-                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to complete onboarding')),
+                    );
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
