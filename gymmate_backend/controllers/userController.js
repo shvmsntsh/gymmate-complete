@@ -169,13 +169,15 @@ exports.login = async (req, res) => {
     { expiresIn: '2h' }
   );
   console.log('✅ Login successful for', email);
+  const isCompleted = user.onboardingProgress && (user.onboardingProgress.isCompleted === true || user.onboardingProgress.isCompleted === 'true');
   const userPayload = {
       id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
       gymId: user.gymId,
-    gymName: gymName,
+      gymName: gymName,
+      hasCompletedOnboarding: isCompleted,
   };
   console.log('📦 Sending user payload:', JSON.stringify(userPayload, null, 2));
   res.json({

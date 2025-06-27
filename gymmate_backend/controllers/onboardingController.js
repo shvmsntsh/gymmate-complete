@@ -338,7 +338,7 @@ const getUserProgress = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId)
-      .select('gamification onboardingProgress preferences profile fitnessGoals');
+      .select('gamification onboardingProgress preferences profile fitnessGoals dietPreferences workoutHabits firstChallenge');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -367,7 +367,7 @@ const getUserProgress = async (req, res) => {
       };
     }
 
-    // Ensure other objects exist
+    // Ensure other objects exist with proper defaults
     if (!user.preferences) {
       user.preferences = { theme: 'light' };
     }
@@ -377,9 +377,39 @@ const getUserProgress = async (req, res) => {
     if (!user.fitnessGoals) {
       user.fitnessGoals = [];
     }
+    if (!user.dietPreferences) {
+      user.dietPreferences = {
+        type: 'flexible',
+        dailyMeals: 3,
+        waterIntake: 8,
+        allergies: [],
+        restrictions: []
+      };
+    }
+    if (!user.workoutHabits) {
+      user.workoutHabits = {
+        preferredTime: 'flexible',
+        currentActivityLevel: 'moderate',
+        workoutsPerWeek: 3,
+        sessionDuration: 60,
+        favoriteExercises: [],
+        hasInjuries: false,
+        injuryDetails: null
+      };
+    }
+    if (!user.firstChallenge) {
+      user.firstChallenge = {
+        isAccepted: false,
+        type: '7_day_checkin',
+        startDate: null,
+        progress: 0,
+        isCompleted: false
+      };
+    }
 
     await user.save();
 
+    // Send the complete data
     const progressData = {
       totalXP: user.gamification.totalXP,
       level: user.gamification.level,
@@ -389,8 +419,12 @@ const getUserProgress = async (req, res) => {
       theme: user.preferences.theme,
       profile: user.profile,
       fitnessGoals: user.fitnessGoals,
+      dietPreferences: user.dietPreferences,
+      workoutHabits: user.workoutHabits,  // Send workoutHabits instead of workoutPreferences
+      firstChallenge: user.firstChallenge,
     };
     
+    console.log('📊 Sending progress data:', JSON.stringify(progressData, null, 2));
     res.status(200).json(progressData);
   } catch (error) {
     console.error('❌ Error getting user progress:', error);
@@ -481,6 +515,8 @@ const completeOnboarding = async (req, res) => {
       injuryDetails: workoutHabits.injuryDetails || null,
       favoriteExercises: workoutHabits.favoriteExercises || [],
     };
+    // Also save as workoutPreferences for frontend compatibility
+    user.workoutPreferences = user.workoutHabits;
 
     user.firstChallenge = { ...user.firstChallenge, ...firstChallenge, isAccepted: true, startDate: new Date() };
 

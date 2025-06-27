@@ -70,14 +70,14 @@ const userSchema = new mongoose.Schema({
   // Fitness Goals (Multi-select)
   fitnessGoals: [{
     type: String,
-    enum: ['muscle_gain', 'fat_loss', 'endurance', 'flexibility', 'strength', 'general_fitness', 'weight_maintenance', 'muscle', null]
+    enum: ['muscle_gain', 'fat_loss', 'endurance', 'flexibility', 'strength', 'general_fitness', 'weight_maintenance', 'muscle', 'performance', null]
   }],
   
   // Diet Preferences
   dietPreferences: {
     type: { 
       type: String, 
-      enum: ['vegetarian', 'non_vegetarian', 'vegan', 'keto', 'paleo', 'mediterranean', 'other', null],
+      enum: ['vegetarian', 'non_vegetarian', 'vegan', 'keto', 'paleo', 'mediterranean', 'other', 'flexible', null],
       default: null 
     },
     allergies: [String], // Common allergies: nuts, dairy, gluten, etc.

@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Connection
-mongoose.connect('mongodb://127.0.0.1:27017/gymmate', {})
+mongoose.connect('mongodb://127.0.0.1:27017/gymmate')
 .then(() => console.log('✅ MongoDB connected'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
@@ -28,6 +28,6 @@ app.use('/api/onboarding', onboardingRoutes);
 console.log('✅ Routes mounted.');
 
 // Start the server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, 'localhost', () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
