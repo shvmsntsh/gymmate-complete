@@ -12,6 +12,7 @@ class AuthProvider with ChangeNotifier {
   String? _userEmail;
   String? _gymName;
   bool? _hasCompletedOnboarding;
+  Map<String, dynamic>? _userData;
 
   final _storage = const FlutterSecureStorage();
 
@@ -23,6 +24,7 @@ class AuthProvider with ChangeNotifier {
   String? get userEmail => _userEmail;
   String? get gymName => _gymName;
   bool get hasCompletedOnboarding => _hasCompletedOnboarding ?? false;
+  Map<String, dynamic>? get userData => _userData;
 
   Future<bool> login(String email, String password) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
@@ -44,6 +46,7 @@ class AuthProvider with ChangeNotifier {
 
       _token = responseData['token'];
       final user = responseData['user'];
+      _userData = user;
       _userId = user['id'];
       _userRole = user['role'];
       _userName = user['name'];
@@ -52,6 +55,7 @@ class AuthProvider with ChangeNotifier {
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
 
       await _storage.write(key: 'user_token', value: _token);
+      await _storage.write(key: 'user_data', value: json.encode(_userData));
       await _storage.write(key: 'user_id', value: _userId);
       await _storage.write(key: 'user_role', value: _userRole);
       await _storage.write(key: 'user_name', value: _userName);
@@ -77,22 +81,18 @@ class AuthProvider with ChangeNotifier {
     }
 
     // Reconstruct the user object from stored data
-    final user = {
-      'id': await _storage.read(key: 'user_id'),
-      'role': await _storage.read(key: 'user_role'),
-      'name': await _storage.read(key: 'user_name'),
-      'email': await _storage.read(key: 'user_email'),
-      'gymName': await _storage.read(key: 'gym_name'),
-      'hasCompletedOnboarding': await _storage.read(key: 'has_completed_onboarding'),
-    };
+    final userDataStr = await _storage.read(key: 'user_data');
+    if (userDataStr != null) {
+      _userData = json.decode(userDataStr);
+    }
 
     _token = token;
-    _userId = user['id'];
-    _userRole = user['role'];
-    _userName = user['name'];
-    _userEmail = user['email'];
-    _gymName = user['gymName'];
-    _hasCompletedOnboarding = user['hasCompletedOnboarding'] == 'true';
+    _userId = await _storage.read(key: 'user_id');
+    _userRole = await _storage.read(key: 'user_role');
+    _userName = await _storage.read(key: 'user_name');
+    _userEmail = await _storage.read(key: 'user_email');
+    _gymName = await _storage.read(key: 'gym_name');
+    _hasCompletedOnboarding = (await _storage.read(key: 'has_completed_onboarding')) == 'true';
 
     print('🔄 [AuthProvider] Token found, auto-login successful. Notifying listeners.');
     notifyListeners();
@@ -108,6 +108,7 @@ class AuthProvider with ChangeNotifier {
     _userEmail = null;
     _gymName = null;
     _hasCompletedOnboarding = null;
+    _userData = null;
     
     // Immediately notify listeners to update UI
     notifyListeners();

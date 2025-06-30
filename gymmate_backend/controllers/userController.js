@@ -305,3 +305,137 @@ exports.getSelf = async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+
+/**
+ * Get categorized members (superadmin only)
+ * Returns a list of gym owners with their respective members
+ */
+exports.getCategorizedMembers = async (req, res) => {
+  if (req.user.role !== 'superadmin') {
+    return res.status(403).json({ message: 'Forbidden: superadmin only' });
+  }
+
+  try {
+    // First, get all gym owners
+    const gymOwners = await User.find({ role: 'gym_owner' }).select('name email gymId');
+    
+    // For each gym owner, get their gym details and members
+    const categorizedData = await Promise.all(gymOwners.map(async (owner) => {
+      const gym = await Gym.findById(owner.gymId);
+      const members = await User.find({ 
+        role: 'gym_member', 
+        gymId: owner.gymId 
+      }).select('name email createdAt');
+
+      return {
+        gymName: gym?.gymName || 'Unknown Gym',
+        ownerName: owner.name,
+        ownerEmail: owner.email,
+        members: members.map(member => ({
+          name: member.name,
+          email: member.email,
+          joinDate: member.createdAt
+        }))
+      };
+    }));
+
+    return res.status(200).json({ gymOwners: categorizedData });
+  } catch (error) {
+    console.error('Error fetching categorized members:', error);
+    return res.status(500).json({ message: 'Error fetching categorized members' });
+  }
+};
+
+/**
+ * Get dashboard statistics (superadmin only)
+ */
+exports.getDashboardStats = async (req, res) => {
+  console.log('🔍 Fetching dashboard stats for superadmin');
+  
+  if (req.user.role !== 'superadmin') {
+    console.log('❌ Unauthorized access attempt:', req.user.role);
+    return res.status(403).json({ message: 'Forbidden: superadmin only' });
+  }
+
+  try {
+    const gymsCount = await User.countDocuments({ role: 'gym_owner' });
+    console.log('📊 Total gyms:', gymsCount);
+
+    const membersCount = await User.countDocuments({ role: 'gym_member' });
+    console.log('📊 Total members:', membersCount);
+
+    const invitesCount = await InviteCode.countDocuments({ used: false });
+    console.log('📊 Active invites:', invitesCount);
+
+    // Log the query we're using
+    console.log('🔍 Querying active members with:', {
+      role: 'gym_member',
+      hasCompletedOnboarding: true
+    });
+
+    // First, let's find all such users to inspect
+    const activeMembers = await User.find({ 
+      role: 'gym_member',
+      hasCompletedOnboarding: true
+    });
+    console.log('📊 Active members found:', activeMembers.length);
+    console.log('📄 Active members details:', activeMembers.map(m => ({
+      email: m.email,
+      hasCompletedOnboarding: m.hasCompletedOnboarding
+    })));
+
+    const activeMembersCount = activeMembers.length;
+
+    const stats = {
+      gyms: gymsCount,
+      members: membersCount,
+      invites: invitesCount,
+      activeMembers: activeMembersCount
+    };
+
+    console.log('📤 Sending stats:', stats);
+    return res.status(200).json(stats);
+  } catch (error) {
+    console.error('❌ Error fetching dashboard stats:', error);
+    return res.status(500).json({ message: 'Error fetching dashboard stats' });
+  }
+};
+
+const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+const getUserDetailsForPlan = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('profile fitnessGoals dietPreferences workoutHabits');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user details for plan:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const updateOnboardingStatus = async (req, res) => {
+  // ... existing code ...
+};
+
+module.exports = {
+  register: exports.register,
+  login: exports.login,
+  generateInviteCode: exports.generateInviteCode,
+  getInviteCodes: exports.getInviteCodes,
+  getUserProfile,
+  updateOnboardingStatus,
+  getUserDetailsForPlan,
+};

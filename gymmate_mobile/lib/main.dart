@@ -43,17 +43,17 @@ class MyApp extends StatelessWidget {
       builder: (context, authProvider, _) {
         return MaterialApp(
           navigatorKey: navigatorKey,
-          title: 'Gymmate',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        debugShowCheckedModeBanner: false,
+          title: 'TFT Gyms',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeMode.system,
+          debugShowCheckedModeBanner: false,
           home: authProvider.isAuth ? const MainNavigationScaffold() : const LoginPage(),
-        routes: {
-          '/login': (context) => const LoginPage(),
-          '/register': (context) => const RegisterPage(),
-          '/onboarding': (context) => const OnboardingFlow(),
-        },
+          routes: {
+            '/login': (context) => const LoginPage(),
+            '/register': (context) => const RegisterPage(),
+            '/onboarding': (context) => const OnboardingFlow(),
+          },
         );
       },
     );
@@ -104,6 +104,23 @@ class MainNavigationScaffold extends StatefulWidget {
 
 class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   int _selectedIndex = 0;
+
+  String _getPageTitle(int index) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userRole = authProvider.userData?['role'] as String? ?? '';
+    final isGymMember = userRole == 'gym_member';
+
+    // Calculate the page index based on role and selected index
+    if (index == 0) {
+      return 'Dashboard';
+    } else if (index == 1) {
+      return isGymMember ? 'Progress' : 'Invites';
+    } else if (isGymMember && index == 2) {
+      return 'Plan';
+    } else {
+      return 'Profile';
+    }
+  }
 
   Widget _getDashboardForRole(String? role) {
     if (role == null) {
@@ -195,37 +212,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(pages[_selectedIndex].toString()),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              print('[LOGOUT] AppBar logout button clicked. Showing confirmation dialog.');
-              final confirmed = await showLogoutConfirmation(context);
-              print('[LOGOUT] Confirmation dialog result: \\${confirmed == true ? 'YES' : 'NO'}');
-              if (confirmed) {
-                // Reset selected index before logging out to prevent out of bounds error
-                setState(() {
-                  _selectedIndex = 0;
-                });
-                await Provider.of<AuthProvider>(context, listen: false).logout();
-                await AuthService.logout();
-                print('[LOGOUT] Session cleared. Navigating to /login using navigatorKey.');
-                try {
-                  navigatorKey.currentState!.pushNamedAndRemoveUntil(
-                    '/login',
-                    (Route<dynamic> route) => false,
-                  );
-                  print('[LOGOUT] Navigation to /login triggered.');
-                } catch (e, st) {
-                  print('[LOGOUT][ERROR] Navigation to /login failed: \\${e}\\n\\${st}');
-                }
-              } else {
-                print('[LOGOUT] NO clicked. Staying on dashboard.');
-              }
-            },
-          ),
-        ],
+        title: Text(_getPageTitle(_selectedIndex)),
       ),
       body: pages[_selectedIndex],
       bottomNavigationBar: Theme(
@@ -250,66 +237,4 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   }
 }
 
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
-
-  Future<Map<String, String?>> _getUserInfo() async {
-    final storage = const FlutterSecureStorage();
-    final name = await storage.read(key: 'userName');
-    final email = await storage.read(key: 'userEmail');
-    final role = await storage.read(key: 'userRole');
-    return {'name': name, 'email': email, 'role': role};
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: FutureBuilder<Map<String, String?>> (
-            future: _getUserInfo(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final user = snapshot.data!;
-              return Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.person, size: 40),
-                        title: Text(user['name'] ?? '-', style: Theme.of(context).textTheme.titleLarge),
-                        subtitle: Text(user['email'] ?? '-', style: Theme.of(context).textTheme.bodyMedium),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const Icon(Icons.verified_user),
-                          const SizedBox(width: 8),
-                          Text('Role: ${user['role'] ?? '-'}', style: Theme.of(context).textTheme.bodyMedium),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        // Fill the rest of the screen with background color
-        Expanded(
-          child: Container(
-            color: Theme.of(context).colorScheme.background,
-          ),
-        ),
-      ],
-    );
-  }
-} 
+// Using the ProfilePage from pages/profile_page.dart 

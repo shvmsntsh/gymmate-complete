@@ -20,7 +20,7 @@
 
     <v-app-bar app flat color="transparent">
       <v-app-bar-nav-icon @click="drawer = !drawer" />
-      <v-toolbar-title class="ml-4">GymMate</v-toolbar-title>
+      <v-toolbar-title class="ml-4">TFT Gyms</v-toolbar-title>
       <v-spacer />
       <v-btn icon @click="toggleTheme">
         <v-icon>{{ theme.global.current.value.dark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>

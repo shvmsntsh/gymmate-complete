@@ -19,10 +19,10 @@ class CompletionStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Static title and description widgets
-    final title = const Text(
-      'Welcome to GymMate!',
-      style: TextStyle(
-        fontSize: 24,
+    final title = Text(
+      'Welcome to TFT Gyms!',
+      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+        color: Colors.white,
         fontWeight: FontWeight.bold,
       ),
       textAlign: TextAlign.center,
@@ -78,31 +78,29 @@ class _CompletionContentState extends State<_CompletionContent> {
   @override
   Widget build(BuildContext context) {
     return Stack(
-      alignment: Alignment.center,
       children: [
+        Align(
+          alignment: Alignment.center,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive,
+            particleDrag: 0.05,
+            emissionFrequency: 0.05,
+            numberOfParticles: 50,
+            gravity: 0.05,
+            shouldLoop: false,
+            colors: const [
+              Colors.green,
+              Colors.blue,
+              Colors.pink,
+              Colors.orange,
+              Colors.purple
+            ],
+          ),
+        ),
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.check_circle_outline,
-              size: 120,
-              color: Colors.green,
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Congratulations!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'You\'ve filled the onboarding details.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () async {
                 final provider = Provider.of<OnboardingProvider>(context, listen: false);
@@ -120,9 +118,9 @@ class _CompletionContentState extends State<_CompletionContent> {
                 if (success) {
                   await authProvider.completeOnboarding();
                   if (context.mounted) {
-                    // Navigate to the plan page and remove all previous routes
+                    // Navigate to the MainNavigationScaffold which will show the Plan page
                     Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const PlanPage()),
+                      MaterialPageRoute(builder: (context) => const MainNavigationScaffold()),
                       (route) => false,
                     );
                   }
@@ -137,29 +135,9 @@ class _CompletionContentState extends State<_CompletionContent> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
-              child: const Text('Save and Start Your Journey'),
+              child: const Text('Save and Continue with Your Journey'),
             ),
           ],
-        ),
-        Align(
-          alignment: Alignment.topCenter,
-          child: ConfettiWidget(
-            confettiController: _confettiController,
-            blastDirection: pi / 2,
-            maxBlastForce: 5,
-            minBlastForce: 2,
-            emissionFrequency: 0.05,
-            numberOfParticles: 50,
-            gravity: 0.1,
-            shouldLoop: false,
-            colors: const [
-              Colors.green,
-              Colors.blue,
-              Colors.pink,
-              Colors.orange,
-              Colors.purple
-            ],
-          ),
         ),
       ],
     );

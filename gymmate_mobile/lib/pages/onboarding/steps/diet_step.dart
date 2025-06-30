@@ -22,6 +22,7 @@ class DietStep extends StatelessWidget {
     return Consumer<OnboardingProvider>(
       builder: (context, provider, _) {
         final selectedType = provider.dietPreferences['type'];
+        print('[DietStep] provider.dietPreferences["type"]: $selectedType');
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -17,25 +17,49 @@ class GoalsStep extends StatelessWidget {
         'icon': Icons.fitness_center,
         'title': 'Build Muscle',
         'description': 'Gain strength and muscle mass',
-        'value': 'muscle',
+        'value': 'muscle_gain',
       },
       {
         'icon': Icons.directions_run,
-        'title': 'Lose Weight',
+        'title': 'Fat Loss',
         'description': 'Burn fat and improve fitness',
-        'value': 'weight_loss',
+        'value': 'fat_loss',
       },
       {
         'icon': Icons.self_improvement,
-        'title': 'Stay Healthy',
-        'description': 'Maintain fitness and well-being',
-        'value': 'health',
+        'title': 'General Fitness',
+        'description': 'Maintain overall fitness and well-being',
+        'value': 'general_fitness',
       },
       {
         'icon': Icons.sports_score,
-        'title': 'Improve Performance',
+        'title': 'Performance',
         'description': 'Enhance athletic abilities',
         'value': 'performance',
+      },
+      {
+        'icon': Icons.sports_handball,
+        'title': 'Strength',
+        'description': 'Build raw strength and power',
+        'value': 'strength',
+      },
+      {
+        'icon': Icons.timer,
+        'title': 'Endurance',
+        'description': 'Improve stamina and endurance',
+        'value': 'endurance',
+      },
+      {
+        'icon': Icons.sports_gymnastics,
+        'title': 'Flexibility',
+        'description': 'Enhance mobility and flexibility',
+        'value': 'flexibility',
+      },
+      {
+        'icon': Icons.balance,
+        'title': 'Weight Maintenance',
+        'description': 'Maintain current weight and fitness',
+        'value': 'weight_maintenance',
       },
     ];
 
@@ -56,7 +80,7 @@ class GoalsStep extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Text(
-                'What do you want to achieve?',
+                'What do you want to achieve? (Select multiple)',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),

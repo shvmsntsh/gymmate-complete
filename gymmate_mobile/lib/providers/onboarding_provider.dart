@@ -56,6 +56,62 @@ class OnboardingProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void loadFromProgress(Map<String, dynamic> progress) {
+    final profile = progress['profile'] ?? {};
+    height = (profile['height'] ?? 0).toDouble();
+    weight = (profile['weight'] ?? 0).toDouble();
+    age = profile['age'] ?? 0;
+    gender = profile['gender'];
+    fitnessGoals = List<String>.from(progress['fitnessGoals'] ?? []);
+    
+    // Handle diet preferences
+    if (progress['dietPreferences'] != null) {
+      dietPreferences = Map<String, dynamic>.from(progress['dietPreferences']);
+    } else {
+      dietPreferences = {
+        'type': 'flexible',
+        'allergies': [],
+        'dailyMeals': 3,
+        'waterIntake': 8,
+        'restrictions': []
+      };
+    }
+
+    // Handle workout habits/preferences
+    if (progress['workoutHabits'] != null) {
+      workoutHabits = Map<String, dynamic>.from(progress['workoutHabits']);
+    } else if (progress['workoutPreferences'] != null) {
+      workoutHabits = Map<String, dynamic>.from(progress['workoutPreferences']);
+    } else {
+      workoutHabits = {
+        'preferredTime': 'flexible',
+        'favoriteExercises': [],
+        'currentActivityLevel': 'moderate',
+        'workoutsPerWeek': 3,
+        'sessionDuration': 60,
+        'hasInjuries': false,
+        'injuryDetails': null
+      };
+    }
+
+    // Handle first challenge
+    if (progress['firstChallenge'] != null) {
+      firstChallenge = Map<String, dynamic>.from(progress['firstChallenge']);
+    } else {
+      firstChallenge = {
+        'isAccepted': false,
+        'type': '7_day_checkin',
+        'startDate': null,
+        'endDate': null,
+        'progress': 0,
+        'isCompleted': false,
+        'completedAt': null
+      };
+    }
+    
+    notifyListeners();
+  }
+
   Future<bool> completeOnboarding(String token) async {
     final url = Uri.parse('http://localhost:5050/api/onboarding/complete');
     final body = {
@@ -70,6 +126,8 @@ class OnboardingProvider with ChangeNotifier {
       "workoutHabits": workoutHabits,
       "firstChallenge": firstChallenge,
     };
+
+    print('[OnboardingProvider] Sending completion data: ${jsonEncode(body)}');
 
     final response = await http.post(
       url,

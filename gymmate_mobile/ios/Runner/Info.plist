@@ -20,11 +20,11 @@
 	  </dict>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>This app needs access to devices on your local network to communicate with the GymMate backend.</string>
+	<string>This app needs access to devices on your local network to communicate with TFT Gyms backend.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Gymmate Mobile</string>
+	<string>TFT Gyms</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -32,7 +32,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>gymmate_mobile</string>
+	<string>TFT Gyms</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

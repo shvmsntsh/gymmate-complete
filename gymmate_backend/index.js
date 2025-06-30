@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const gymRoutes = require('./routes/gymRoutes');
 const inviteRoutes = require('./routes/inviteRoutes');
 const onboardingRoutes = require('./routes/onboardingRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/gym', gymRoutes);
 app.use('/api/invite', inviteRoutes);
 app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/ai', aiRoutes);
 console.log('✅ Routes mounted.');
 
 // Start the server

@@ -1,0 +1,2 @@
+FROM llama3
+PARAMETER keep_alive 10m 

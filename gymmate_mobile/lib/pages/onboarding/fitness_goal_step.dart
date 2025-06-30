@@ -11,7 +11,7 @@ class FitnessGoalStep extends BaseStep {
     key: key,
     onNext: onNext,
     title: 'Fitness Goals',
-    description: 'What do you want to achieve?',
+    description: 'What do you want to achieve? (Select multiple)',
   );
 
   @override
@@ -25,40 +25,64 @@ class FitnessGoalStep extends BaseStep {
               icon: Icons.fitness_center,
               title: 'Build Muscle',
               description: 'Gain strength and muscle mass',
-              isSelected: false,
-              onTap: () {
-                // Handle goal selection
-              },
+              isSelected: provider.fitnessGoals.contains('muscle_gain'),
+              onTap: () => provider.toggleFitnessGoal('muscle_gain'),
             ),
             _buildGoalCard(
               context,
               icon: Icons.directions_run,
-              title: 'Lose Weight',
+              title: 'Fat Loss',
               description: 'Burn fat and improve fitness',
-              isSelected: false,
-              onTap: () {
-                // Handle goal selection
-              },
+              isSelected: provider.fitnessGoals.contains('fat_loss'),
+              onTap: () => provider.toggleFitnessGoal('fat_loss'),
             ),
             _buildGoalCard(
               context,
               icon: Icons.self_improvement,
-              title: 'Stay Healthy',
-              description: 'Maintain fitness and wellness',
-              isSelected: false,
-              onTap: () {
-                // Handle goal selection
-              },
+              title: 'General Fitness',
+              description: 'Maintain overall fitness and wellness',
+              isSelected: provider.fitnessGoals.contains('general_fitness'),
+              onTap: () => provider.toggleFitnessGoal('general_fitness'),
             ),
             _buildGoalCard(
               context,
               icon: Icons.sports_gymnastics,
-              title: 'Improve Flexibility',
+              title: 'Flexibility',
               description: 'Enhance mobility and balance',
-              isSelected: false,
-              onTap: () {
-                // Handle goal selection
-              },
+              isSelected: provider.fitnessGoals.contains('flexibility'),
+              onTap: () => provider.toggleFitnessGoal('flexibility'),
+            ),
+            _buildGoalCard(
+              context,
+              icon: Icons.sports_handball,
+              title: 'Strength',
+              description: 'Build raw strength and power',
+              isSelected: provider.fitnessGoals.contains('strength'),
+              onTap: () => provider.toggleFitnessGoal('strength'),
+            ),
+            _buildGoalCard(
+              context,
+              icon: Icons.timer,
+              title: 'Endurance',
+              description: 'Improve stamina and endurance',
+              isSelected: provider.fitnessGoals.contains('endurance'),
+              onTap: () => provider.toggleFitnessGoal('endurance'),
+            ),
+            _buildGoalCard(
+              context,
+              icon: Icons.balance,
+              title: 'Weight Maintenance',
+              description: 'Maintain current weight and fitness level',
+              isSelected: provider.fitnessGoals.contains('weight_maintenance'),
+              onTap: () => provider.toggleFitnessGoal('weight_maintenance'),
+            ),
+            _buildGoalCard(
+              context,
+              icon: Icons.speed,
+              title: 'Performance',
+              description: 'Improve athletic performance',
+              isSelected: provider.fitnessGoals.contains('performance'),
+              onTap: () => provider.toggleFitnessGoal('performance'),
             ),
           ],
         );

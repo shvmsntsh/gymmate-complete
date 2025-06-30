@@ -1,6 +1,6 @@
 {
-    "name": "gymmate_mobile",
-    "short_name": "gymmate_mobile",
+    "name": "TFT Gyms",
+    "short_name": "TFT Gyms",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

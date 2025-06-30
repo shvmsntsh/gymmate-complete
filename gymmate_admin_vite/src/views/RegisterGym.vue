@@ -3,7 +3,7 @@
     <v-app-bar app dense>
   <v-app-bar-nav-icon @click="drawer = !drawer" />
   <v-toolbar-title class="ml-2" style="cursor: pointer" @click="router.push('/')">
-   GymMate
+   The Training Theory
  </v-toolbar-title>
   <v-spacer />
   <v-btn icon @click="toggleTheme">
@@ -41,7 +41,9 @@
           <!-- Right Panel -->
           <v-col cols="12" md="7" lg="8" class="d-flex justify-center align-center pa-4 pa-md-10">
             <v-card elevation="8" class="pa-6" max-width="600" width="100%">
-              <v-card-title class="text-h4 font-weight-bold text-center">Join the Movement</v-card-title>
+              <v-card-title class="text-center text-h4 font-weight-bold mb-4">
+                TFT Gyms
+              </v-card-title>
               <v-card-subtitle class="text-subtitle-1 text-center mb-4">
                 Register your gym to become part of us.
               </v-card-subtitle>

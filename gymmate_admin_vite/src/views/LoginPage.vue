@@ -7,7 +7,7 @@
     <v-icon>mdi-menu</v-icon>
   </v-btn>
  <v-toolbar-title class="ml-2" style="cursor: pointer" @click="router.push('/')">
-   GymMate
+   The Training Theory
  </v-toolbar-title>
   
   <!-- Fill spacer -->
@@ -48,7 +48,9 @@
           <!-- Right form panel -->
           <v-col cols="12" md="7" lg="8" class="d-flex justify-center align-center pa-4 pa-md-10">
             <v-card elevation="8" class="pa-6" max-width="500" width="100%">
-              <v-card-title class="text-h4 font-weight-bold text-center">Welcome Back</v-card-title>
+              <v-card-title class="text-center text-h4 font-weight-bold mb-4">
+                TFT Gyms
+              </v-card-title>
               <v-card-subtitle class="text-subtitle-1 text-center mb-4">
                 Login to manage your gym account
               </v-card-subtitle>

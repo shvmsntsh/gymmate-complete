@@ -86,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen> {
             
             // App Name
             Text(
-              'GymMate',
+              'The Training Theory',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,

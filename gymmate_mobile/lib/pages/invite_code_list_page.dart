@@ -28,7 +28,9 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
   @override
   void initState() {
     super.initState();
-    // Use WidgetsBinding to ensure context is available
+    // Initialize with an empty list future
+    _inviteCodesFuture = Future.value([]);
+    // Then refresh the list after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshList();
     });
@@ -209,8 +211,28 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(
                         'Role: ${code.role} | Used: ${code.used ? 'Yes' : 'No'}'),
-                    trailing:
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Text(code.createdAt.toLocal().toString().split(' ')[0]),
+                        if (!code.used) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.copy, size: 20),
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: code.code));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Code copied to clipboard!'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            tooltip: 'Copy invite code',
+                          ),
+                        ],
+                      ],
+                    ),
                   );
                 },
               ),

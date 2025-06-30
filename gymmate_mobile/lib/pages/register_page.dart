@@ -162,9 +162,12 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Join the GymMate community!',
-                    style: theme.textTheme.titleMedium,
-                    textAlign: TextAlign.center,
+                    'Join TFT Gyms community!',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
                   _buildRoleSelector(theme),
