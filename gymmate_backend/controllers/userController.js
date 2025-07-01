@@ -438,4 +438,6 @@ module.exports = {
   getUserProfile,
   updateOnboardingStatus,
   getUserDetailsForPlan,
+  getDashboardStats: exports.getDashboardStats,
+  getCategorizedMembers: exports.getCategorizedMembers,
 };

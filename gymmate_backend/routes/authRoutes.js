@@ -19,4 +19,10 @@ router.get('/user-details-for-plan', userController.getUserDetailsForPlan);
 // Onboarding-related routes
 router.post('/complete-onboarding', userController.updateOnboardingStatus);
 
+// Dashboard stats for superadmin
+router.get('/dashboard/stats', userController.getDashboardStats);
+
+// Categorized members for superadmin
+router.get('/members/categorized', userController.getCategorizedMembers);
+
 module.exports = router;
