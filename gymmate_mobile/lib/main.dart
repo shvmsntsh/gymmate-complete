@@ -16,6 +16,7 @@ import 'package:gymmate_mobile/services/auth_service.dart';
 import 'package:gymmate_mobile/main.dart';
 import 'pages/progress_page.dart';
 import 'pages/plan_page.dart';
+import 'pages/coach_page.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -200,6 +201,12 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       items.add(const BottomNavigationBarItem(
         icon: Icon(Icons.calendar_today),
         label: 'Plan',
+      ));
+      // Add Coach tab for gym members
+      pages.add(const CoachPage());
+      items.add(const BottomNavigationBarItem(
+        icon: Icon(Icons.sports_gymnastics),
+        label: 'Coach',
       ));
     }
 

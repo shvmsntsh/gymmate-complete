@@ -37,6 +37,7 @@ dependencies:
   http: ^1.1.0
   cupertino_icons: ^1.0.2
   intl: ^0.17.0
+  table_calendar: ^3.0.8
   
   # 📊 Charts (local fork)
   charts_flutter:

@@ -153,4 +153,39 @@ class AuthProvider with ChangeNotifier {
     await _storage.write(key: 'has_completed_onboarding', value: 'true');
     notifyListeners();
   }
+
+  Future<void> refreshUser() async {
+    if (_token == null) return;
+    try {
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
+      // We don't have the password, so instead, fetch user profile by token if such endpoint exists
+      final profileUrl = Uri.parse('${ApiConfig.baseUrl}/api/auth/me');
+      final response = await http.get(
+        profileUrl,
+        headers: {'Authorization': 'Bearer $_token'},
+      );
+      if (response.statusCode == 200) {
+        final user = json.decode(response.body);
+        _userData = user;
+        _userId = user['id'];
+        _userRole = user['role'];
+        _userName = user['name'];
+        _userEmail = user['email'];
+        _gymName = user['gymName'];
+        _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
+        await _storage.write(key: 'user_data', value: json.encode(_userData));
+        await _storage.write(key: 'user_id', value: _userId);
+        await _storage.write(key: 'user_role', value: _userRole);
+        await _storage.write(key: 'user_name', value: _userName);
+        await _storage.write(key: 'user_email', value: _userEmail);
+        await _storage.write(key: 'gym_name', value: _gymName);
+        await _storage.write(key: 'has_completed_onboarding', value: _hasCompletedOnboarding.toString());
+        notifyListeners();
+      } else {
+        print('Failed to refresh user: ${response.body}');
+      }
+    } catch (e) {
+      print('Error refreshing user: $e');
+    }
+  }
 } 

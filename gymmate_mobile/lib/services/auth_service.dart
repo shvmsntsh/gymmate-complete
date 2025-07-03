@@ -160,4 +160,30 @@ class AuthService with ChangeNotifier {
   Future<Map<String, dynamic>?> getCurrentUser() async {
     return await getUser();
   }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String name,
+    required String email,
+    required String? token,
+  }) async {
+    if (token == null) {
+      throw Exception('Authentication token not found.');
+    }
+    final response = await http.put(
+      Uri.parse('${ApiConfig.baseUrl}/api/user/profile'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({ 'name': name, 'email': email }),
+    );
+    if (response.statusCode == 200) {
+      final decodedBody = json.decode(utf8.decode(response.bodyBytes));
+      return decodedBody;
+    } else {
+      print('❌ Profile update failed. Status Code: ${response.statusCode}');
+      print('Raw error from backend: ${response.body}');
+      throw Exception('Failed to update profile: ${response.body}');
+    }
+  }
 } 
