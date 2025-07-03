@@ -430,6 +430,69 @@ const updateOnboardingStatus = async (req, res) => {
   // ... existing code ...
 };
 
+// Update profile (name/email)
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    let { name, email } = req.body;
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return res.status(400).json({ message: 'Name must be at least 2 characters.' });
+    }
+    if (!email || typeof email !== 'string' || !/^\S+@\S+\.\S+$/.test(email)) {
+      return res.status(400).json({ message: 'A valid email is required.' });
+    }
+    email = email.trim().toLowerCase();
+    // Check if email is unique (except for current user)
+    const existing = await User.findOne({ email });
+    if (existing && existing._id.toString() !== userId) {
+      return res.status(400).json({ message: 'Email is already in use.' });
+    }
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    user.name = name.trim();
+    user.email = email;
+    await user.save();
+    return res.json({
+      message: 'Profile updated successfully.',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        gymId: user.gymId,
+      },
+    });
+  } catch (err) {
+    console.error('Profile update error:', err);
+    return res.status(500).json({ message: 'Server error during profile update.' });
+  }
+};
+
+// Get current user profile by token
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    let gymName = null;
+    if (user.gymId) {
+      const gym = await Gym.findById(user.gymId);
+      if (gym) gymName = gym.gymName;
+    }
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      gymId: user.gymId,
+      gymName,
+      hasCompletedOnboarding: user.hasCompletedOnboarding,
+    });
+  } catch (err) {
+    console.error('GetMe error:', err);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
 module.exports = {
   register: exports.register,
   login: exports.login,
@@ -440,4 +503,6 @@ module.exports = {
   getUserDetailsForPlan,
   getDashboardStats: exports.getDashboardStats,
   getCategorizedMembers: exports.getCategorizedMembers,
+  updateProfile: exports.updateProfile,
+  getMe: exports.getMe,
 };
