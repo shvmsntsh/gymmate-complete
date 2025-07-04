@@ -115,9 +115,7 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
 
   bool operator ==(Object other) => other is SimpleLegendEntryLayout;
 
-  int get hashCode {
-    return Object.hash(runtimeType);
-  }
+  int get hashCode => runtimeType.hashCode;
 
   /// Convert the charts common TextStlyeSpec into a standard TextStyle, while
   /// reducing the color opacity to 26% if the entry is hidden.
@@ -132,7 +130,7 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
     if (isHidden) {
       // Use a default color for hidden legend entries if none is provided.
       color ??= Theme.of(context).textTheme.bodyMedium?.color;
-      color = color!.withValues(alpha: 0.26);
+      color = color!.withOpacity(0.26);
     }
 
     return new TextStyle(

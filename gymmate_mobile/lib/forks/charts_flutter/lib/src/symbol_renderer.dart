@@ -34,7 +34,7 @@ class SymbolRendererCanvas implements SymbolRendererBuilder {
   Widget build(BuildContext context,
       {Color? color, required Size size, bool enabled = true}) {
     if (color != null && !enabled) {
-      color = color.withValues(alpha: 0.26);
+      color = color.withOpacity(0.26);
     }
 
     return new SizedBox.fromSize(

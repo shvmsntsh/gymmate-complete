@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../main.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../widgets/animated_form_field.dart';
+import '../widgets/confetti_success.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -15,6 +18,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   bool _isSaving = false;
+  bool _showConfetti = false;
 
   @override
   void initState() {
@@ -61,9 +65,11 @@ class _ProfilePageState extends State<ProfilePage> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
       final authService = AuthService();
-      final result = await authService.updateProfile(name: name, email: email, token: token);
-      // Update provider
+      await authService.updateProfile(name: name, email: email, token: token);
       await authProvider.refreshUser();
+      setState(() => _showConfetti = true);
+      await Future.delayed(const Duration(milliseconds: 1800));
+      setState(() => _showConfetti = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
       );
@@ -83,229 +89,270 @@ class _ProfilePageState extends State<ProfilePage> {
     ).join(' ');
   }
 
+  static const List<String> allAvatars = [
+    'assets/avatars/o_m_1.png',
+    'assets/avatars/t_m_1.png',
+    'assets/avatars/m_m_1.png',
+    'assets/avatars/m_f_1.png',
+  ];
+
+  void _showAvatarPicker(BuildContext context, String userRole, String? currentAvatar, Function(String) onSelect) {
+    // Show all avatars from the avatars folder
+    final avatars = allAvatars;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).dialogBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Choose your avatar', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 20,
+                runSpacing: 20,
+                children: avatars.map((avatar) => GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onSelect(avatar);
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: avatar == currentAvatar ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                        width: 3,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: CircleAvatar(
+                      backgroundColor: Colors.grey[200],
+                      radius: 40,
+                      backgroundImage: AssetImage(avatar),
+                    ),
+                  ),
+                )).toList(),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final avatarPath = authProvider.avatarPath;
+    final userRole = authProvider.userRole ?? 'owner';
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                // Profile Header
-                Center(
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDark ? Colors.grey[850] : Colors.grey[200],
-                          border: Border.all(
-                            color: accentColor,
-                            width: 3,
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    // Animated Avatar with selection
+                    Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          _showAvatarPicker(context, userRole, avatarPath, (selected) async {
+                            await authProvider.setAvatarPath(selected);
+                            setState(() {});
+                          });
+                        },
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark ? Colors.grey[850] : Colors.grey[200],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ),
-                        child: Icon(
-                          Icons.person,
-                          size: 60,
-                          color: accentColor,
-                        ),
+                          child: avatarPath != null
+                              ? ClipOval(
+                                  child: Image.asset(
+                                    avatarPath,
+                                    fit: BoxFit.cover,
+                                    width: 120,
+                                    height: 120,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.person,
+                                  size: 72,
+                                  color: accentColor,
+                                ),
+                        ).animate().fadeIn(duration: 500.ms).scaleXY(begin: 0.8, end: 1.0, duration: 500.ms, curve: Curves.elasticOut),
                       ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-
-                // Profile Information Cards
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-                      width: 1,
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                Icons.person_outline,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: TextField(
-                                controller: _nameController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Full Name',
-                                  border: InputBorder.none,
-                                ),
-                                enabled: !_isSaving,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 32),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                Icons.email_outlined,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: TextField(
-                                controller: _emailController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Email',
-                                  border: InputBorder.none,
-                                ),
-                                keyboardType: TextInputType.emailAddress,
-                                enabled: !_isSaving,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 32),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                Icons.badge_outlined,
-                                color: Theme.of(context).colorScheme.primary,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: TextField(
-                                controller: TextEditingController(text: _formatRole(authProvider.userRole ?? '-')),
-                                decoration: const InputDecoration(
-                                  labelText: 'Role',
-                                  border: InputBorder.none,
-                                ),
-                                enabled: false,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    const SizedBox(height: 12),
+                    Center(
+                      child: Text(
+                        'Tap avatar to change',
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                      ),
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isSaving ? null : _saveProfile,
-                    icon: _isSaving ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save),
-                    label: const Text('Save'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.cyan,
-                      foregroundColor: Colors.white,
+                    const SizedBox(height: 24),
+                    // Animated Profile Card
+                    Card(
+                      elevation: 4,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      color: theme.colorScheme.surface,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AnimatedFormField(
+                              controller: _nameController,
+                              hintText: 'Full Name',
+                              enabled: !_isSaving,
+                              index: 0,
+                            ),
+                            const SizedBox(height: 16),
+                            AnimatedFormField(
+                              controller: _emailController,
+                              hintText: 'Email',
+                              keyboardType: TextInputType.emailAddress,
+                              enabled: !_isSaving,
+                              index: 1,
+                            ),
+                            const SizedBox(height: 16),
+                            AnimatedFormField(
+                              controller: TextEditingController(text: _formatRole(userRole)),
+                              hintText: 'Role',
+                              enabled: false,
+                              index: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ).animate().fadeIn(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, duration: 500.ms, delay: 200.ms),
+                    const SizedBox(height: 24),
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: GestureDetector(
+                        onTap: _isSaving ? null : _saveProfile,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.primary.withOpacity(0.2),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: _isSaving
+                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : Text(
+                                    'Save',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      color: theme.colorScheme.onPrimary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ).animate().shimmer(duration: 800.ms),
+                          ),
+                        ).animate().scaleXY(begin: 0.98, end: 1.0, duration: 200.ms, curve: Curves.easeOut),
                       ),
                     ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Logout Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isSaving
-                        ? null
-                        : () async {
-                            final confirmed = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Logout'),
-                                content: const Text('Are you sure you want to logout?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, false),
-                                    child: const Text('Cancel'),
+                    const SizedBox(height: 16),
+                    // Logout Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: GestureDetector(
+                        onTap: _isSaving
+                            ? null
+                            : () async {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Logout'),
+                                    content: const Text('Are you sure you want to logout?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Logout'),
+                                      ),
+                                    ],
                                   ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context, true),
-                                    child: const Text('Logout'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirmed == true) {
-                              await authProvider.logout();
-                              await AuthService.logout();
-                              if (context.mounted) {
-                                navigatorKey.currentState!.pushNamedAndRemoveUntil(
-                                  '/login',
-                                  (Route<dynamic> route) => false,
                                 );
-                              }
-                            }
-                          },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                                if (confirmed == true) {
+                                  await authProvider.logout();
+                                  await AuthService.logout();
+                                  if (context.mounted) {
+                                    navigatorKey.currentState!.pushNamedAndRemoveUntil(
+                                      '/login',
+                                      (Route<dynamic> route) => false,
+                                    );
+                                  }
+                                }
+                              },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.error,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: theme.colorScheme.error.withOpacity(0.15),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              'Logout',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.1, end: 0, duration: 400.ms, delay: 300.ms),
                       ),
                     ),
-                    icon: const Icon(Icons.logout),
-                    label: const Text(
-                      'Logout',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+          ConfettiSuccess(show: _showConfetti),
+        ],
       ),
     );
   }

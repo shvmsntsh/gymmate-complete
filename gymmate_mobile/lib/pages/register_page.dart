@@ -1,3 +1,5 @@
+// DEPRECATED: All login/signup logic is now handled in gamified_entry_screen.dart
+
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -7,6 +9,7 @@ import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
 import 'package:gymmate_mobile/main.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -143,132 +146,121 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text('Sign Up', style: theme.textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Create Account',
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Join TFT Gyms community!',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                     textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  _buildRoleSelector(theme),
-                  const SizedBox(height: 20),
-                  _buildTextFormField(
-                    controller: _nameController,
-                    labelText: 'Full Name',
-                    icon: Icons.person_outline,
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter your name' : null,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildTextFormField(
-                    controller: _emailController,
-                    labelText: 'Email',
-                    icon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value!.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  _buildTextFormField(
-                    controller: _passwordController,
-                    labelText: 'Password',
-                    icon: Icons.lock_outline,
-                    obscureText: _obscurePassword,
-                    isPassword: true,
-                    onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
-                    validator: (value) => value!.length < 6
-                        ? 'Password must be at least 6 characters'
-                        : null,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildTextFormField(
-                    controller: _confirmPasswordController,
-                    labelText: 'Confirm Password',
-                    icon: Icons.lock_outline,
-                    obscureText: _obscureConfirmPassword,
-                    isPassword: true,
-                    onToggleObscure: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                    validator: (value) => value != _passwordController.text
-                        ? 'Passwords do not match'
-                        : null,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildTextFormField(
-                    controller: _inviteCodeController,
-                    labelText: 'Invite Code',
-                    icon: Icons.qr_code_scanner,
-                    validator: (value) =>
-                        value!.isEmpty ? 'Please enter an invite code' : null,
-                  ),
-                  if (_selectedRole == 'gym_owner') ...[
-                    const SizedBox(height: 20),
-                    _buildTextFormField(
-                      controller: _gymNameController,
-                      labelText: 'Gym Name',
-                      icon: Icons.business_outlined,
-                      enabled: !_isSuperAdminCode,
-                      validator: (value) =>
-                          value!.isEmpty ? 'Please enter a gym name' : null,
-                    ),
-                  ],
-                  const SizedBox(height: 40),
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton(
-                          onPressed: _register,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextFormField(
+                              controller: _inviteCodeController,
+                              decoration: const InputDecoration(
+                                hintText: 'Invite Code',
+                              ),
+                              style: theme.textTheme.bodyLarge,
+                              validator: (value) => value == null || value.isEmpty ? 'Please enter an invite code' : null,
                             ),
-                          ),
-                          child: const Text('Register'),
+                            const SizedBox(height: 20),
+                            TextFormField(
+                              controller: _emailController,
+                              decoration: const InputDecoration(
+                                hintText: 'Email',
+                              ),
+                              style: theme.textTheme.bodyLarge,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your email';
+                                }
+                                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                  return 'Please enter a valid email';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                            TextFormField(
+                              controller: _passwordController,
+                              decoration: const InputDecoration(
+                                hintText: 'Password',
+                              ),
+                              style: theme.textTheme.bodyLarge,
+                              obscureText: true,
+                              validator: (value) => value == null || value.length < 6 ? 'Password must be at least 6 characters' : null,
+                            ),
+                            const SizedBox(height: 20),
+                            TextFormField(
+                              controller: _confirmPasswordController,
+                              decoration: const InputDecoration(
+                                hintText: 'Confirm Password',
+                              ),
+                              style: theme.textTheme.bodyLarge,
+                              obscureText: true,
+                              validator: (value) => value != _passwordController.text ? 'Passwords do not match' : null,
+                            ),
+                            const SizedBox(height: 20),
+                            Text('Role: Member', style: theme.textTheme.bodyLarge),
+                            const SizedBox(height: 32),
+                            _isLoading
+                                ? const Center(child: CircularProgressIndicator())
+                                : ElevatedButton(
+                                    onPressed: _register,
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                    child: const Text('Sign Up', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  ),
+                          ],
                         ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text("Already have an account?"),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                                builder: (context) => const LoginPage()),
-                          );
-                        },
-                        child: const Text('Log In'),
-                      ),
-                    ],
+                      ).animate().fadeIn(duration: 600.ms, curve: Curves.easeOut),
+                    ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 32),
+                Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
+                      );
+                    },
+                    child: Text(
+                      'Already have an account? Sign In',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -287,6 +279,7 @@ class _RegisterPageState extends State<RegisterPage> {
         children: [
           _buildRoleButton('gym_owner', 'Gym Owner', theme),
           _buildRoleButton('gym_member', 'Gym Member', theme),
+          _buildRoleButton('gym_trainer', 'Gym Trainer', theme),
         ],
       ),
     );

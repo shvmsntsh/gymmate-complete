@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../services/ai_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../api/api_config.dart';
@@ -356,7 +355,7 @@ class _PlanPageState extends State<PlanPage> {
         await prefs.remove('cached_plan_$onboardingHash');
       }
     }
-    _fetchPlan(forceRefresh: false);
+    _loadPlanFromBackend();
   }
 
   String _getOnboardingHash(Map<String, dynamic> userData) {
@@ -373,55 +372,64 @@ class _PlanPageState extends State<PlanPage> {
     return onboardingData.toString().hashCode.toString();
   }
 
-  Future<void> _fetchPlan({bool forceRefresh = false}) async {
+  Future<void> _loadPlanFromBackend() async {
     setState(() {
       _planLoading = true;
       _planError = false;
-      _usedFallback = false;
-      _aiError = null;
     });
     try {
-      final token = _authProvider?.token;
-      if (token == null) {
-        setState(() {
-          _planError = true;
-          _planLoading = false;
-        });
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
+      final userData = authProvider.userData;
+      if (token == null || userData == null) {
+        setState(() { _planError = true; _planLoading = false; });
         return;
       }
-      final userData = _authProvider?.userData;
-      final onboardingHash = _getOnboardingHash(userData!);
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/api/ai/generate-plan'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({ 'forceRefresh': forceRefresh }),
+      // Calculate BMI category
+      final profile = userData['profile'] ?? {};
+      final weight = (profile['weight'] as num?)?.toDouble() ?? 0.0;
+      final height = (profile['height'] as num?)?.toDouble() ?? 0.0;
+      double bmi = 0;
+      String bmiCategory = 'normal';
+      if (weight > 0 && height > 0) {
+        bmi = weight / ((height / 100) * (height / 100));
+        if (bmi < 18.5) bmiCategory = 'underweight';
+        else if (bmi < 25) bmiCategory = 'normal';
+        else if (bmi < 30) bmiCategory = 'overweight';
+        else bmiCategory = 'obese';
+      }
+      // Prepare query params
+      final goal = (userData['fitnessGoals'] as List?)?.isNotEmpty == true ? userData['fitnessGoals'][0] : 'general_fitness';
+      final dietType = userData['dietPreferences']?['type'] ?? 'flexible';
+      final workoutSplit = userData['workoutHabits']?['split'] ?? 'Full Body';
+      final day = DateFormat('EEEE').format(DateTime.now());
+      // Fetch meal plan
+      final mealRes = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/plans/meal?goal=$goal&dietType=$dietType&bmiCategory=$bmiCategory&day=$day'),
+        headers: { 'Authorization': 'Bearer $token' },
       );
-      if (response.statusCode != 200) {
+      // Fetch workout plan
+      final workoutRes = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/plans/workout?goal=$goal&workoutSplit=$workoutSplit&bmiCategory=$bmiCategory&day=$day'),
+        headers: { 'Authorization': 'Bearer $token' },
+      );
+      if (mealRes.statusCode == 200 && workoutRes.statusCode == 200) {
+        final mealPlan = json.decode(mealRes.body);
+        final workoutPlan = json.decode(workoutRes.body);
         setState(() {
-          _planError = true;
+          _plan = {
+            'meals': mealPlan['meals'],
+            'workout': workoutPlan,
+            'day': day,
+          };
           _planLoading = false;
+          _planError = false;
         });
-        return;
+      } else {
+        setState(() { _planError = true; _planLoading = false; });
       }
-      final data = json.decode(response.body);
-      setState(() {
-        _plan = data['plan'];
-        _usedFallback = data['_fallback'] == true;
-        _aiError = data['_aiError'];
-        _planLoading = false;
-        _planError = false;
-      });
-      // Cache plan
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('cached_plan_$onboardingHash', json.encode(_plan));
     } catch (e) {
-      setState(() {
-        _planError = true;
-        _planLoading = false;
-      });
+      setState(() { _planError = true; _planLoading = false; });
     }
   }
 
@@ -507,7 +515,7 @@ class _PlanPageState extends State<PlanPage> {
       _planLoading = true;
       _planError = false;
     });
-    await _fetchPlan(forceRefresh: true);
+    await _loadPlanFromBackend();
   }
 
   @override
@@ -596,6 +604,8 @@ class _PlanPageState extends State<PlanPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if ((plan?['usedFallback'] == true || plan?['fallback'] == true) && planReady)
+                        _fallbackBanner(colorScheme),
                       // 1. Overall Calorie Card
                       GestureDetector(
                         onTap: planReady ? _goToMealDetail : null,
@@ -866,6 +876,30 @@ class _PlanPageState extends State<PlanPage> {
       _saveCheckboxState();
     }
   }
+
+  Widget _fallbackBanner(ColorScheme colorScheme) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.primary, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'No exact plan found for your onboarding. Showing the closest match.',
+              style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // MealDetailPage implementation
@@ -977,7 +1011,7 @@ class _MealDetailPageState extends State<MealDetailPage> {
           const SizedBox(height: 16),
           ...['breakfast', 'lunch', 'snack', 'dinner'].map((mealType) {
             final m = meals[mealType] is Map ? meals[mealType] : <String, dynamic>{};
-            final items = m['items'] is List ? m['items'].whereType<String>().toList() : [];
+            final items = m['items'] is List ? List<Map<String, dynamic>>.from(m['items']) : <Map<String, dynamic>>[];
             return Card(
               color: colorScheme.surfaceVariant,
               margin: const EdgeInsets.symmetric(vertical: 8),
@@ -990,6 +1024,7 @@ class _MealDetailPageState extends State<MealDetailPage> {
                   children: [
                     Text(mealType[0].toUpperCase() + mealType.substring(1), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
                     ...List.generate(items.length, (i) {
+                      final item = items[i];
                       final key = '${widget.plan['day']}-meal-$mealType-$i';
                       final checked = _checkboxState[key] ?? false;
                       final qty = _mealItemQuantities[mealType]?[i] ?? 1.0;
@@ -1004,7 +1039,14 @@ class _MealDetailPageState extends State<MealDetailPage> {
                             },
                             activeColor: colorScheme.primary,
                           ),
-                          Expanded(child: Text(items[i], style: checked ? TextStyle(decoration: TextDecoration.lineThrough, color: colorScheme.secondary) : TextStyle(color: colorScheme.onSurface))),
+                          Expanded(child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item['name'] ?? '', style: checked ? TextStyle(decoration: TextDecoration.lineThrough, color: colorScheme.secondary) : TextStyle(color: colorScheme.onSurface)),
+                              Text(item['quantity'] ?? '', style: TextStyle(fontSize: 12, color: colorScheme.secondary)),
+                              Text('P: ${item['macros']?['protein'] ?? 0}g  C: ${item['macros']?['carbs'] ?? 0}g  F: ${item['macros']?['fats'] ?? 0}g', style: TextStyle(fontSize: 12, color: colorScheme.tertiary)),
+                            ],
+                          )),
                           SizedBox(
                             width: 60,
                             child: TextFormField(
@@ -1069,12 +1111,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
   @override
   Widget build(BuildContext context) {
     final workout = widget.plan['workout'] is Map ? widget.plan['workout'] : {};
-    final exercises = (workout['exercises'] is List) ? workout['exercises'].map(parseExercise).toList() : <Map<String, dynamic>>[];
-    final exerciseKeys = List.generate(exercises.length, (i) => '${widget.plan['day']}-workout-ex-$i');
-    final completed = exerciseKeys.where((k) => _exerciseChecked[k] == true).length;
-    final total = exerciseKeys.length > 0 ? exerciseKeys.length : 1;
-    final duration = workout['duration'] ?? 0;
-    final calories = workout['calories'] ?? 0;
+    final exercisesMap = (workout['exercises'] is Map) ? Map<String, dynamic>.from(workout['exercises']) : <String, dynamic>{};
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
@@ -1121,21 +1158,21 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     children: [
                       Chip(
                         avatar: Icon(Icons.timer, color: colorScheme.secondary, size: 18),
-                        label: Text('Duration: $duration min', style: TextStyle(color: colorScheme.secondary)),
+                        label: Text('Duration: ${workout['duration'] ?? 0} min', style: TextStyle(color: colorScheme.secondary)),
                         backgroundColor: colorScheme.surfaceVariant,
                         shape: StadiumBorder(side: BorderSide(color: colorScheme.secondary, width: 1)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                       ),
                       Chip(
                         avatar: Icon(Icons.local_fire_department, color: colorScheme.tertiary, size: 18),
-                        label: Text('Calories: $calories kcal', style: TextStyle(color: colorScheme.tertiary)),
+                        label: Text('Calories: ${workout['calories'] ?? 0} kcal', style: TextStyle(color: colorScheme.tertiary)),
                         backgroundColor: colorScheme.surfaceVariant,
                         shape: StadiumBorder(side: BorderSide(color: colorScheme.tertiary, width: 1)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                       ),
                       Chip(
                         avatar: Icon(Icons.check_circle, color: colorScheme.primary, size: 18),
-                        label: Text('$completed / $total done', style: TextStyle(color: colorScheme.primary)),
+                        label: Text('${_exerciseChecked.values.where((v) => v).length} / ${_exerciseChecked.length > 0 ? _exerciseChecked.length : 1} done', style: TextStyle(color: colorScheme.primary)),
                         backgroundColor: colorScheme.surfaceVariant,
                         shape: StadiumBorder(side: BorderSide(color: colorScheme.primary, width: 1)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
@@ -1145,50 +1182,57 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                   const SizedBox(height: 18),
                   Text('Exercises:', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
                   const SizedBox(height: 8),
-                  ...exercises.asMap().entries.map((entry) {
-                    final i = entry.key;
-                    final w = entry.value;
-                    final key = exerciseKeys[i];
-                    final checked = _exerciseChecked[key] ?? false;
-                    return Container(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: checked
-                            ? colorScheme.primary.withOpacity(0.13)
-                            : colorScheme.surfaceVariant,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: checked ? colorScheme.primary : colorScheme.outline.withOpacity(0.13),
-                          width: checked ? 1.5 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Checkbox(
-                            value: checked,
-                            onChanged: (val) {
-                              setState(() {
-                                _exerciseChecked[key] = val ?? false;
-                              });
-                            },
-                            activeColor: colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(w['name'] ?? '', style: TextStyle(fontWeight: FontWeight.w600, color: checked ? colorScheme.primary : colorScheme.onSurface)),
-                                const SizedBox(height: 2),
-                                Text('${w['sets']}x${w['reps']}, Rest: ${w['rest']}s', style: TextStyle(color: colorScheme.secondary)),
-                              ],
+                  ...exercisesMap.entries.expand((entry) {
+                    final group = entry.value;
+                    final groupName = group['muscleGroup'] ?? entry.key;
+                    final items = group['items'] is List ? List<Map<String, dynamic>>.from(group['items']) : <Map<String, dynamic>>[];
+                    return [
+                      Text(groupName, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.secondary)),
+                      ...List.generate(items.length, (i) {
+                        final ex = items[i];
+                        final key = '${widget.plan['day']}-workout-${entry.key}-$i';
+                        final checked = _exerciseChecked[key] ?? false;
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: checked
+                                ? colorScheme.primary.withOpacity(0.13)
+                                : colorScheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: checked ? colorScheme.primary : colorScheme.outline.withOpacity(0.13),
+                              width: checked ? 1.5 : 1,
                             ),
                           ),
-                        ],
-                      ),
-                    );
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Checkbox(
+                                value: checked,
+                                onChanged: (val) {
+                                  setState(() {
+                                    _exerciseChecked[key] = val ?? false;
+                                  });
+                                },
+                                activeColor: colorScheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(ex['name'] ?? '', style: TextStyle(fontWeight: FontWeight.w600, color: checked ? colorScheme.primary : colorScheme.onSurface)),
+                                    const SizedBox(height: 2),
+                                    Text('${ex['sets']}x${ex['reps']}, ${ex['muscleGroup']}', style: TextStyle(color: colorScheme.secondary)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ];
                   }),
                 ],
               ),

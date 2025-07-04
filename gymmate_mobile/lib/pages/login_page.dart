@@ -1,7 +1,10 @@
+// DEPRECATED: All login/signup logic is now handled in gamified_entry_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
 import 'package:gymmate_mobile/main.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -18,32 +21,25 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
-      print('Login form validation failed.');
       return;
     }
-
     setState(() {
       _isLoading = true;
     });
-
-    print('Attempting login for: ' + _emailController.text.trim());
     try {
       await Provider.of<AuthProvider>(context, listen: false).login(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
-      print('Login successful, waiting for UI to update.');
-      // No navigation here! The Consumer in main.dart will handle it.
     } catch (error) {
-      print('Login failed: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error.toString().replaceFirst("Exception: ", "Login failed: ")), 
             backgroundColor: Colors.red,
           ),
-          );
-        }
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -58,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-      }
+  }
 
   @override
   void didChangeDependencies() {
@@ -76,122 +72,137 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Logo and Title
-                  Icon(
-                    Icons.fitness_center,
-                    size: 80,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'TFT Gyms',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Illustration Card with animation
+                Padding(
+                  padding: const EdgeInsets.only(top: 32.0, left: 24.0, right: 24.0, bottom: 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFFB97C5A) : const Color(0xFFE6B89C),
+                      borderRadius: BorderRadius.circular(32),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Welcome back!',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Email Field
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: const Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                      child: Center(
+                        child: Image.asset(
+                          'assets/illustration.png',
+                          height: 180,
+                          fit: BoxFit.contain,
+                        ).animate().fadeIn(duration: 600.ms, curve: Curves.easeOut).slideY(begin: 0.2, end: 0, duration: 600.ms, curve: Curves.easeOut),
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
                   ),
-                  const SizedBox(height: 16),
-
-                  // Password Field
-                  TextFormField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Login Button
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                          child: const Text(
-                            'Login',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Register Link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                ),
+                const SizedBox(height: 32),
+                // Welcome Texts with animation
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Don't have an account? ",
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pushNamed('/register');
-                        },
-                        child: const Text('Register'),
-                      ),
+                        'Welcome back',
+                        style: theme.textTheme.displayLarge?.copyWith(fontWeight: FontWeight.bold),
+                      ).animate().fadeIn(duration: 500.ms, delay: 200.ms),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Log in to your account',
+                        style: theme.textTheme.bodyLarge,
+                      ).animate().fadeIn(duration: 500.ms, delay: 300.ms),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 32),
+                // Login Form with animation
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Email Field
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            hintText: 'Email',
+                          ),
+                          style: theme.textTheme.bodyLarge,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        // Password Field
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: const InputDecoration(
+                            hintText: 'Password',
+                          ),
+                          style: theme.textTheme.bodyLarge,
+                          obscureText: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 32),
+                        // Login Button
+                        _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : ElevatedButton(
+                                onPressed: _isLoading ? null : _login,
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Login',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                        const SizedBox(height: 32),
+                        // Register Link
+                        Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pushNamed('/register');
+                            },
+                            child: Text(
+                              "Don't have an account? Register",
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ).animate().fadeIn(duration: 600.ms, delay: 200.ms, curve: Curves.easeOut),
+                ),
+              ],
             ),
           ),
         ),

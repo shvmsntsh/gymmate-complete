@@ -36,24 +36,6 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
     });
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      isLoading = true;
-      error = null;
-    });
-    
-    _currentUser = await _authService.getUser();
-    if (_currentUser != null) {
-      // The backend endpoint for this doesn't exist yet.
-      // I will leave this blank for now.
-      // await fetchInviteCodes(); 
-    }
-    
-    setState(() {
-      isLoading = false;
-    });
-  }
-
   void _refreshList() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.isAuth) {
@@ -79,14 +61,37 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
 
     final isSuperadmin = authProvider.userRole == 'superadmin';
     final isGymOwner = authProvider.userRole == 'gym_owner';
-    final roleToGenerate = isSuperadmin ? 'gym_owner' : isGymOwner ? 'gym_member' : null;
+    String? roleToGenerate = isSuperadmin ? 'gym_owner' : null;
+    if (isGymOwner) {
+      // Prompt for member/trainer
+      roleToGenerate = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Invite Type'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text('Gym Member'),
+                onTap: () => Navigator.of(context).pop('gym_member'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.fitness_center),
+                title: const Text('Gym Trainer'),
+                onTap: () => Navigator.of(context).pop('gym_trainer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     if (roleToGenerate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You are not allowed to generate invite codes.')),
       );
       return;
     }
-
     try {
       final newCode = await _inviteService.generateInviteCode(roleToGenerate, authProvider.token!);
       developer.log('Generated code: ${newCode.code}', name: 'InviteCodeListPage');

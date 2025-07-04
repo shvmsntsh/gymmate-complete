@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../services/ai_service.dart';
 import '../providers/auth_provider.dart';
+import '../services/ai_service.dart';
 
 class CoachPage extends StatefulWidget {
   const CoachPage({Key? key}) : super(key: key);
@@ -25,9 +25,8 @@ class _CoachPageState extends State<CoachPage> {
     });
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      final aiService = AiService();
-      final reply = await aiService.coachChat(message: text, token: token);
+      final token = authProvider.token ?? '';
+      final reply = await AIService.sendMessage(message: text, token: token);
       setState(() {
         _messages.add(_ChatMessage(reply, false));
       });

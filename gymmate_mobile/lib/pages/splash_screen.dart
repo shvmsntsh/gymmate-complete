@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
+      backgroundColor: const Color(0xFF232112),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -53,10 +53,10 @@ class _SplashScreenState extends State<SplashScreen> {
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDarkMode ? Theme.of(context).primaryColor : Colors.grey[200],
+                color: const Color(0xFFF8D84B),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).primaryColor.withOpacity(0.3),
+                    color: const Color(0xFFF8D84B).withOpacity(0.3),
                     blurRadius: 20,
                     spreadRadius: 2,
                   ),
@@ -72,14 +72,15 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
             )
             .animate()
-            .scale(
-              delay: 300.ms,
+            .scaleXY(
+              begin: 0.8,
+              end: 1.0,
               duration: 800.ms,
               curve: Curves.elasticOut,
             ).then(duration: 500.ms)
             .shimmer(
               duration: 1200.ms,
-              color: Theme.of(context).primaryColor.withOpacity(0.5),
+              color: const Color(0xFFF8D84B).withOpacity(0.5),
             ),
             
             const SizedBox(height: 24),
@@ -91,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
-                color: Theme.of(context).textTheme.displayLarge?.color,
+                color: const Color(0xFFF8D84B),
               ),
             )
             .animate()

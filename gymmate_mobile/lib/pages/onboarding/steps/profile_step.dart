@@ -17,7 +17,6 @@ class ProfileStep extends StatelessWidget {
     final heightController = TextEditingController(text: provider.height > 0 ? provider.height.toString() : '');
     final weightController = TextEditingController(text: provider.weight > 0 ? provider.weight.toString() : '');
     final ageController = TextEditingController(text: provider.age > 0 ? provider.age.toString() : '');
-    String? selectedGender = provider.gender;
 
     return Consumer<OnboardingProvider>(
       builder: (context, provider, _) {
@@ -27,12 +26,12 @@ class ProfileStep extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'Let’s Begin With You',
+                "Let's Begin With You",
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
               Text(
-                'We’ll start by learning a few basics about you',
+                "We'll start by learning a few basics about you",
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 24),
@@ -96,7 +95,6 @@ class ProfileStep extends StatelessWidget {
                       isSelected: provider.gender == 'male',
                       onTap: () {
                         provider.setGender('male');
-                        selectedGender = 'male';
                       },
                     ),
                   ),
@@ -109,7 +107,6 @@ class ProfileStep extends StatelessWidget {
                       isSelected: provider.gender == 'female',
                       onTap: () {
                         provider.setGender('female');
-                        selectedGender = 'female';
                       },
                     ),
                   ),

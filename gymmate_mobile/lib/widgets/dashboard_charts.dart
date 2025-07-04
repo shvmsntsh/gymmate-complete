@@ -37,7 +37,7 @@ class DashboardChart extends StatelessWidget {
     final series = [
       charts.Series<ChartData, String>(
         id: 'Weekly Check-ins',
-        colorFn: (_, __) => charts.MaterialPalette.blue.shadeDefault,
+        colorFn: (_, __) => charts.ColorUtil.fromDartColor(Colors.amber.shade400),
         domainFn: (ChartData data, _) => data.day,
         measureFn: (ChartData data, _) => data.count,
         data: gymData,
@@ -53,34 +53,12 @@ class DashboardChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      color: Theme.of(context).cardColor.withOpacity(0.95),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            const Divider(thickness: 1.2),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 220,
-              child: charts.BarChart(
-                seriesList,
-                animate: animate,
-                animationDuration: const Duration(milliseconds: 600),
-              ),
-            ),
-          ],
-        ),
+    return SizedBox(
+      height: 180,
+      child: charts.BarChart(
+        seriesList,
+        animate: animate,
+        animationDuration: const Duration(milliseconds: 600),
       ),
     );
   }
@@ -97,7 +75,7 @@ class DashboardChart extends StatelessWidget {
     return [
       charts.Series<ChartData, String>(
         id: 'Members by Activity',
-        colorFn: (_, __) => charts.MaterialPalette.purple.shadeDefault,
+        colorFn: (_, __) => charts.ColorUtil.fromDartColor(Colors.amber.shade400),
         domainFn: (ChartData data, _) => data.day,
         measureFn: (ChartData data, _) => data.count,
         data: data,

@@ -13,6 +13,7 @@ class AuthProvider with ChangeNotifier {
   String? _gymName;
   bool? _hasCompletedOnboarding;
   Map<String, dynamic>? _userData;
+  String? _avatarPath;
 
   final _storage = const FlutterSecureStorage();
 
@@ -25,6 +26,7 @@ class AuthProvider with ChangeNotifier {
   String? get gymName => _gymName;
   bool get hasCompletedOnboarding => _hasCompletedOnboarding ?? false;
   Map<String, dynamic>? get userData => _userData;
+  String? get avatarPath => _avatarPath;
 
   Future<bool> login(String email, String password) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
@@ -53,6 +55,7 @@ class AuthProvider with ChangeNotifier {
       _userEmail = user['email'];
       _gymName = user['gymName'];
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
+      _avatarPath = user['avatarPath'] ?? _defaultAvatarForRole(_userRole);
 
       await _storage.write(key: 'user_token', value: _token);
       await _storage.write(key: 'user_data', value: json.encode(_userData));
@@ -62,6 +65,7 @@ class AuthProvider with ChangeNotifier {
       await _storage.write(key: 'user_email', value: _userEmail);
       await _storage.write(key: 'gym_name', value: _gymName);
       await _storage.write(key: 'has_completed_onboarding', value: _hasCompletedOnboarding.toString());
+      await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
       
       print('🔒 [AuthProvider] Login successful, token stored. Notifying listeners.');
       notifyListeners();
@@ -93,6 +97,7 @@ class AuthProvider with ChangeNotifier {
     _userEmail = await _storage.read(key: 'user_email');
     _gymName = await _storage.read(key: 'gym_name');
     _hasCompletedOnboarding = (await _storage.read(key: 'has_completed_onboarding')) == 'true';
+    _avatarPath = await _storage.read(key: 'avatar_path') ?? _defaultAvatarForRole(_userRole);
 
     print('🔄 [AuthProvider] Token found, auto-login successful. Notifying listeners.');
     notifyListeners();
@@ -141,6 +146,11 @@ class AuthProvider with ChangeNotifier {
 
       // Registration successful, now log in
       final loginSuccess = await login(registrationData['email'], registrationData['password']);
+      if (loginSuccess) {
+        // Set default avatar for role
+        _avatarPath = _defaultAvatarForRole(_userRole);
+        await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
+      }
       return loginSuccess;
     } catch (e) {
       print('🔑 [AuthProvider] Registration error: $e');
@@ -173,6 +183,7 @@ class AuthProvider with ChangeNotifier {
         _userEmail = user['email'];
         _gymName = user['gymName'];
         _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
+        _avatarPath = user['avatarPath'] ?? await _storage.read(key: 'avatar_path') ?? _defaultAvatarForRole(_userRole);
         await _storage.write(key: 'user_data', value: json.encode(_userData));
         await _storage.write(key: 'user_id', value: _userId);
         await _storage.write(key: 'user_role', value: _userRole);
@@ -180,6 +191,7 @@ class AuthProvider with ChangeNotifier {
         await _storage.write(key: 'user_email', value: _userEmail);
         await _storage.write(key: 'gym_name', value: _gymName);
         await _storage.write(key: 'has_completed_onboarding', value: _hasCompletedOnboarding.toString());
+        await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
         notifyListeners();
       } else {
         print('Failed to refresh user: ${response.body}');
@@ -187,5 +199,29 @@ class AuthProvider with ChangeNotifier {
     } catch (e) {
       print('Error refreshing user: $e');
     }
+  }
+
+  String _defaultAvatarForRole(String? role) {
+    switch (role) {
+      case 'superadmin':
+        return 'assets/logos/superadmin_logo.png';
+      case 'gym_owner':
+      case 'owner':
+        return 'assets/avatars/o_m_1.png';
+      case 'gym_trainer':
+      case 'trainer':
+        return 'assets/avatars/t_m_1.png';
+      case 'gym_member':
+      case 'member':
+        return 'assets/avatars/m_m_1.png';
+      default:
+        return 'assets/avatars/o_m_1.png';
+    }
+  }
+
+  Future<void> setAvatarPath(String path) async {
+    _avatarPath = path;
+    await _storage.write(key: 'avatar_path', value: path);
+    notifyListeners();
   }
 } 

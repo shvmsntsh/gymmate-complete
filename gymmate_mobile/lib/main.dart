@@ -11,12 +11,17 @@ import 'package:gymmate_mobile/pages/invite_code_list_page.dart';
 import 'package:gymmate_mobile/pages/profile_page.dart';
 import 'package:gymmate_mobile/pages/gym_owner_dashboard_page.dart';
 import 'package:gymmate_mobile/pages/gym_member_dashboard_page.dart';
-import 'theme.dart';
+import 'package:gymmate_mobile/themes/app_theme.dart';
 import 'package:gymmate_mobile/services/auth_service.dart';
 import 'package:gymmate_mobile/main.dart';
 import 'pages/progress_page.dart';
 import 'pages/plan_page.dart';
 import 'pages/coach_page.dart';
+import 'pages/gym_trainer_dashboard_page.dart';
+import 'pages/trainees_list_page.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'pages/gamified_entry_screen.dart';
+import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -49,10 +54,10 @@ class MyApp extends StatelessWidget {
           darkTheme: AppTheme.darkTheme,
           themeMode: ThemeMode.system,
           debugShowCheckedModeBanner: false,
-          home: authProvider.isAuth ? const MainNavigationScaffold() : const LoginPage(),
+          home: authProvider.isAuth ? const MainNavigationScaffold() : const GamifiedEntryScreen(),
           routes: {
-            '/login': (context) => const LoginPage(),
-            '/register': (context) => const RegisterPage(),
+            // '/login': (context) => const LoginPage(),
+            // '/register': (context) => const RegisterPage(),
             '/onboarding': (context) => const OnboardingFlow(),
           },
         );
@@ -106,6 +111,28 @@ class MainNavigationScaffold extends StatefulWidget {
 class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   int _selectedIndex = 0;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reset index if out of range (e.g., after logout or role change)
+    final authProvider = Provider.of<AuthProvider>(context);
+    final userRole = authProvider.userData?['role'] as String? ?? '';
+    final isGymMember = userRole == 'gym_member';
+    int maxIndex = 0;
+    if (isGymMember) {
+      maxIndex = 4; // Dashboard, Progress, Plan, Coach, Profile
+    } else if (userRole == 'gym_trainer') {
+      maxIndex = 2; // Dashboard, Trainees, Profile
+    } else {
+      maxIndex = 2; // Dashboard, Invites, Profile
+    }
+    if (_selectedIndex > maxIndex) {
+      setState(() {
+        _selectedIndex = 0;
+      });
+    }
+  }
+
   String _getPageTitle(int index) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userRole = authProvider.userData?['role'] as String? ?? '';
@@ -123,34 +150,73 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     }
   }
 
-  Widget _getDashboardForRole(String? role) {
-    if (role == null) {
-      // Still loading user info, show spinner
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
-    // For gym_member, check onboarding status
-    if (role == 'gym_member' && !authProvider.hasCompletedOnboarding) {
-      print('[NAV] New gym member detected, showing onboarding flow');
-      return const OnboardingFlow();
-    }
-
-    switch (role) {
+  Widget _buildRoleLogoAndSignature(String userRole, BuildContext context) {
+    String asset = '';
+    String label = '';
+    switch (userRole) {
       case 'superadmin':
-        print('[NAV] Showing Superadmin Dashboard');
-        return const AdminDashboardPage();
+        asset = 'assets/logos/superadmin_logo.png';
+        label = 'Superadmin';
+        break;
       case 'gym_owner':
-        print('[NAV] Showing Gym Owner Dashboard');
-        return const GymOwnerDashboardPage();
+      case 'owner':
+        asset = 'assets/logos/owner_logo.png';
+        label = 'Owner';
+        break;
+      case 'gym_trainer':
+      case 'trainer':
+        asset = 'assets/logos/trainer_logo.png';
+        label = 'Trainer';
+        break;
       case 'gym_member':
-        print('[NAV] Showing Gym Member Dashboard');
-        return const GymMemberDashboardPage();
+      case 'member':
+        asset = 'assets/logos/member_logo_m.png';
+        label = 'Member';
+        break;
       default:
-        print('[NAV] Unknown role, showing fallback');
-        return const Center(child: Text('Unknown role'));
+        asset = 'assets/logos/owner_logo.png';
+        label = 'User';
     }
+    final theme = Theme.of(context);
+    final textColor = theme.brightness == Brightness.dark ? Colors.white : Colors.black87;
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, top: 4, bottom: 4),
+      child: SizedBox(
+        height: 48,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Image.asset(
+                asset,
+                height: 44,
+                fit: BoxFit.contain,
+              ),
+            ),
+            Positioned(
+              left: 6,
+              bottom: -6, // Overlap about 10% of the logo
+              child: Text(
+                label,
+                style: GoogleFonts.pacifico(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 4,
+                      color: theme.brightness == Brightness.dark ? Colors.black54 : Colors.white54,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -169,6 +235,8 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         const GymMemberDashboardPage()
       else if (userRole == 'gym_owner')
         const GymOwnerDashboardPage()
+      else if (userRole == 'gym_trainer')
+        const GymTrainerDashboardPage()
       else
         const AdminDashboardPage(),
     ];
@@ -186,6 +254,12 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       items.add(const BottomNavigationBarItem(
         icon: Icon(Icons.show_chart),
         label: 'Progress',
+      ));
+    } else if (userRole == 'gym_trainer') {
+      pages.add(const TraineesListPage());
+      items.add(const BottomNavigationBarItem(
+        icon: Icon(Icons.people),
+        label: 'Trainees',
       ));
     } else {
       pages.add(const InviteCodeListPage());
@@ -217,31 +291,93 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       label: 'Profile',
     ));
 
+    // Guard: Ensure _selectedIndex is in range
+    final safeIndex = (_selectedIndex < pages.length) ? _selectedIndex : 0;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getPageTitle(_selectedIndex)),
+        centerTitle: false,
+        titleSpacing: 0,
+        title: _buildRoleLogoAndSignature(userRole, context),
       ),
-      body: pages[_selectedIndex],
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          canvasColor: const Color(0xFF2C2C2E),
+      body: pages[safeIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF282828),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        child: SalomonBottomBar(
+          currentIndex: safeIndex,
           onTap: (index) {
             setState(() {
               _selectedIndex = index;
             });
           },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: const Color(0xFF2C2C2E),
-          selectedItemColor: Colors.cyan,
-          unselectedItemColor: Colors.white54,
-          items: items,
+          items: [
+            SalomonBottomBarItem(
+              icon: const Icon(Icons.dashboard),
+              title: const Text('Dashboard'),
+              selectedColor: Colors.cyanAccent.shade400,
+              unselectedColor: Colors.white70,
+            ),
+            if (isGymMember)
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.show_chart),
+                title: const Text('Progress'),
+                selectedColor: Colors.amber.shade400,
+                unselectedColor: Colors.white70,
+              )
+            else if (userRole == 'gym_trainer')
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.people),
+                title: const Text('Trainees'),
+                selectedColor: Colors.purpleAccent.shade100,
+                unselectedColor: Colors.white70,
+              )
+            else
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.vpn_key),
+                title: const Text('Invites'),
+                selectedColor: Colors.greenAccent.shade400,
+                unselectedColor: Colors.white70,
+              ),
+            if (isGymMember)
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.calendar_today),
+                title: const Text('Plan'),
+                selectedColor: Colors.blueAccent.shade200,
+                unselectedColor: Colors.white70,
+              ),
+            if (isGymMember)
+              SalomonBottomBarItem(
+                icon: const Icon(Icons.sports_gymnastics),
+                title: const Text('Coach'),
+                selectedColor: Colors.deepOrangeAccent.shade200,
+                unselectedColor: Colors.white70,
+              ),
+            SalomonBottomBarItem(
+              icon: const Icon(Icons.person),
+              title: const Text('Profile'),
+              selectedColor: Colors.tealAccent.shade400,
+              unselectedColor: Colors.white70,
+            ),
+          ],
+          backgroundColor: Colors.transparent,
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+          duration: const Duration(milliseconds: 400),
         ),
       ),
     );
   }
-}
-
-// Using the ProfilePage from pages/profile_page.dart 
+} 
