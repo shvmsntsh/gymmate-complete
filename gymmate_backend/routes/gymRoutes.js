@@ -356,5 +356,15 @@ router.put('/onboarding', authenticateToken, async (req, res) => {
   }
 });
 
+// POST /api/gym/check-name - Check if a gym name already exists
+router.post('/check-name', async (req, res) => {
+  const { gymName } = req.body;
+  if (!gymName) {
+    return res.status(400).json({ exists: false, message: 'Gym name is required' });
+  }
+  const existing = await Gym.findOne({ gymName: gymName.trim() });
+  res.status(200).json({ exists: !!existing });
+});
+
 // Export the router to be mounted in the main app under '/api/gym'
 module.exports = router;

@@ -96,6 +96,16 @@ router.post('/validate', async (req, res) => {
       console.error('❌ Invite code already used:', code);
       return res.status(400).json({ error: 'Invite code already used.' });
     }
+    // For gym_owner, allow gymId to be null (gym will be created on registration)
+    if (invite.role === 'gym_owner') {
+      return res.status(200).json({
+        message: 'Valid invite code.',
+        role: invite.role,
+        gym: null,
+        gymId: null
+      });
+    }
+    // For member/trainer, require gymId and gym to exist
     if (!invite.gymId) {
       console.error('❌ Invite code does not reference a valid gym:', code);
       return res.status(400).json({ error: 'Invite code does not reference a valid gym.' });

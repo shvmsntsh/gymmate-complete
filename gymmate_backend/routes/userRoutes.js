@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User'); // Adjust path if needed
 const { authenticateToken } = require('../middleware/authMiddleware');
-const { updateProfile, getMe } = require('../controllers/userController');
+const { updateProfile, getMe, getGymMembers } = require('../controllers/userController');
 
 // Register a new gym member
 router.post('/register-member', async (req, res) => {
@@ -34,5 +34,18 @@ router.put('/profile', authenticateToken, updateProfile);
 
 // Get current user profile
 router.get('/me', authenticateToken, getMe);
+
+// Get all gym members for the trainer's gym
+router.get('/gym-members', authenticateToken, getGymMembers);
+
+// Get user count (for superadmin registration logic)
+router.get('/count', async (req, res) => {
+  try {
+    const count = await User.countDocuments();
+    res.status(200).json({ count });
+  } catch (err) {
+    res.status(500).json({ message: 'Error getting user count', error: err.message });
+  }
+});
 
 module.exports = router;

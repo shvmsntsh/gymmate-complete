@@ -23,16 +23,17 @@ const userSchema = new mongoose.Schema({
   // 'admin' = central builder's office (admin)
   // 'gym_owner' = society secretary (manages one gym)
   // 'gym_member' = flat owner (can only see own record)
+  // 'gym_trainer' = trainer (can edit/view plans for members in their gym)
   role: {
     type: String,
-    enum: ['superadmin', 'admin', 'gym_owner', 'gym_member'],
+    enum: ['superadmin', 'admin', 'gym_owner', 'gym_member', 'gym_trainer'],
     default: 'gym_owner',
   },
-  // Reference to associated Gym (only for gym_owner and gym_member)
+  // Reference to associated Gym (for gym_owner, gym_member, gym_trainer)
   gymId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Gym',
-    required: function() { return this.role === 'gym_member'; }
+    required: function() { return this.role === 'gym_member' || this.role === 'gym_trainer'; }
   },
   // Date the user joined
   joinDate: {
@@ -182,7 +183,10 @@ const userSchema = new mongoose.Schema({
     required: function() {
       return this.role === 'gym_member';
     }
-  }
+  },
+  // Trainer/owner custom plan overrides
+  customMealPlan: { type: Object, default: null },
+  customWorkoutPlan: { type: Object, default: null },
 }, { timestamps: true });
 
 // Hash password before saving

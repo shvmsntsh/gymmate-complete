@@ -10,7 +10,7 @@ exports.listInviteCodes = async (req, res) => {
     let filter = {};
 
     if (req.user.role === 'gym_owner') {
-      filter = { gymId: req.user.gymId, role: 'gym_member' };
+      filter = { gymId: req.user.gymId, role: { $in: ['gym_member', 'gym_trainer'] } };
     } else if (req.user.role === 'superadmin') {
       filter = {}; // show all codes
     } else {
@@ -32,12 +32,17 @@ exports.listInviteCodes = async (req, res) => {
 // Generate invite code (for gym_owner or superadmin)
 exports.generateInviteCode = async (req, res) => {
   console.log('🔔 Invite code generation attempt by:', req.user.email);
+  console.log('📥 Full request body:', req.body);
   try {
     const { roleToGenerate } = req.body;
     const currentUser = req.user;
 
     console.log('Requesting user role:', currentUser.role);
     console.log('Role to generate:', roleToGenerate);
+    console.log('Type of roleToGenerate:', typeof roleToGenerate);
+    if (roleToGenerate && typeof roleToGenerate === 'string') {
+      console.log('roleToGenerate value (string):', roleToGenerate, '| length:', roleToGenerate.length, '| chars:', roleToGenerate.split('').join(','));
+    }
 
     if (!roleToGenerate) {
       return res.status(400).json({ message: 'roleToGenerate is required' });
@@ -46,12 +51,14 @@ exports.generateInviteCode = async (req, res) => {
     // Superadmin can only create gym_owner codes
     if (currentUser.role === 'superadmin' && roleToGenerate !== 'gym_owner') {
       return res.status(403).json({ message: 'Superadmin can only generate codes for gym_owner' });
-      }
+    }
 
-    // Gym owner can only create gym_member codes
-    if (currentUser.role === 'gym_owner' && roleToGenerate !== 'gym_member') {
-      return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member' });
-      }
+    // Gym owner can only create gym_member or gym_trainer codes
+    const normalizedRole = typeof roleToGenerate === 'string' ? roleToGenerate.trim().toLowerCase() : '';
+    console.log('Normalized roleToGenerate:', normalizedRole);
+    if (currentUser.role === 'gym_owner' && !['gym_member', 'gym_trainer'].includes(normalizedRole)) {
+      return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member or gym_trainer' });
+    }
     
     // For a gym_owner creating an invite, we need their gymId
     let gymId = null;
@@ -72,7 +79,7 @@ exports.generateInviteCode = async (req, res) => {
     
     const invite = new InviteCode({
       code,
-      role: roleToGenerate,
+      role: normalizedRole,
       gymId: gymId,
       gymName: gymName,
       createdBy: currentUser.id

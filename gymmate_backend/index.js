@@ -8,6 +8,7 @@ const inviteRoutes = require('./routes/inviteRoutes');
 const onboardingRoutes = require('./routes/onboardingRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const userRoutes = require('./routes/userRoutes');
+const planRoutes = require('./routes/planRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -29,6 +30,7 @@ app.use('/api/invite', inviteRoutes);
 app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/plans', planRoutes);
 console.log('✅ Routes mounted.');
 
 // Start the server

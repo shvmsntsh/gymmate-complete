@@ -1,0 +1,8738 @@
+[
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "muscle_gain",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "fat_loss",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "PPL",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Deadlift",
+        "sets": 3,
+        "reps": 8,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Bench Press",
+        "sets": 4,
+        "reps": 8,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Barbell Squat",
+        "sets": 4,
+        "reps": 10,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Bro Split",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Lateral Raise",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Bicep Curl",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      },
+      {
+        "name": "Tricep Pushdown",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "arms"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Bodyweight Squats",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "legs"
+      },
+      {
+        "name": "Push Ups",
+        "sets": 3,
+        "reps": 15,
+        "muscleGroup": "chest"
+      },
+      {
+        "name": "Burpees",
+        "sets": 4,
+        "reps": 20,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "underweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "normal",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "overweight",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Monday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Tuesday",
+    "exercises": [
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Wednesday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Thursday",
+    "exercises": [
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Friday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Saturday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  },
+  {
+    "goal": "general_fitness",
+    "workoutSplit": "Full Body",
+    "bmiCategory": "obese",
+    "day": "Sunday",
+    "exercises": [
+      {
+        "name": "Pull Ups",
+        "sets": 3,
+        "reps": 10,
+        "muscleGroup": "back"
+      },
+      {
+        "name": "Shoulder Press",
+        "sets": 3,
+        "reps": 12,
+        "muscleGroup": "shoulders"
+      },
+      {
+        "name": "Mountain Climbers",
+        "sets": 4,
+        "reps": 30,
+        "muscleGroup": "cardio"
+      }
+    ]
+  }
+]

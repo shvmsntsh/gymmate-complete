@@ -28,4 +28,15 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-module.exports = { authenticateToken };
+// Alias for compatibility with route files
+const protect = authenticateToken;
+
+// Role-based access control middleware
+const requireRole = (roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ message: 'Forbidden: insufficient role' });
+  }
+  next();
+};
+
+module.exports = { authenticateToken, protect, requireRole };

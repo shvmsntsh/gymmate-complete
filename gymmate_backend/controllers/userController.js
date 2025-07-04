@@ -493,6 +493,27 @@ exports.getMe = async (req, res) => {
   }
 };
 
+// Get all gym members for the trainer's gym
+exports.getGymMembers = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user || !user.gymId) {
+      return res.status(400).json({ message: 'User or gymId missing.' });
+    }
+    if (!['gym_trainer', 'gym_owner'].includes(user.role)) {
+      return res.status(403).json({ message: 'Forbidden: Only trainers or owners can view gym members.' });
+    }
+    const members = await require('../models/User').find({
+      gymId: user.gymId,
+      role: 'gym_member',
+    }).select('name email _id');
+    res.status(200).json({ members });
+  } catch (err) {
+    console.error('❌ Error fetching gym members:', err);
+    res.status(500).json({ message: 'Server error fetching gym members.' });
+  }
+};
+
 module.exports = {
   register: exports.register,
   login: exports.login,
@@ -505,4 +526,5 @@ module.exports = {
   getCategorizedMembers: exports.getCategorizedMembers,
   updateProfile: exports.updateProfile,
   getMe: exports.getMe,
+  getGymMembers: exports.getGymMembers,
 };
