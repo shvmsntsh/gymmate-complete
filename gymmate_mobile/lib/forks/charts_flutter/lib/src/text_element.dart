@@ -138,17 +138,17 @@ class TextElement implements common.TextElement {
     _opacity ??= 1.0;
     var color = (textStyle == null || textStyle!.color == null)
         ? null
-        : new Color.fromARGB(
+        : Color.fromARGB(
             (textStyle!.color!.a * _opacity!).round(),
             textStyle!.color!.r,
             textStyle!.color!.g,
             textStyle!.color!.b,
           );
 
-    _textPainter = new TextPainter(
-        text: new TextSpan(
+    _textPainter = TextPainter(
+        text: TextSpan(
             text: text,
-            style: new TextStyle(
+            style: TextStyle(
                 color: color,
                 fontSize: textStyle?.fontSize?.toDouble(),
                 fontFamily: textStyle?.fontFamily,
@@ -176,7 +176,7 @@ class TextElement implements common.TextElement {
     // The font reports a size larger than the drawn size, which makes it
     // difficult to shift the text around to get it to visually line up
     // vertically with other components.
-    _measurement = new common.TextMeasurement(
+    _measurement = common.TextMeasurement(
         horizontalSliceWidth: _textPainter.width,
         verticalSliceWidth: _textPainter.height * 0.70,
         baseline: baseline);

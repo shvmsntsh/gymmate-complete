@@ -65,29 +65,71 @@ router.post('/register', async (req, res) => {
 
 // POST /api/invite/validate - Validate an invite code
 router.post('/validate', async (req, res) => {
-  const { code } = req.body;
+  let { code } = req.body;
+  console.log('[DEBUG] /api/invite/validate incoming code:', code);
   if (!code) {
     console.error('❌ Invite code is required');
     return res.status(400).json({ error: 'Invite code is required.' });
   }
-
-  // Handle the special superadmin code "123456"
-  if (code === '123456') {
-    const userCount = await User.countDocuments();
-    if (userCount > 0) {
-      console.error('❌ Superadmin already exists.');
-      return res.status(400).json({ error: 'Superadmin already exists.' });
+  code = code.trim().toUpperCase();
+  console.log('[DEBUG] Normalized code:', code);
+  try {
+    const invite = await InviteCode.findOne({ code });
+    console.log('[DEBUG] Invite lookup result:', invite);
+    if (!invite) {
+      console.error('❌ Invalid invite code:', code);
+      return res.status(400).json({ error: 'Invalid invite code.' });
     }
+    if (invite.used) {
+      console.error('❌ Invite code already used:', code);
+      return res.status(400).json({ error: 'Invite code already used.' });
+    }
+    // For gym_owner, allow gymId to be null (gym will be created on registration)
+    if (invite.role === 'gym_owner') {
     return res.status(200).json({
-      message: 'Valid superadmin invite code.',
-      role: 'superadmin',
+        message: 'Valid invite code.',
+        role: invite.role,
       gym: null,
       gymId: null
     });
   }
+    // For member/trainer, require gymId and gym to exist
+    if (!invite.gymId) {
+      console.error('❌ Invite code does not reference a valid gym:', code);
+      return res.status(400).json({ error: 'Invite code does not reference a valid gym.' });
+    }
+    const gym = await Gym.findById(invite.gymId);
+    if (!gym) {
+      console.error('❌ Gym not found for invite code:', code, 'with gymId:', invite.gymId);
+      return res.status(400).json({ error: 'Gym not found for this invite code.' });
+    }
+    console.log('✅ Invite code validated:', code, 'for gym:', gym.gymName);
+    res.status(200).json({
+      message: 'Valid invite code.',
+      role: invite.role,
+      gym: { gymName: gym.gymName, _id: gym._id },
+      gymId: gym._id
+    });
+  } catch (err) {
+    console.error('❌ Error validating invite code:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
+// POST /api/invite/verify - Alias for /validate
+router.post('/verify', async (req, res) => {
+  // Call the same logic as /validate
+  let { code } = req.body;
+  console.log('[DEBUG] /api/invite/verify incoming code:', code);
+  if (!code) {
+    console.error('❌ Invite code is required');
+    return res.status(400).json({ error: 'Invite code is required.' });
+  }
+  code = code.trim().toUpperCase();
+  console.log('[DEBUG] Normalized code:', code);
   try {
     const invite = await InviteCode.findOne({ code });
+    console.log('[DEBUG] Invite lookup result:', invite);
     if (!invite) {
       console.error('❌ Invalid invite code:', code);
       return res.status(400).json({ error: 'Invalid invite code.' });

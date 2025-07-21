@@ -27,7 +27,7 @@ class SelectionModelConfig<D> {
   /// Listens anytime update selection is called.
   final common.SelectionModelListener<D>? updatedListener;
 
-  SelectionModelConfig(
+  const SelectionModelConfig(
       {this.type = common.SelectionModelType.info,
       this.changedListener,
       this.updatedListener});

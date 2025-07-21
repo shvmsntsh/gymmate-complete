@@ -6,6 +6,7 @@ const userController = require('../controllers/userController');
 // Public routes
 router.post('/register', userController.register);
 router.post('/login', userController.login);
+router.post('/quick-login', userController.quickLogin);
 
 // Protected routes - All routes below this line require a valid token
 router.use(authenticateToken);

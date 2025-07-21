@@ -549,7 +549,9 @@ const completeOnboarding = async (req, res) => {
       user.onboardingProgress.stepsCompleted.push(7);
     }
 
-    user.hasCompletedOnboarding = true;
+    if (user.role === 'gym_member') {
+      user.hasCompletedOnboarding = true;
+    }
 
     const xpAwarded = XP_REWARDS.step_7_completion;
     await awardXP(user, xpAwarded);

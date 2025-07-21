@@ -40,7 +40,7 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
       TappableLegend legend, bool isHidden) {
     // TODO: Consider allowing scaling the size for the symbol.
     // A custom symbol renderer can ignore this size and use their own.
-    final materialSymbolSize = new Size(12.0, 12.0);
+    const materialSymbolSize = Size(12.0, 12.0);
 
     final entryColor = legendEntry.color;
     final color = entryColor == null ? null : ColorUtil.toDartColor(entryColor);
@@ -49,17 +49,17 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
     final SymbolRendererBuilder symbolRendererBuilder =
         legendEntry.symbolRenderer! is SymbolRendererBuilder
             ? legendEntry.symbolRenderer! as SymbolRendererBuilder
-            : new SymbolRendererCanvas(
+            : SymbolRendererCanvas(
                 legendEntry.symbolRenderer!, legendEntry.dashPattern);
 
-    return new GestureDetector(
+    return GestureDetector(
+        onTapUp: makeTapUpCallback(context, legendEntry, legend),
         child: symbolRendererBuilder.build(
           context,
           size: materialSymbolSize,
           color: color,
           enabled: !isHidden,
-        ),
-        onTapUp: makeTapUpCallback(context, legendEntry, legend));
+        ));
   }
 
   Widget createLabel(BuildContext context, common.LegendEntry legendEntry,
@@ -67,16 +67,16 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
     TextStyle style =
         _convertTextStyle(isHidden, context, legendEntry.textStyle);
 
-    return new GestureDetector(
-        child: new Text(legendEntry.label, style: style),
-        onTapUp: makeTapUpCallback(context, legendEntry, legend));
+    return GestureDetector(
+        onTapUp: makeTapUpCallback(context, legendEntry, legend),
+        child: Text(legendEntry.label, style: style));
   }
 
   Widget createMeasureValue(BuildContext context,
       common.LegendEntry legendEntry, TappableLegend legend, bool isHidden) {
-    return new GestureDetector(
-        child: new Text(legendEntry.formattedValue!),
-        onTapUp: makeTapUpCallback(context, legendEntry, legend));
+    return GestureDetector(
+        onTapUp: makeTapUpCallback(context, legendEntry, legend),
+        child: Text(legendEntry.formattedValue!));
   }
 
   @override
@@ -86,7 +86,7 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
     final rowChildren = <Widget>[];
 
     // TODO: Allow setting to configure the padding.
-    final padding = new EdgeInsets.only(right: 8.0); // Material default.
+    const padding = EdgeInsets.only(right: 8.0); // Material default.
     final symbol = createSymbol(context, legendEntry, legend, isHidden);
     final label = createLabel(context, legendEntry, legend, isHidden);
 
@@ -95,15 +95,15 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
         : null;
 
     rowChildren.add(symbol);
-    rowChildren.add(new Container(padding: padding));
+    rowChildren.add(Container(padding: padding));
     rowChildren.add(label);
     if (measure != null) {
-      rowChildren.add(new Container(padding: padding));
+      rowChildren.add(Container(padding: padding));
       rowChildren.add(measure);
     }
 
     // Row automatically reverses the content if Directionality is rtl.
-    return new Row(children: rowChildren);
+    return Row(children: rowChildren);
   }
 
   GestureTapUpCallback makeTapUpCallback(BuildContext context,
@@ -113,8 +113,10 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
     };
   }
 
+  @override
   bool operator ==(Object other) => other is SimpleLegendEntryLayout;
 
+  @override
   int get hashCode => runtimeType.hashCode;
 
   /// Convert the charts common TextStlyeSpec into a standard TextStyle, while
@@ -133,7 +135,7 @@ class SimpleLegendEntryLayout implements LegendEntryLayout {
       color = color!.withOpacity(0.26);
     }
 
-    return new TextStyle(
+    return TextStyle(
         inherit: true,
         fontFamily: textStyle?.fontFamily,
         fontSize: textStyle?.fontSize != null

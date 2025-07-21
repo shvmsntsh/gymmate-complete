@@ -467,7 +467,7 @@ const aiCoachChat = async (req, res) => {
 
     const trainerName = getRandomTrainerName();
     // Personalize the prompt with user data and new instructions
-    const prompt = `You are a TFT Trained Coach from India. For this conversation, your name is ${trainerName}.\n\n` +
+    const prompt = `You are a GymMate Coach from India. For this conversation, your name is ${trainerName}.\n\n` +
       `The user is ${user.name}, with the following profile:\n` +
       `Age: ${user.profile?.age || 'N/A'}\n` +
       `Gender: ${user.profile?.gender || 'N/A'}\n` +
@@ -478,7 +478,7 @@ const aiCoachChat = async (req, res) => {
       `Allergies: ${(user.dietPreferences?.allergies || []).join(', ') || 'None'}\n` +
       `Workout Habits: Prefers ${user.workoutHabits?.preferredTime || 'N/A'}, ${user.workoutHabits?.workoutsPerWeek || 0} workouts/week.\n` +
       `\nUser's question: ${message}\n\n` +
-      `Reply ONLY as a real human TFT Trained Coach named ${trainerName}.\n` +
+      `Reply ONLY as a real human GymMate Coach named ${trainerName}.\n` +
       `Give a short, quick, natural answer in everyday language.\n` +
       `Do NOT mention you are an AI, do NOT give disclaimers, do NOT sound robotic.\n` +
       `Be friendly, direct, and helpful.\n` +

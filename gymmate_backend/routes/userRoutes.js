@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User'); // Adjust path if needed
 const { authenticateToken } = require('../middleware/authMiddleware');
-const { updateProfile, getMe, getGymMembers } = require('../controllers/userController');
+const { updateProfile, getMe, getGymMembers, getGymDashboardStats } = require('../controllers/userController');
 
 // Register a new gym member
 router.post('/register-member', async (req, res) => {
@@ -47,5 +47,8 @@ router.get('/count', async (req, res) => {
     res.status(500).json({ message: 'Error getting user count', error: err.message });
   }
 });
+
+// GET /api/user/gym-dashboard-stats (gym_owner only)
+router.get('/gym-dashboard-stats', authenticateToken, getGymDashboardStats);
 
 module.exports = router;

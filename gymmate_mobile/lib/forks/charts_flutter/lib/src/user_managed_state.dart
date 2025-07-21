@@ -62,8 +62,8 @@ class UserManagedSelectionModel<D> {
   UserManagedSelectionModel.fromConfig(
       {List<String>? selectedSeriesConfig,
       List<common.SeriesDatumConfig<D>>? selectedDataConfig})
-      : this.selectedSeriesConfig = selectedSeriesConfig,
-        this.selectedDataConfig = selectedDataConfig;
+      : selectedSeriesConfig = selectedSeriesConfig,
+        selectedDataConfig = selectedDataConfig;
 
   /// Gets the selection model. If the model is null, create one from
   /// configuration and the processed [seriesList] passed in.

@@ -86,13 +86,13 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 24),
             
             // App Name
-            Text(
+            const Text(
               'The Training Theory',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
-                color: const Color(0xFFF8D84B),
+                color: Color(0xFFF8D84B),
               ),
             )
             .animate()

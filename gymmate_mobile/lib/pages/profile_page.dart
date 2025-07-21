@@ -6,6 +6,7 @@ import '../main.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../widgets/animated_form_field.dart';
 import '../widgets/confetti_success.dart';
+import 'gamified_entry_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -98,7 +99,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _showAvatarPicker(BuildContext context, String userRole, String? currentAvatar, Function(String) onSelect) {
     // Show all avatars from the avatars folder
-    final avatars = allAvatars;
+    const avatars = allAvatars;
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).dialogBackgroundColor,
@@ -218,6 +219,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       elevation: 4,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: theme.colorScheme.primary, width: 1.2),
                       ),
                       color: theme.colorScheme.surface,
                       child: Padding(
@@ -254,42 +256,37 @@ class _ProfilePageState extends State<ProfilePage> {
                     // Save Button
                     SizedBox(
                       width: double.infinity,
-                      child: GestureDetector(
-                        onTap: _isSaving ? null : _saveProfile,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.primary.withOpacity(0.2),
-                                blurRadius: 12,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
                           ),
-                          child: Center(
-                            child: _isSaving
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : Text(
-                                    'Save',
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      color: theme.colorScheme.onPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ).animate().shimmer(duration: 800.ms),
-                          ),
-                        ).animate().scaleXY(begin: 0.98, end: 1.0, duration: 200.ms, curve: Curves.easeOut),
+                          textStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                        ),
+                        onPressed: _isSaving ? null : _saveProfile,
+                        child: _isSaving
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('Save'),
                       ),
                     ),
                     const SizedBox(height: 16),
                     // Logout Button
                     SizedBox(
                       width: double.infinity,
-                      child: GestureDetector(
-                        onTap: _isSaving
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: theme.colorScheme.primary, width: 2),
+                          foregroundColor: theme.colorScheme.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        onPressed: _isSaving
                             ? null
                             : () async {
                                 final confirmed = await showDialog<bool>(
@@ -311,39 +308,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                 );
                                 if (confirmed == true) {
                                   await authProvider.logout();
-                                  await AuthService.logout();
                                   if (context.mounted) {
-                                    navigatorKey.currentState!.pushNamedAndRemoveUntil(
-                                      '/login',
+                                    navigatorKey.currentState!.pushAndRemoveUntil(
+                                      MaterialPageRoute(builder: (_) => const GamifiedEntryScreen()),
                                       (Route<dynamic> route) => false,
                                     );
                                   }
                                 }
                               },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.error,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.colorScheme.error.withOpacity(0.15),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              'Logout',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.colorScheme.onPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.1, end: 0, duration: 400.ms, delay: 300.ms),
+                        child: const Text('Logout'),
                       ),
                     ),
                   ],

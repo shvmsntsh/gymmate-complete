@@ -5,9 +5,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../api/api_config.dart';
 import 'package:intl/intl.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
+import 'package:gymmate_mobile/pages/onboarding/onboarding_flow.dart';
+import '../services/onboarding_service.dart';
+import '../providers/onboarding_provider.dart';
 
 void logPlanPage(String msg) {
   assert(() {
@@ -94,21 +96,21 @@ class _PlanPageState extends State<PlanPage> {
   double? _bmi;
 
   // Checklist state: Set of 'day-mealType' and 'day-workout' keys
-  Set<String> _checkedItems = {};
+  final Set<String> _checkedItems = {};
 
   AuthProvider? _authProvider;
 
   // 1. Store the current day's plan only
   Map<String, dynamic>? _dayPlan;
-  bool _usedFallback = false;
+  final bool _usedFallback = false;
   String? _aiError;
 
-  int _selectedDayIndex = DateTime.now().weekday - 1; // 0=Monday
+  final int _selectedDayIndex = DateTime.now().weekday - 1; // 0=Monday
 
   int get _todayIndex => DateTime.now().weekday - 1;
 
   // 1. Add loading animation and animated text sequence
-  List<String> _loadingMessages = [
+  final List<String> _loadingMessages = [
     '🧠 Generating your personalized fitness plan…',
     '🏋️‍♂️ Matching workouts to your goals…',
     '🥗 Balancing meals just for you…',
@@ -136,18 +138,22 @@ class _PlanPageState extends State<PlanPage> {
   final double dailyCGoal = 220;
 
   // Add state for workout logging
-  List<bool> _workoutCompleted = [];
+  final List<bool> _workoutCompleted = [];
 
+  // Add state for water and steps persistence
   int _waterGlasses = 0;
   final int _waterGoal = 8; // 8 glasses per day
-
-  // Add state for steps
   int _steps = 0;
-  int _stepGoal = 8000; // Example, can be set from onboarding
+  final int _stepGoal = 8000; // Example, can be set from onboarding
 
   Map<String, bool> _exerciseCompleted = {}; // key: exerciseKey, value: checked
 
   double? _calorieGoal;
+
+  // Progress data state (like ProgressPage)
+  Map<String, dynamic>? _progressData;
+  bool _progressLoading = true;
+  String? _progressError;
 
   // Helper to get calories for a meal item (assume per serving if not specified)
   double _getCaloriesForMealItem(Map meal, double quantity) {
@@ -171,12 +177,12 @@ class _PlanPageState extends State<PlanPage> {
   Map<String, double> _calculateDailyTotals(Map<String, dynamic> plan) {
     double cal = 0, p = 0, f = 0, c = 0;
     final mealsRaw = plan['meals'];
-    logPlanPage('[PlanPage] _calculateDailyTotals: plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\${mealsRaw}');
-    final meals = mealsRaw is Map ? mealsRaw as Map : <String, dynamic>{};
+    logPlanPage('[PlanPage] _calculateDailyTotals: plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\$mealsRaw');
+    final meals = mealsRaw is Map ? mealsRaw : <String, dynamic>{};
     for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
       final mealRaw = meals[mealType];
-      logPlanPage('[PlanPage] _calculateDailyTotals: meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\${mealRaw}');
-      final meal = mealRaw is Map ? mealRaw as Map : <String, dynamic>{};
+      logPlanPage('[PlanPage] _calculateDailyTotals: meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\$mealRaw');
+      final meal = mealRaw is Map ? mealRaw : <String, dynamic>{};
       final items = meal['items'] is List ? meal['items'] : [];
       for (int i = 0; i < items.length; i++) {
         final key = '${plan['day']}-meal-$mealType-$i';
@@ -228,14 +234,14 @@ class _PlanPageState extends State<PlanPage> {
   // Calculate workout summary
   Map<String, dynamic> _calculateWorkoutSummary(Map<String, dynamic> plan) {
     final workoutRaw = plan['workout'];
-    logPlanPage('[PlanPage] _calculateWorkoutSummary: plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\${workoutRaw}');
-    final workout = workoutRaw is Map ? workoutRaw as Map : <String, dynamic>{};
+    logPlanPage('[PlanPage] _calculateWorkoutSummary: plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\$workoutRaw');
+    final workout = workoutRaw is Map ? workoutRaw : <String, dynamic>{};
     final exercisesRaw = workout['exercises'];
-    logPlanPage('[PlanPage] _calculateWorkoutSummary: workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\${exercisesRaw}');
+    logPlanPage('[PlanPage] _calculateWorkoutSummary: workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw');
     final exercises = (exercisesRaw is List) ? exercisesRaw.map(parseExercise).toList() : <Map<String, dynamic>>[];
     final exerciseKeys = List.generate(exercises.length, (i) => '${plan['day']}-workout-ex-$i');
     int completed = exerciseKeys.where((k) => _exerciseCompleted[k] == true).length;
-    int total = exerciseKeys.length > 0 ? exerciseKeys.length : 1;
+    int total = exerciseKeys.isNotEmpty ? exerciseKeys.length : 1;
     final duration = _getWorkoutDuration(workout);
     final calories = _getWorkoutCalories(workout);
     return {
@@ -252,8 +258,10 @@ class _PlanPageState extends State<PlanPage> {
     super.initState();
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _authProvider?.addListener(_onAuthChanged);
+    _fetchProgressData();
     _loadUserDataAndBMI();
     _loadCheckboxState();
+    _loadWaterAndSteps(); // <-- Load water/steps from storage
     _loadPlanIfNeeded();
     _updateCalorieGoal();
     // Animated loading message
@@ -372,7 +380,7 @@ class _PlanPageState extends State<PlanPage> {
     return onboardingData.toString().hashCode.toString();
   }
 
-  Future<void> _loadPlanFromBackend() async {
+  Future<void> _loadPlanFromBackend({bool force = false}) async {
     setState(() {
       _planLoading = true;
       _planError = false;
@@ -382,7 +390,7 @@ class _PlanPageState extends State<PlanPage> {
       final token = authProvider.token;
       final userData = authProvider.userData;
       if (token == null || userData == null) {
-        setState(() { _planError = true; _planLoading = false; });
+        if (mounted) setState(() { _planError = true; _planLoading = false; });
         return;
       }
       // Calculate BMI category
@@ -393,8 +401,9 @@ class _PlanPageState extends State<PlanPage> {
       String bmiCategory = 'normal';
       if (weight > 0 && height > 0) {
         bmi = weight / ((height / 100) * (height / 100));
-        if (bmi < 18.5) bmiCategory = 'underweight';
-        else if (bmi < 25) bmiCategory = 'normal';
+        if (bmi < 18.5) {
+          bmiCategory = 'underweight';
+        } else if (bmi < 25) bmiCategory = 'normal';
         else if (bmi < 30) bmiCategory = 'overweight';
         else bmiCategory = 'obese';
       }
@@ -429,7 +438,7 @@ class _PlanPageState extends State<PlanPage> {
         setState(() { _planError = true; _planLoading = false; });
       }
     } catch (e) {
-      setState(() { _planError = true; _planLoading = false; });
+      if (mounted) setState(() { _planError = true; _planLoading = false; });
     }
   }
 
@@ -444,11 +453,13 @@ class _PlanPageState extends State<PlanPage> {
     setState(() {
       _steps = math.min(_steps + by, _stepGoal);
     });
+    _saveWaterAndSteps();
   }
   void _decrementSteps([int by = 1000]) {
     setState(() {
       _steps = math.max(_steps - by, 0);
     });
+    _saveWaterAndSteps();
   }
 
   // Helper for animated progress icon
@@ -489,8 +500,9 @@ class _PlanPageState extends State<PlanPage> {
         : 10 * weight + 6.25 * height - 5 * age + 5;
     // Activity multiplier
     double activityMult = 1.2;
-    if (activity == 'lightly_active') activityMult = 1.375;
-    else if (activity == 'moderately_active') activityMult = 1.55;
+    if (activity == 'lightly_active') {
+      activityMult = 1.375;
+    } else if (activity == 'moderately_active') activityMult = 1.55;
     else if (activity == 'very_active') activityMult = 1.725;
     else if (activity == 'extra_active') activityMult = 1.9;
     double calGoal = bmr * activityMult;
@@ -562,7 +574,7 @@ class _PlanPageState extends State<PlanPage> {
         title: const Text('Plan'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -579,6 +591,16 @@ class _PlanPageState extends State<PlanPage> {
                   const Text('Failed to load plan. Please try refreshing.'),
                   const SizedBox(height: 16),
                   ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                    ),
                     onPressed: _refreshPlan,
                     child: const Text('Refresh Plan'),
                   ),
@@ -593,6 +615,16 @@ class _PlanPageState extends State<PlanPage> {
                       const Text('No plan generated yet.'),
                       const SizedBox(height: 16),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                        ),
                         onPressed: _refreshPlan,
                         child: const Text('Generate Plan'),
                       ),
@@ -604,16 +636,20 @@ class _PlanPageState extends State<PlanPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      _buildProgressCard(),
                       if ((plan?['usedFallback'] == true || plan?['fallback'] == true) && planReady)
                         _fallbackBanner(colorScheme),
                       // 1. Overall Calorie Card
                       GestureDetector(
                         onTap: planReady ? _goToMealDetail : null,
                         child: Card(
-                          color: colorScheme.surface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+                          ),
+                          color: Theme.of(context).colorScheme.surface,
                           elevation: 6,
                           margin: const EdgeInsets.only(bottom: 18),
-                          shape: RoundedRectangleBorder(borderRadius: cardRadius),
                           child: Padding(
                             padding: const EdgeInsets.all(22.0),
                             child: Row(
@@ -622,22 +658,22 @@ class _PlanPageState extends State<PlanPage> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Calories', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.primary)),
+                                      Text('Calories', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
                                       const SizedBox(height: 2),
-                                      Text('${mealCalories.toStringAsFixed(0)} / ${mealGoal.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: colorScheme.primary)),
-                                      Text('${mealLeft.toStringAsFixed(0)} left', style: TextStyle(color: colorScheme.secondary)),
+                                      Text('${mealCalories.toStringAsFixed(0)} / ${mealGoal.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                                      Text('${mealLeft.toStringAsFixed(0)} left', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
                                       const SizedBox(height: 12),
                                       LinearProgressIndicator(
                                         value: mealPercent,
                                         minHeight: 8,
-                                        backgroundColor: colorScheme.surfaceVariant,
-                                        color: colorScheme.primary,
+                                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        color: Theme.of(context).colorScheme.primary,
                                       ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(width: 18),
-                                AnimatedFillIcon(icon: Icons.lunch_dining, percent: mealPercent, color: colorScheme.primary, size: 44),
+                                AnimatedFillIcon(icon: Icons.lunch_dining, percent: mealPercent, color: Theme.of(context).colorScheme.primary, size: 44),
                               ],
                             ),
                           ),
@@ -647,10 +683,13 @@ class _PlanPageState extends State<PlanPage> {
                       GestureDetector(
                         onTap: planReady ? _goToWorkoutDetail : null,
                         child: Card(
-                          color: colorScheme.surface,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+                          ),
+                          color: Theme.of(context).colorScheme.surface,
                           elevation: 6,
                           margin: const EdgeInsets.only(bottom: 18),
-                          shape: RoundedRectangleBorder(borderRadius: cardRadius),
                           child: Padding(
                             padding: const EdgeInsets.all(22.0),
                             child: Row(
@@ -659,22 +698,22 @@ class _PlanPageState extends State<PlanPage> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Workout', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.primary)),
+                                      Text('Workout', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
                                       const SizedBox(height: 2),
-                                      Text('${workoutDuration.toStringAsFixed(0)} min • ${workoutCalories.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-                                      Text('Tap to log workout', style: TextStyle(color: colorScheme.secondary)),
+                                      Text('${workoutDuration.toStringAsFixed(0)} min • ${workoutCalories.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                                      Text('Tap to log workout', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
                                       const SizedBox(height: 12),
                                       LinearProgressIndicator(
                                         value: workoutPercent,
                                         minHeight: 8,
-                                        backgroundColor: colorScheme.surfaceVariant,
-                                        color: colorScheme.primary,
+                                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                        color: Theme.of(context).colorScheme.primary,
                                       ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(width: 18),
-                                AnimatedFillIcon(icon: Icons.fitness_center, percent: workoutPercent, color: colorScheme.primary, size: 44),
+                                AnimatedFillIcon(icon: Icons.fitness_center, percent: workoutPercent, color: Theme.of(context).colorScheme.primary, size: 44),
                               ],
                             ),
                           ),
@@ -682,10 +721,13 @@ class _PlanPageState extends State<PlanPage> {
                       ),
                       // 3. Water Intake Logging Card
                       Card(
-                        color: colorScheme.surface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+                        ),
+                        color: Theme.of(context).colorScheme.surface,
                         elevation: 6,
                         margin: const EdgeInsets.only(bottom: 18),
-                        shape: RoundedRectangleBorder(borderRadius: cardRadius),
                         child: Padding(
                           padding: const EdgeInsets.all(22.0),
                           child: Row(
@@ -694,45 +736,48 @@ class _PlanPageState extends State<PlanPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Water Intake', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.primary)),
+                                    Text('Water Intake', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
                                     const SizedBox(height: 2),
-                                    Text('$_waterGlasses / $_waterGoal glasses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
-                                    Text('$waterMl ml / ${(_waterGoal * 250 / 1000).toStringAsFixed(1)} L', style: TextStyle(fontSize: 14, color: colorScheme.secondary)),
+                                    Text('$_waterGlasses / $_waterGoal glasses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                                    Text('$waterMl ml / ${(_waterGoal * 250 / 1000).toStringAsFixed(1)} L', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.secondary)),
                                     Row(
                                       children: [
                                         IconButton(
                                           icon: const Icon(Icons.remove_circle_outline),
                                           onPressed: _decrementWater,
-                                          color: colorScheme.primary,
+                                          color: Theme.of(context).colorScheme.primary,
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.add_circle_outline),
                                           onPressed: _incrementWater,
-                                          color: colorScheme.primary,
+                                          color: Theme.of(context).colorScheme.primary,
                                         ),
                                       ],
                                     ),
                                     LinearProgressIndicator(
                                       value: waterPercent,
                                       minHeight: 8,
-                                      backgroundColor: colorScheme.surfaceVariant,
-                                      color: colorScheme.tertiary,
+                                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                      color: Theme.of(context).colorScheme.tertiary,
                                     ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 18),
-                              AnimatedFillIcon(icon: Icons.water_drop, percent: waterPercent, color: colorScheme.tertiary, size: 44),
+                              AnimatedFillIcon(icon: Icons.water_drop, percent: waterPercent, color: Theme.of(context).colorScheme.tertiary, size: 44),
                             ],
                           ),
                         ),
                       ),
                       // 4. Step Count Card
                       Card(
-                        color: colorScheme.surface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+                        ),
+                        color: Theme.of(context).colorScheme.surface,
                         elevation: 6,
                         margin: const EdgeInsets.only(bottom: 18),
-                        shape: RoundedRectangleBorder(borderRadius: cardRadius),
                         child: Padding(
                           padding: const EdgeInsets.all(22.0),
                           child: Row(
@@ -741,34 +786,34 @@ class _PlanPageState extends State<PlanPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Steps', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: colorScheme.primary)),
+                                    Text('Steps', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
                                     const SizedBox(height: 2),
-                                    Text('$_steps / $_stepGoal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+                                    Text('$_steps / $_stepGoal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
                                     Row(
                                       children: [
                                         IconButton(
                                           icon: const Icon(Icons.remove_circle_outline),
                                           onPressed: () => _decrementSteps(1000),
-                                          color: colorScheme.primary,
+                                          color: Theme.of(context).colorScheme.primary,
                                         ),
                                         IconButton(
                                           icon: const Icon(Icons.add_circle_outline),
                                           onPressed: () => _incrementSteps(1000),
-                                          color: colorScheme.primary,
+                                          color: Theme.of(context).colorScheme.primary,
                                         ),
                                       ],
                                     ),
                                     LinearProgressIndicator(
                                       value: stepsPercent,
                                       minHeight: 8,
-                                      backgroundColor: colorScheme.surfaceVariant,
-                                      color: colorScheme.secondary,
+                                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                      color: Theme.of(context).colorScheme.secondary,
                                     ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 18),
-                              AnimatedFillIcon(icon: Icons.directions_walk, percent: stepsPercent, color: colorScheme.secondary, size: 44),
+                              AnimatedFillIcon(icon: Icons.directions_walk, percent: stepsPercent, color: Theme.of(context).colorScheme.secondary, size: 44),
                             ],
                           ),
                         ),
@@ -784,6 +829,7 @@ class _PlanPageState extends State<PlanPage> {
       setState(() {
         _waterGlasses++;
       });
+      _saveWaterAndSteps();
     }
   }
 
@@ -792,13 +838,14 @@ class _PlanPageState extends State<PlanPage> {
       setState(() {
         _waterGlasses--;
       });
+      _saveWaterAndSteps();
     }
   }
 
   void _goToMealDetail() async {
     if (_plan == null || _planLoading) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Plan is still loading. Please wait.')),
+        const SnackBar(content: Text('Plan is still loading. Please wait.')),
       );
       return;
     }
@@ -808,12 +855,12 @@ class _PlanPageState extends State<PlanPage> {
     if (plan != null) {
       double planTotal = 0;
       final mealsRaw = plan['meals'];
-      logPlanPage('[PlanPage] plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\${mealsRaw}');
-      final meals = mealsRaw is Map ? mealsRaw as Map : <String, dynamic>{};
+      logPlanPage('[PlanPage] plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\$mealsRaw');
+      final meals = mealsRaw is Map ? mealsRaw : <String, dynamic>{};
       for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
         final mealRaw = meals[mealType];
-        logPlanPage('[PlanPage] meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\${mealRaw}');
-        final meal = mealRaw is Map ? mealRaw as Map : <String, dynamic>{};
+        logPlanPage('[PlanPage] meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\$mealRaw');
+        final meal = mealRaw is Map ? mealRaw : <String, dynamic>{};
         planTotal += (meal['cal'] as num?)?.toDouble() ?? 0.0;
       }
       if (planTotal > 0 && planTotal < mealGoal) {
@@ -844,16 +891,16 @@ class _PlanPageState extends State<PlanPage> {
   void _goToWorkoutDetail() async {
     if (_plan == null || _planLoading) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Plan is still loading. Please wait.')),
+        const SnackBar(content: Text('Plan is still loading. Please wait.')),
       );
       return;
     }
     final plan = _plan;
     final workoutRaw = plan?['workout'];
-    logPlanPage('[PlanPage] plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\${workoutRaw}');
+    logPlanPage('[PlanPage] plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\$workoutRaw');
     final workout = workoutRaw is Map ? workoutRaw as Map<String, dynamic> : <String, dynamic>{};
     final exercisesRaw = workout['exercises'];
-    logPlanPage('[PlanPage] workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\${exercisesRaw}');
+    logPlanPage('[PlanPage] workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw');
     final exercises = (exercisesRaw is List) ? exercisesRaw.map(parseExercise).toList() : <Map<String, dynamic>>[];
     final exerciseKeys = List.generate(exercises.length, (i) => '${plan?['day']}-workout-ex-$i');
     final exerciseChecked = <String, bool>{};
@@ -899,6 +946,244 @@ class _PlanPageState extends State<PlanPage> {
         ],
       ),
     );
+  }
+
+  void _editOnboarding() async {
+    final provider = Provider.of<AuthProvider>(context, listen: false);
+    final onboardingProvider = Provider.of<OnboardingProvider>(context, listen: false);
+    if (_progressData != null) {
+      onboardingProvider.loadFromProgress(_progressData!);
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const OnboardingFlow()),
+    );
+    await provider.refreshUser();
+    await _fetchProgressData();
+    await _loadPlanFromBackend(force: true); // <-- Always force plan refresh
+    if (mounted) setState(() {});
+  }
+
+  // Helper to capitalize first letter (Abc format)
+  String _abc(String? value) {
+    if (value == null || value.isEmpty) return '-';
+    return value[0].toUpperCase() + value.substring(1).toLowerCase().replaceAll('_', ' ');
+  }
+
+  Widget _buildProgressCard() {
+    if (_progressLoading) {
+      return const Card(
+        margin: EdgeInsets.only(bottom: 18),
+        child: Padding(
+          padding: EdgeInsets.all(22.0),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+    if (_progressError != null) {
+      return Card(
+        margin: const EdgeInsets.only(bottom: 18),
+        child: Padding(
+          padding: const EdgeInsets.all(22.0),
+          child: Column(
+            children: [
+              Text('Error loading profile: $_progressError'),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                ),
+                onPressed: _fetchProgressData,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    final data = _progressData;
+    if (data == null) return const SizedBox.shrink();
+    final profile = (data['profile'] is Map)
+        ? Map<String, dynamic>.from(data['profile'])
+        : <String, dynamic>{};
+    final fitnessGoals = data['fitnessGoals'] is List
+        ? List<String>.from(data['fitnessGoals'])
+        : <String>[];
+    final dietPreferences = (data['dietPreferences'] is Map)
+        ? Map<String, dynamic>.from(data['dietPreferences'])
+        : <String, dynamic>{};
+    final iconColor = Theme.of(context).colorScheme.primary;
+    final textStyle = Theme.of(context).textTheme.bodyMedium;
+    final boldStyle = textStyle?.copyWith(fontWeight: FontWeight.bold);
+    final valueStyle = textStyle?.copyWith(fontSize: 16, fontWeight: FontWeight.w500);
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+      ),
+      color: Theme.of(context).colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(18.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.account_circle, color: iconColor, size: 28),
+                    const SizedBox(width: 8),
+                    Text('Your Profile', style: Theme.of(context).textTheme.titleMedium),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  tooltip: 'Edit Onboarding',
+                  onPressed: _editOnboarding,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Divider(height: 24),
+            // Profile fields in a grid for even spacing
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.cake, color: iconColor, size: 18),
+                      const SizedBox(width: 4),
+                      Text('Age:', style: boldStyle),
+                      const SizedBox(width: 4),
+                      Text('${profile['age'] ?? '-'}', style: valueStyle),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.monitor_weight, color: iconColor, size: 18),
+                      const SizedBox(width: 4),
+                      Text('Weight:', style: boldStyle),
+                      const SizedBox(width: 4),
+                      Text('${profile['weight'] ?? '-'} kg', style: valueStyle),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.male, color: iconColor, size: 18),
+                      const SizedBox(width: 4),
+                      Text('Gender:', style: boldStyle),
+                      const SizedBox(width: 4),
+                      Text(_abc(profile['gender']?.toString()), style: valueStyle),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.height, color: iconColor, size: 18),
+                      const SizedBox(width: 4),
+                      Text('Height:', style: boldStyle),
+                      const SizedBox(width: 4),
+                      Text('${profile['height'] ?? '-'} cm', style: valueStyle),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(Icons.flag, color: iconColor, size: 20),
+                const SizedBox(width: 6),
+                Text('Fitness Goals:', style: boldStyle),
+              ],
+            ),
+            ...fitnessGoals.map((g) => Padding(
+              padding: const EdgeInsets.only(left: 28, top: 2),
+              child: Row(children: [Icon(Icons.check_circle, color: iconColor, size: 16), const SizedBox(width: 4), Text(_abc(g), style: valueStyle)]),
+            )),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(Icons.restaurant_menu, color: iconColor, size: 20),
+                const SizedBox(width: 6),
+                Text('Diet Preferences:', style: boldStyle),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 28, top: 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Diet Type: ${_abc(dietPreferences['type']?.toString())}', style: valueStyle),
+                  Text('Daily Meals: ${dietPreferences['dailyMeals'] ?? '-'}', style: valueStyle),
+                  Text('Water Intake: ${dietPreferences['waterIntake'] ?? '-'} glasses', style: valueStyle),
+                  Text('Allergies: ${((dietPreferences['allergies'] is List && (dietPreferences['allergies'] as List).isNotEmpty) ? (dietPreferences['allergies'] as List).map((e) => _abc(e.toString())).join(', ') : 'None')}', style: valueStyle),
+                  Text('Restrictions: ${((dietPreferences['restrictions'] is List && (dietPreferences['restrictions'] as List).isNotEmpty) ? (dietPreferences['restrictions'] as List).map((e) => _abc(e.toString())).join(', ') : 'None')}', style: valueStyle),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _fetchProgressData() async {
+    setState(() {
+      _progressLoading = true;
+      _progressError = null;
+    });
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final token = authProvider.token;
+      if (token == null) throw Exception('No authentication token available');
+      final service = OnboardingService();
+      service.setToken(token);
+      final data = await service.getUserProgress();
+      debugPrint('🔍 [PlanPage] Progress Data: \\${jsonEncode(data)}');
+      setState(() {
+        _progressData = data;
+        _progressLoading = false;
+      });
+    } catch (e) {
+      debugPrint('❌ [PlanPage] Error fetching progress: \\${e.toString()}');
+      setState(() {
+        _progressError = e.toString();
+        _progressLoading = false;
+      });
+    }
+  }
+
+  // Persist water and steps to SharedPreferences
+  Future<void> _saveWaterAndSteps() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('plan_water_glasses', _waterGlasses);
+    await prefs.setInt('plan_steps', _steps);
+  }
+
+  Future<void> _loadWaterAndSteps() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _waterGlasses = prefs.getInt('plan_water_glasses') ?? 0;
+      _steps = prefs.getInt('plan_steps') ?? 0;
+    });
   }
 }
 
@@ -968,7 +1253,7 @@ class _MealDetailPageState extends State<MealDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meal Details'),
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
@@ -986,22 +1271,24 @@ class _MealDetailPageState extends State<MealDetailPage> {
         padding: const EdgeInsets.all(16),
         children: [
           Card(
-            color: colorScheme.surface,
-            elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+            ),
+            color: Theme.of(context).colorScheme.surface,
             child: Padding(
               padding: const EdgeInsets.all(18.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Total: ${dailyTotals['cal']!.toStringAsFixed(0)} / ${_calorieGoal.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                  Text('Total: ${dailyTotals['cal']!.toStringAsFixed(0)} / ${_calorieGoal.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                   Wrap(
                     spacing: 16,
                     runSpacing: 8,
                     children: [
-                      macroSummary('P', dailyTotals['p'] ?? 0.0, 120 * _mealScale, colorScheme.tertiary),
-                      macroSummary('F', dailyTotals['f'] ?? 0.0, 60 * _mealScale, colorScheme.secondary),
-                      macroSummary('C', dailyTotals['c'] ?? 0.0, 220 * _mealScale, colorScheme.primary),
+                      macroSummary('P', dailyTotals['p'] ?? 0.0, 120 * _mealScale, Theme.of(context).colorScheme.tertiary),
+                      macroSummary('F', dailyTotals['f'] ?? 0.0, 60 * _mealScale, Theme.of(context).colorScheme.secondary),
+                      macroSummary('C', dailyTotals['c'] ?? 0.0, 220 * _mealScale, Theme.of(context).colorScheme.primary),
                     ],
                   ),
                 ],
@@ -1013,16 +1300,19 @@ class _MealDetailPageState extends State<MealDetailPage> {
             final m = meals[mealType] is Map ? meals[mealType] : <String, dynamic>{};
             final items = m['items'] is List ? List<Map<String, dynamic>>.from(m['items']) : <Map<String, dynamic>>[];
             return Card(
-              color: colorScheme.surfaceVariant,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+              ),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               margin: const EdgeInsets.symmetric(vertical: 8),
               elevation: 1,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(mealType[0].toUpperCase() + mealType.substring(1), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                    Text(mealType[0].toUpperCase() + mealType.substring(1), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                     ...List.generate(items.length, (i) {
                       final item = items[i];
                       final key = '${widget.plan['day']}-meal-$mealType-$i';
@@ -1037,23 +1327,23 @@ class _MealDetailPageState extends State<MealDetailPage> {
                                 _checkboxState[key] = val ?? false;
                               });
                             },
-                            activeColor: colorScheme.primary,
+                            activeColor: Theme.of(context).colorScheme.primary,
                           ),
                           Expanded(child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item['name'] ?? '', style: checked ? TextStyle(decoration: TextDecoration.lineThrough, color: colorScheme.secondary) : TextStyle(color: colorScheme.onSurface)),
-                              Text(item['quantity'] ?? '', style: TextStyle(fontSize: 12, color: colorScheme.secondary)),
-                              Text('P: ${item['macros']?['protein'] ?? 0}g  C: ${item['macros']?['carbs'] ?? 0}g  F: ${item['macros']?['fats'] ?? 0}g', style: TextStyle(fontSize: 12, color: colorScheme.tertiary)),
+                              Text(item['name'] ?? '', style: checked ? TextStyle(decoration: TextDecoration.lineThrough, color: Theme.of(context).colorScheme.secondary) : TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                              Text(item['quantity'] ?? '', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
+                              Text('P: ${item['macros']?['protein'] ?? 0}g  C: ${item['macros']?['carbs'] ?? 0}g  F: ${item['macros']?['fats'] ?? 0}g', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.tertiary)),
                             ],
                           )),
                           SizedBox(
                             width: 60,
                             child: TextFormField(
                               initialValue: qty.toStringAsFixed(1),
-                              keyboardType: TextInputType.numberWithOptions(decimal: true),
-                              decoration: InputDecoration(labelText: 'Qty', isDense: true, labelStyle: TextStyle(color: colorScheme.secondary)),
-                              style: TextStyle(color: colorScheme.onSurface),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: InputDecoration(labelText: 'Qty', isDense: true, labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                               onChanged: (val) {
                                 final v = double.tryParse(val) ?? 1.0;
                                 setState(() {
@@ -1064,7 +1354,7 @@ class _MealDetailPageState extends State<MealDetailPage> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text('x1 serving', style: TextStyle(fontSize: 12, color: colorScheme.secondary)),
+                          Text('x1 serving', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
                         ],
                       );
                     }),
@@ -1073,12 +1363,12 @@ class _MealDetailPageState extends State<MealDetailPage> {
                       spacing: 8,
                       runSpacing: 4,
                       children: [
-                        if (m['cal'] != null) Chip(label: Text('Cal: ${((m['cal'] ?? 0) * _mealScale).toStringAsFixed(0)}'), backgroundColor: colorScheme.surfaceVariant, labelStyle: TextStyle(color: colorScheme.primary)),
-                        if (m['p'] != null) Chip(label: Text('P: ${((m['p'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: colorScheme.surfaceVariant, labelStyle: TextStyle(color: colorScheme.tertiary)),
-                        if (m['c'] != null) Chip(label: Text('C: ${((m['c'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: colorScheme.surfaceVariant, labelStyle: TextStyle(color: colorScheme.primary)),
-                        if (m['f'] != null) Chip(label: Text('F: ${((m['f'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: colorScheme.surfaceVariant, labelStyle: TextStyle(color: colorScheme.secondary)),
-                        if (m['iron'] != null) Chip(label: Text('Iron: ${m['iron']}mg'), backgroundColor: colorScheme.surfaceVariant, labelStyle: TextStyle(color: colorScheme.secondary)),
-                        if (m['calcium'] != null) Chip(label: Text('Calcium: ${m['calcium']}mg'), backgroundColor: colorScheme.surfaceVariant, labelStyle: TextStyle(color: colorScheme.tertiary)),
+                        if (m['cal'] != null) Chip(label: Text('Cal: ${((m['cal'] ?? 0) * _mealScale).toStringAsFixed(0)}'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                        if (m['p'] != null) Chip(label: Text('P: ${((m['p'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
+                        if (m['c'] != null) Chip(label: Text('C: ${((m['c'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                        if (m['f'] != null) Chip(label: Text('F: ${((m['f'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+                        if (m['iron'] != null) Chip(label: Text('Iron: ${m['iron']}mg'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+                        if (m['calcium'] != null) Chip(label: Text('Calcium: ${m['calcium']}mg'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
                       ],
                     ),
                   ],
@@ -1116,7 +1406,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Workout Details'),
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
@@ -1131,9 +1421,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
         padding: const EdgeInsets.all(16),
         children: [
           Card(
-            color: colorScheme.surface,
-            elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+            ),
+            color: Theme.of(context).colorScheme.surface,
             child: Padding(
               padding: const EdgeInsets.all(18.0),
               child: Column(
@@ -1145,7 +1437,7 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                       'Target: ${workout['target'] ?? '-'}',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       maxLines: 3,
                       softWrap: true,
@@ -1157,37 +1449,37 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     runSpacing: 8,
                     children: [
                       Chip(
-                        avatar: Icon(Icons.timer, color: colorScheme.secondary, size: 18),
-                        label: Text('Duration: ${workout['duration'] ?? 0} min', style: TextStyle(color: colorScheme.secondary)),
-                        backgroundColor: colorScheme.surfaceVariant,
-                        shape: StadiumBorder(side: BorderSide(color: colorScheme.secondary, width: 1)),
+                        avatar: Icon(Icons.timer, color: Theme.of(context).colorScheme.secondary, size: 18),
+                        label: Text('Duration: ${workout['duration'] ?? 0} min', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        shape: StadiumBorder(side: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 1)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                       ),
                       Chip(
-                        avatar: Icon(Icons.local_fire_department, color: colorScheme.tertiary, size: 18),
-                        label: Text('Calories: ${workout['calories'] ?? 0} kcal', style: TextStyle(color: colorScheme.tertiary)),
-                        backgroundColor: colorScheme.surfaceVariant,
-                        shape: StadiumBorder(side: BorderSide(color: colorScheme.tertiary, width: 1)),
+                        avatar: Icon(Icons.local_fire_department, color: Theme.of(context).colorScheme.tertiary, size: 18),
+                        label: Text('Calories: ${workout['calories'] ?? 0} kcal', style: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        shape: StadiumBorder(side: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                       ),
                       Chip(
-                        avatar: Icon(Icons.check_circle, color: colorScheme.primary, size: 18),
-                        label: Text('${_exerciseChecked.values.where((v) => v).length} / ${_exerciseChecked.length > 0 ? _exerciseChecked.length : 1} done', style: TextStyle(color: colorScheme.primary)),
-                        backgroundColor: colorScheme.surfaceVariant,
-                        shape: StadiumBorder(side: BorderSide(color: colorScheme.primary, width: 1)),
+                        avatar: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 18),
+                        label: Text('${_exerciseChecked.values.where((v) => v).length} / ${_exerciseChecked.isNotEmpty ? _exerciseChecked.length : 1} done', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        shape: StadiumBorder(side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1)),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                       ),
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Text('Exercises:', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                  Text('Exercises:', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                   const SizedBox(height: 8),
                   ...exercisesMap.entries.expand((entry) {
                     final group = entry.value;
                     final groupName = group['muscleGroup'] ?? entry.key;
                     final items = group['items'] is List ? List<Map<String, dynamic>>.from(group['items']) : <Map<String, dynamic>>[];
                     return [
-                      Text(groupName, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.secondary)),
+                      Text(groupName, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary)),
                       ...List.generate(items.length, (i) {
                         final ex = items[i];
                         final key = '${widget.plan['day']}-workout-${entry.key}-$i';
@@ -1197,11 +1489,11 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
                             color: checked
-                                ? colorScheme.primary.withOpacity(0.13)
-                                : colorScheme.surfaceVariant,
+                                ? Theme.of(context).colorScheme.primary.withOpacity(0.13)
+                                : Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: checked ? colorScheme.primary : colorScheme.outline.withOpacity(0.13),
+                              color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline.withOpacity(0.13),
                               width: checked ? 1.5 : 1,
                             ),
                           ),
@@ -1215,16 +1507,16 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                                     _exerciseChecked[key] = val ?? false;
                                   });
                                 },
-                                activeColor: colorScheme.primary,
+                                activeColor: Theme.of(context).colorScheme.primary,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(ex['name'] ?? '', style: TextStyle(fontWeight: FontWeight.w600, color: checked ? colorScheme.primary : colorScheme.onSurface)),
+                                    Text(ex['name'] ?? '', style: TextStyle(fontWeight: FontWeight.w600, color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface)),
                                     const SizedBox(height: 2),
-                                    Text('${ex['sets']}x${ex['reps']}, ${ex['muscleGroup']}', style: TextStyle(color: colorScheme.secondary)),
+                                    Text('${ex['sets']}x${ex['reps']}, ${ex['muscleGroup']}', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
                                   ],
                                 ),
                               ),

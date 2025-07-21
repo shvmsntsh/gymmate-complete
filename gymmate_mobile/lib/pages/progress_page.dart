@@ -60,7 +60,7 @@ class _ProgressPageState extends State<ProgressPage> {
       provider.loadFromProgress(_progressData!);
     }
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => OnboardingFlow()),
+      MaterialPageRoute(builder: (context) => const OnboardingFlow()),
     );
   }
 

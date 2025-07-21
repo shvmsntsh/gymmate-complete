@@ -54,9 +54,7 @@ class Home extends StatelessWidget {
       {Key? key,
       this.showPerformanceOverlay = false,
       required this.onShowPerformanceOverlayChanged})
-      : super(key: key) {
-    assert(onShowPerformanceOverlayChanged != null);
-  }
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -106,12 +104,12 @@ class Home extends StatelessWidget {
 
     _setupPerformance();
 
-    return new Scaffold(
-      drawer: new GalleryDrawer(
+    return Scaffold(
+      drawer: GalleryDrawer(
           showPerformanceOverlay: showPerformanceOverlay,
           onShowPerformanceOverlayChanged: onShowPerformanceOverlayChanged),
-      appBar: new AppBar(title: new Text(defaultConfig.appName)),
-      body: new ListView(padding: kMaterialListPadding, children: galleries),
+      appBar: AppBar(title: Text(defaultConfig.appName)),
+      body: ListView(padding: kMaterialListPadding, children: galleries),
     );
   }
 

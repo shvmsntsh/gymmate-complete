@@ -12,11 +12,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-developmen
  * This function handles the core logic for user creation based on invitation codes.
  */
 exports.register = async (req, res) => {
-  let { name, email, password, inviteCode } = req.body;
+  let { name, email, password, inviteCode, phone_number } = req.body;
+  console.log('[DEBUG] Registration fields:', { name, email, password, inviteCode, phone_number });
   if (!name || !email || !password || !inviteCode) {
     return res.status(400).json({ message: 'Name, email, password, and invite code are required.' });
   }
   email = email.trim().toLowerCase();
+  inviteCode = inviteCode.trim().toUpperCase();
+  console.log('[DEBUG] Normalized inviteCode:', inviteCode);
 
   // Handle the very first superadmin registration
   if (inviteCode === '123456') {
@@ -35,6 +38,7 @@ exports.register = async (req, res) => {
       email,
       password, // plain password
       role: 'superadmin',
+      phone_number,
     });
     await newUser.save();
     // Generate token and return user object (like login)
@@ -63,6 +67,7 @@ exports.register = async (req, res) => {
 
   // For all other users, validate the invite code
   const code = await InviteCode.findOne({ code: inviteCode });
+  console.log('[DEBUG] Invite lookup result:', code);
   if (!code || code.used) {
     return res.status(400).json({ message: 'Invalid or already used invitation code.' });
   }
@@ -76,6 +81,7 @@ exports.register = async (req, res) => {
     password, // plain password
     role: code.role,
     gymId: code.gymId,
+    phone_number,
   });
   await newUser.save();
   // If the new user is a gym owner, their gymId should be their own ID.
@@ -185,6 +191,77 @@ exports.login = async (req, res) => {
     user: userPayload,
   });
 };
+
+/**
+ * Log in a user with a phone number and OTP
+ */
+exports.quickLogin = async (req, res) => {
+  console.log('📱 /api/auth/quick-login endpoint hit');
+  const { phone_number, otp } = req.body;
+  console.log('Quick login attempt:', { phone_number });
+
+  if (!phone_number || !otp) {
+    return res.status(400).json({ message: 'Phone number and OTP are required.' });
+  }
+
+  // For now, OTP is hardcoded to '1234'
+  if (otp !== '1234') {
+    return res.status(401).json({ message: 'Invalid OTP.' });
+  }
+
+  const user = await User.findOne({ phone_number });
+
+  if (!user) {
+    return res.status(404).json({ message: 'No user found with this phone number.' });
+  }
+
+  // If the user was only invited, mark them as registered
+  if (user.invited && !user.registered) {
+    user.registered = true;
+    // Since they are logging in without a password, we might not need to set one.
+    // Or we could set a default placeholder that they are prompted to change later.
+    // For now, we'll leave the password as is (or null if it was never set).
+    await user.save({ validateBeforeSave: false });
+  }
+
+  let gymName = null;
+  if (user.gymId) {
+    const gym = await Gym.findById(user.gymId);
+    if (gym) {
+      gymName = gym.gymName;
+    }
+  }
+
+  const token = jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      gymId: user.gymId,
+      gymName: gymName,
+    },
+    JWT_SECRET,
+    { expiresIn: '2h' }
+  );
+
+  console.log('✅ Quick login successful for', phone_number);
+  const isCompleted = user.onboardingProgress && user.onboardingProgress.isCompleted;
+  const userPayload = {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    gymId: user.gymId,
+    gymName: gymName,
+    hasCompletedOnboarding: isCompleted,
+  };
+
+  res.json({
+    token,
+    user: userPayload,
+  });
+};
+
 
 /**
  * Generate an invitation code
@@ -364,33 +441,44 @@ exports.getDashboardStats = async (req, res) => {
     const membersCount = await User.countDocuments({ role: 'gym_member' });
     console.log('📊 Total members:', membersCount);
 
+    const trainersCount = await User.countDocuments({ role: 'gym_trainer' });
+    console.log('📊 Total trainers:', trainersCount);
+
     const invitesCount = await InviteCode.countDocuments({ used: false });
     console.log('📊 Active invites:', invitesCount);
 
-    // Log the query we're using
-    console.log('🔍 Querying active members with:', {
-      role: 'gym_member',
-      hasCompletedOnboarding: true
-    });
+    // Registrations in last 7 days (Mon-Sun)
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const now = new Date();
+    // Find the most recent Monday
+    const monday = new Date(now);
+    const dayOfWeek = monday.getDay(); // 0 (Sun) - 6 (Sat)
+    const diffToMonday = (dayOfWeek + 6) % 7; // 0 if Mon, 1 if Tue, ..., 6 if Sun
+    monday.setDate(now.getDate() - diffToMonday);
+    monday.setHours(0, 0, 0, 0);
 
-    // First, let's find all such users to inspect
-    const activeMembers = await User.find({ 
-      role: 'gym_member',
-      hasCompletedOnboarding: true
-    });
-    console.log('📊 Active members found:', activeMembers.length);
-    console.log('📄 Active members details:', activeMembers.map(m => ({
-      email: m.email,
-      hasCompletedOnboarding: m.hasCompletedOnboarding
-    })));
+    // Get all users created in the last 7 days (members + trainers)
+    const weekUsers = await User.find({
+      role: { $in: ['gym_member', 'gym_trainer'] },
+      createdAt: { $gte: monday }
+    }).select('createdAt role');
 
-    const activeMembersCount = activeMembers.length;
+    const registrations = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1);
+      const count = weekUsers.filter(u => u.createdAt >= day && u.createdAt < nextDay).length;
+      registrations.push({ day: dayNames[i], count });
+    }
 
     const stats = {
       gyms: gymsCount,
       members: membersCount,
+      trainers: trainersCount,
       invites: invitesCount,
-      activeMembers: activeMembersCount
+      registrations
     };
 
     console.log('📤 Sending stats:', stats);
@@ -514,6 +602,45 @@ exports.getGymMembers = async (req, res) => {
   }
 };
 
+/**
+ * Get dashboard stats for a gym (for gym_owner)
+ */
+exports.getGymDashboardStats = async (req, res) => {
+  try {
+    if (req.user.role !== 'gym_owner') {
+      return res.status(403).json({ message: 'Forbidden: gym_owner only' });
+    }
+    const gymId = req.user.gymId;
+    // Get all users for this gym
+    const users = await require('../models/User').find({ gymId });
+    // Only count trainers and members for registrations
+    const trainersAndMembers = users.filter(u => u.role === 'gym_trainer' || u.role === 'gym_member');
+    // Registrations in last 7 days (always Mon-Sun order)
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    // Find the date for the most recent Monday
+    const now = new Date();
+    const monday = new Date(now);
+    const dayOfWeek = monday.getDay(); // 0 (Sun) - 6 (Sat)
+    // If today is not Monday, go back to the most recent Monday
+    const diffToMonday = (dayOfWeek + 6) % 7; // 0 if Mon, 1 if Tue, ..., 6 if Sun
+    monday.setDate(now.getDate() - diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+    const registrations = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      const nextDay = new Date(day);
+      nextDay.setDate(day.getDate() + 1);
+      const count = trainersAndMembers.filter(u => u.createdAt >= day && u.createdAt < nextDay).length;
+      registrations.push({ day: dayNames[i], count });
+    }
+    res.status(200).json({ membersCount: trainersAndMembers.length, trainersCount: users.filter(u => u.role === 'gym_trainer').length, registrations });
+  } catch (error) {
+    console.error('❌ Error fetching gym dashboard stats:', error);
+    res.status(500).json({ message: 'Error fetching gym dashboard stats', error: error.message });
+  }
+};
+
 module.exports = {
   register: exports.register,
   login: exports.login,
@@ -527,4 +654,6 @@ module.exports = {
   updateProfile: exports.updateProfile,
   getMe: exports.getMe,
   getGymMembers: exports.getGymMembers,
+  getGymDashboardStats: exports.getGymDashboardStats,
+  quickLogin: exports.quickLogin,
 };

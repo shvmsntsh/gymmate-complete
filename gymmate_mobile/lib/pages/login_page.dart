@@ -169,18 +169,34 @@ class _LoginPageState extends State<LoginPage> {
                         // Login Button
                         _isLoading
                             ? const Center(child: CircularProgressIndicator())
-                            : ElevatedButton(
-                                onPressed: _isLoading ? null : _login,
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
+                            : GestureDetector(
+                                onTap: _isLoading ? null : _login,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(vertical: 18),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
                                     borderRadius: BorderRadius.circular(16),
-                                  ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary.withOpacity(0.18),
+                                        blurRadius: 16,
+                                        spreadRadius: 2,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                 ),
-                                child: const Text(
+                                  child: Center(
+                                    child: Text(
                                   'Login',
-                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        color: theme.colorScheme.onPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18,
+                                      ),
                                 ),
+                                  ),
+                                ).animate().fadeIn(duration: 400.ms).scaleXY(begin: 0.98, end: 1, duration: 400.ms, curve: Curves.easeOutBack),
                               ),
                         const SizedBox(height: 32),
                         // Register Link

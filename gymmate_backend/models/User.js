@@ -13,10 +13,16 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  phone_number: {
+    type: String,
+    unique: true,
+    sparse: true, // Allows multiple documents to have a null value for this field
+  },
   // Hashed password
   password: {
     type: String,
-    required: true,
+    // Not required if user is only invited
+    required: function() { return !this.invited; },
   },
   // Role determines access level:
   // 'superadmin' = central builder's office (superadmin)
@@ -34,6 +40,14 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Gym',
     required: function() { return this.role === 'gym_member' || this.role === 'gym_trainer'; }
+  },
+  invited: {
+    type: Boolean,
+    default: false,
+  },
+  registered: {
+    type: Boolean,
+    default: false,
   },
   // Date the user joined
   joinDate: {

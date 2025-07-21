@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gymmate_mobile/services/auth_service.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:gymmate_mobile/api/api_config.dart';
 import 'package:gymmate_mobile/services/invite_service.dart';
 import 'package:gymmate_mobile/models/invite_code_model.dart';
 import 'dart:developer' as developer;
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
+import 'package:gymmate_mobile/main.dart';
+import 'package:gymmate_mobile/widgets/animated_form_field.dart';
 
 class InviteCodeListPage extends StatefulWidget {
   const InviteCodeListPage({super.key});
@@ -61,48 +60,61 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
 
     final isSuperadmin = authProvider.userRole == 'superadmin';
     final isGymOwner = authProvider.userRole == 'gym_owner';
-    String? roleToGenerate = isSuperadmin ? 'gym_owner' : null;
+
+    String? roleToGenerate;
+    String? name;
+    String? email;
+    String? phoneNumber;
+
     if (isGymOwner) {
-      // Prompt for member/trainer
-      roleToGenerate = await showDialog<String>(
+      final result = await showDialog<Map<String, String>>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Select Invite Type'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.person),
-                title: const Text('Gym Member'),
-                onTap: () => Navigator.of(context).pop('gym_member'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.fitness_center),
-                title: const Text('Gym Trainer'),
-                onTap: () => Navigator.of(context).pop('gym_trainer'),
-              ),
-            ],
-          ),
-        ),
+        builder: (context) => _GenerateInviteDialog(),
       );
+
+      if (result == null) return; // User cancelled
+
+      roleToGenerate = result['role'];
+      name = result['name'];
+      email = result['email'];
+      phoneNumber = result['phone_number'];
+
+    } else if (isSuperadmin) {
+      roleToGenerate = 'gym_owner';
+      // For superadmin, we might need a different dialog or flow
+      // to collect gym owner details, but for now, we'll focus on gym_owner flow.
     }
+    
     if (roleToGenerate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You are not allowed to generate invite codes.')),
       );
       return;
     }
+
     try {
-      final newCode = await _inviteService.generateInviteCode(roleToGenerate, authProvider.token!);
+      final newCode = await _inviteService.generateInviteCode(
+        role: roleToGenerate,
+        name: name,
+        email: email,
+        phoneNumber: phoneNumber,
+        token: authProvider.token!,
+      );
       developer.log('Generated code: ${newCode.code}', name: 'InviteCodeListPage');
       _refreshList();
       _showGeneratedCodeDialog(newCode.code, roleToGenerate);
     } catch (e) {
       developer.log('Failed to generate invite code: $e', name: 'InviteCodeListPage', error: e);
       if (mounted) {
+        String errorMessage = e.toString();
+        if (errorMessage.contains("User with this phone number already exists")) {
+          errorMessage = "A user with this phone number already exists.";
+        } else {
+          errorMessage = "Failed to generate code: ${e.toString()}";
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to generate code: ${e.toString()}'),
+              content: Text(errorMessage),
               backgroundColor: Colors.red),
         );
       }
@@ -247,9 +259,100 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _generateCode,
-        child: const Icon(Icons.add),
         tooltip: 'Generate Invite Code',
+        child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+class _GenerateInviteDialog extends StatefulWidget {
+  @override
+  __GenerateInviteDialogState createState() => __GenerateInviteDialogState();
+}
+
+class __GenerateInviteDialogState extends State<_GenerateInviteDialog> {
+  final _formKey = GlobalKey<FormState>();
+  String? _selectedRole;
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Generate Invite'),
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                hint: const Text('Select Role'),
+                items: [
+                  const DropdownMenuItem(value: 'gym_member', child: Text('Gym Member')),
+                  const DropdownMenuItem(value: 'gym_trainer', child: Text('Gym Trainer')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedRole = value;
+                  });
+                },
+                validator: (value) => value == null ? 'Role is required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: 'Full Name'),
+                validator: (value) => value == null || value.isEmpty ? 'Name is required' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Email is required';
+                  if (!RegExp(r"^\S+@\S+\.\S+$").hasMatch(value)) return 'Invalid email format';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(labelText: 'Phone Number'),
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Phone number is required';
+                  if (!RegExp(r'^(?:\+91)?[6-9]\d{9}$').hasMatch(value)) return 'Invalid Indian phone number';
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.of(context).pop({
+                'role': _selectedRole!,
+                'name': _nameController.text,
+                'email': _emailController.text,
+                'phone_number': _phoneController.text,
+              });
+            }
+          },
+          child: const Text('Generate'),
+        ),
+      ],
     );
   }
 }

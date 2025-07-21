@@ -15,14 +15,15 @@
 
 import 'package:charts_common/common.dart' as common
     show ArcRendererConfig, PieChart, RTLSpec, Series;
+import 'package:flutter/src/foundation/key.dart';
 import 'behaviors/chart_behavior.dart' show ChartBehavior;
 import 'base_chart.dart' show BaseChart, LayoutConfig;
 import 'base_chart_state.dart' show BaseChartState;
 import 'selection_model_config.dart' show SelectionModelConfig;
 
 class PieChart<D> extends BaseChart<D> {
-  PieChart(
-    List<common.Series<dynamic, D>> seriesList, {
+  const PieChart(
+    List<common.Series<dynamic, D>> seriesList, {Key? key, 
     bool? animate,
     Duration? animationDuration,
     common.ArcRendererConfig<D>? defaultRenderer,
@@ -33,7 +34,7 @@ class PieChart<D> extends BaseChart<D> {
     bool defaultInteractions = true,
   }) : super(
           seriesList,
-          animate: animate,
+           key: key, animate: animate,
           animationDuration: animationDuration,
           defaultRenderer: defaultRenderer,
           behaviors: behaviors,
@@ -45,5 +46,5 @@ class PieChart<D> extends BaseChart<D> {
 
   @override
   common.PieChart<D> createCommonChart(BaseChartState chartState) =>
-      new common.PieChart<D>(layoutConfig: layoutConfig?.commonLayoutConfig);
+      common.PieChart<D>(layoutConfig: layoutConfig?.commonLayoutConfig);
 }

@@ -24,6 +24,7 @@ import 'package:charts_common/common.dart' as common
         SeriesRendererConfig,
         SelectionModelType,
         SelectionTrigger;
+import 'package:flutter/src/foundation/key.dart';
 import 'behaviors/select_nearest.dart' show SelectNearest;
 import 'package:meta/meta.dart' show immutable;
 import 'behaviors/chart_behavior.dart'
@@ -69,8 +70,8 @@ abstract class BaseChart<D> extends StatefulWidget {
   /// Optional state that overrides internally kept state, such as selection.
   final UserManagedState<D>? userManagedState;
 
-  BaseChart(this.seriesList,
-      {bool? animate,
+  const BaseChart(this.seriesList,
+      {Key? key, bool? animate,
       Duration? animationDuration,
       this.defaultRenderer,
       this.customSeriesRenderers,
@@ -80,12 +81,12 @@ abstract class BaseChart<D> extends StatefulWidget {
       this.defaultInteractions = true,
       this.layoutConfig,
       this.userManagedState})
-      : this.animate = animate ?? true,
-        this.animationDuration =
-            animationDuration ?? const Duration(milliseconds: 300);
+      : animate = animate ?? true,
+        animationDuration =
+            animationDuration ?? const Duration(milliseconds: 300), super(key: key);
 
   @override
-  BaseChartState<D> createState() => new BaseChartState<D>();
+  BaseChartState<D> createState() => BaseChartState<D>();
 
   /// Creates and returns a [common.BaseChart].
   common.BaseChart<D> createCommonChart(BaseChartState<D> chartState);
@@ -159,7 +160,7 @@ abstract class BaseChart<D> extends StatefulWidget {
     }
 
     // Add any remaining/new behaviors.
-    behaviorList.forEach((ChartBehavior<D> behaviorWidget) {
+    for (var behaviorWidget in behaviorList) {
       final commonBehavior = behaviorWidget.createCommonBehavior();
 
       // Assign the chart state to any behavior that needs it.
@@ -172,13 +173,13 @@ abstract class BaseChart<D> extends StatefulWidget {
       chartState.addedCommonBehaviorsByRole[behaviorWidget.role] =
           commonBehavior;
       chartState.markChartDirty();
-    });
+    }
   }
 
   /// Create the list of default interaction behaviors.
   void addDefaultInteractions(List<ChartBehavior> behaviors) {
     // Update selection model
-    behaviors.add(new SelectNearest<D>(
+    behaviors.add(SelectNearest<D>(
         eventTrigger: common.SelectionTrigger.tap,
         selectionModelType: common.SelectionModelType.info,
         selectClosestSeries: true));
@@ -192,7 +193,7 @@ abstract class BaseChart<D> extends StatefulWidget {
 
   void _updateSelectionModel(
       common.BaseChart<D> chart, BaseChartState<D> chartState) {
-    final prevTypes = new List<common.SelectionModelType>.from(
+    final prevTypes = List<common.SelectionModelType>.from(
         chartState.addedSelectionChangedListenersByType.keys);
 
     // Update any listeners for each type.
@@ -225,13 +226,13 @@ abstract class BaseChart<D> extends StatefulWidget {
     });
 
     // Remove any lingering listeners.
-    prevTypes.forEach((common.SelectionModelType type) {
+    for (var type in prevTypes) {
       chart.getSelectionModel(type)
         ..removeSelectionChangedListener(
             chartState.addedSelectionChangedListenersByType[type]!)
         ..removeSelectionUpdatedListener(
             chartState.addedSelectionUpdatedListenersByType[type]!);
-    });
+    }
   }
 
   /// Gets distinct set of gestures this chart will subscribe to.
@@ -241,7 +242,7 @@ abstract class BaseChart<D> extends StatefulWidget {
   /// Gestures are then setup to be proxied in [common.BaseChart] and that is
   /// held by [ChartContainerRenderObject].
   Set<GestureType> getDesiredGestures(BaseChartState chartState) {
-    final types = new Set<GestureType>();
+    final types = <GestureType>{};
     behaviors?.forEach((ChartBehavior behavior) {
       types.addAll(behavior.desiredGestures);
     });
@@ -250,9 +251,9 @@ abstract class BaseChart<D> extends StatefulWidget {
       addDefaultInteractions(chartState.autoBehaviorWidgets);
     }
 
-    chartState.autoBehaviorWidgets.forEach((ChartBehavior behavior) {
+    for (var behavior in chartState.autoBehaviorWidgets) {
       types.addAll(behavior.desiredGestures);
-    });
+    }
     return types;
   }
 }
@@ -264,14 +265,14 @@ class LayoutConfig {
   final common.MarginSpec rightMarginSpec;
   final common.MarginSpec bottomMarginSpec;
 
-  LayoutConfig({
+  const LayoutConfig({
     required this.leftMarginSpec,
     required this.topMarginSpec,
     required this.rightMarginSpec,
     required this.bottomMarginSpec,
   });
 
-  common.LayoutConfig get commonLayoutConfig => new common.LayoutConfig(
+  common.LayoutConfig get commonLayoutConfig => common.LayoutConfig(
       leftSpec: leftMarginSpec,
       topSpec: topMarginSpec,
       rightSpec: rightMarginSpec,

@@ -44,21 +44,21 @@ class OnboardingService {
 
   Future<Map<String, dynamic>> getOnboardingStatus() {
     return _performRequest((token) => http.get(
-      Uri.parse('${baseUrl}/api/onboarding/status'),
+      Uri.parse('$baseUrl/api/onboarding/status'),
       headers: {'Authorization': 'Bearer $token'},
     ));
   }
 
   Future<Map<String, dynamic>> startOnboarding() {
     return _performRequest((token) => http.post(
-      Uri.parse('${baseUrl}/api/onboarding/start'),
+      Uri.parse('$baseUrl/api/onboarding/start'),
       headers: {'Authorization': 'Bearer $token'},
     ));
   }
 
   Future<Map<String, dynamic>> saveStepProgress(int step, Map<String, dynamic> data) {
      return _performRequest((token) => http.post(
-      Uri.parse('${baseUrl}/api/onboarding/step'),
+      Uri.parse('$baseUrl/api/onboarding/step'),
       headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
       body: jsonEncode({'step': step, 'data': data}),
     ));
@@ -77,8 +77,8 @@ class OnboardingService {
     final body = json.encode(data);
 
     print('[OnboardingService] POST $url');
-    print('[OnboardingService] Headers: ' + headers.toString());
-    print('[OnboardingService] Body: ' + body);
+    print('[OnboardingService] Headers: $headers');
+    print('[OnboardingService] Body: $body');
 
     try {
       final response = await http.post(
@@ -127,21 +127,21 @@ class OnboardingService {
   
   Future<Map<String, dynamic>> getUserBadges() {
      return _performRequest((token) => http.get(
-      Uri.parse('${baseUrl}/api/onboarding/badges'),
+      Uri.parse('$baseUrl/api/onboarding/badges'),
       headers: {'Authorization': 'Bearer $token'},
     ));
   }
 
   Future<Map<String, dynamic>> getUserProgress() {
     return _performRequest((token) => http.get(
-      Uri.parse('${baseUrl}/api/onboarding/progress'),
+      Uri.parse('$baseUrl/api/onboarding/progress'),
       headers: {'Authorization': 'Bearer $token'},
     ));
   }
   
   Future<Map<String, dynamic>> resetOnboarding() async {
     final data = await _performRequest((token) => http.post(
-      Uri.parse('${baseUrl}/api/onboarding/reset'),
+      Uri.parse('$baseUrl/api/onboarding/reset'),
       headers: {'Authorization': 'Bearer $token'},
     ));
     await _clearLocalCache();

@@ -20,7 +20,7 @@ class AnimatedBackground extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    theme.colorScheme.background,
+                    theme.colorScheme.surface,
                     theme.colorScheme.surface.withOpacity(0.7),
                   ],
                   begin: Alignment.topLeft,

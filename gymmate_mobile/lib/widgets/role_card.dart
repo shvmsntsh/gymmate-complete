@@ -66,7 +66,7 @@ class RoleCard extends StatelessWidget {
               title,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: selected ? theme.colorScheme.primary : theme.colorScheme.onBackground,
+                color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
               ),
             ),
           ],

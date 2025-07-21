@@ -26,6 +26,7 @@ class DomainA11yExploreBehavior<D> extends ChartBehavior<D> {
   /// Returns a string for a11y vocalization from a list of series datum.
   final common.VocalizationCallback? vocalizationCallback;
 
+  @override
   final Set<GestureType> desiredGestures;
 
   /// The gesture that activates explore mode. Defaults to long press.
@@ -60,19 +61,19 @@ class DomainA11yExploreBehavior<D> extends ChartBehavior<D> {
     String? exploreModeEnabledAnnouncement,
     String? exploreModeDisabledAnnouncement,
   }) {
-    final desiredGestures = new Set<GestureType>();
+    final desiredGestures = <GestureType>{};
     exploreModeTrigger ??= common.ExploreModeTrigger.pressHold;
 
     switch (exploreModeTrigger) {
       case common.ExploreModeTrigger.pressHold:
-        desiredGestures..add(GestureType.onLongPress);
+        desiredGestures.add(GestureType.onLongPress);
         break;
       case common.ExploreModeTrigger.tap:
-        desiredGestures..add(GestureType.onTap);
+        desiredGestures.add(GestureType.onTap);
         break;
     }
 
-    return new DomainA11yExploreBehavior._internal(
+    return DomainA11yExploreBehavior._internal(
       vocalizationCallback: vocalizationCallback,
       desiredGestures: desiredGestures,
       exploreModeTrigger: exploreModeTrigger,
@@ -84,7 +85,7 @@ class DomainA11yExploreBehavior<D> extends ChartBehavior<D> {
 
   @override
   common.DomainA11yExploreBehavior<D> createCommonBehavior() {
-    return new common.DomainA11yExploreBehavior<D>(
+    return common.DomainA11yExploreBehavior<D>(
         vocalizationCallback: vocalizationCallback,
         exploreModeTrigger: exploreModeTrigger,
         minimumWidth: minimumWidth,
@@ -96,7 +97,7 @@ class DomainA11yExploreBehavior<D> extends ChartBehavior<D> {
   void updateCommonBehavior(common.ChartBehavior commonBehavior) {}
 
   @override
-  String get role => 'DomainA11yExplore-${exploreModeTrigger}';
+  String get role => 'DomainA11yExplore-$exploreModeTrigger';
 
   @override
   bool operator ==(Object o) =>

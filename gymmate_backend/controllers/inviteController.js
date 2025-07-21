@@ -34,28 +34,24 @@ exports.generateInviteCode = async (req, res) => {
   console.log('🔔 Invite code generation attempt by:', req.user.email);
   console.log('📥 Full request body:', req.body);
   try {
-    const { roleToGenerate } = req.body;
+    const { role, phone_number, name, email } = req.body;
     const currentUser = req.user;
 
     console.log('Requesting user role:', currentUser.role);
-    console.log('Role to generate:', roleToGenerate);
-    console.log('Type of roleToGenerate:', typeof roleToGenerate);
-    if (roleToGenerate && typeof roleToGenerate === 'string') {
-      console.log('roleToGenerate value (string):', roleToGenerate, '| length:', roleToGenerate.length, '| chars:', roleToGenerate.split('').join(','));
-    }
+    console.log('Role to generate:', role);
 
-    if (!roleToGenerate) {
-      return res.status(400).json({ message: 'roleToGenerate is required' });
+    if (!role) {
+      return res.status(400).json({ message: 'role is required' });
     }
 
     // Superadmin can only create gym_owner codes
-    if (currentUser.role === 'superadmin' && roleToGenerate !== 'gym_owner') {
+    if (currentUser.role === 'superadmin' && role !== 'gym_owner') {
       return res.status(403).json({ message: 'Superadmin can only generate codes for gym_owner' });
     }
 
     // Gym owner can only create gym_member or gym_trainer codes
-    const normalizedRole = typeof roleToGenerate === 'string' ? roleToGenerate.trim().toLowerCase() : '';
-    console.log('Normalized roleToGenerate:', normalizedRole);
+    const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : '';
+    console.log('Normalized role:', normalizedRole);
     if (currentUser.role === 'gym_owner' && !['gym_member', 'gym_trainer'].includes(normalizedRole)) {
       return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member or gym_trainer' });
     }
@@ -73,6 +69,30 @@ exports.generateInviteCode = async (req, res) => {
       }
       gymId = gym._id;
       gymName = gym.gymName;
+    }
+
+    if (phone_number) {
+      // Create a user placeholder
+      const userExists = await User.findOne({ phone_number });
+      if (userExists) {
+        return res.status(409).json({ message: 'User with this phone number already exists.' });
+      }
+
+      if (!name || !email) {
+        return res.status(400).json({ message: 'Name and email are required when providing a phone number.' });
+      }
+
+      const newUser = new User({
+        name,
+        email,
+        phone_number,
+        role: normalizedRole,
+        gymId,
+        invited: true,
+        registered: false,
+      });
+      await newUser.save({ validateBeforeSave: false }); // Bypass password requirement
+      console.log('✅ Invited user created:', newUser);
     }
 
     const code = Math.random().toString(36).substring(2, 10).toUpperCase();

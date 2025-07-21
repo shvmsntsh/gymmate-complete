@@ -27,8 +27,21 @@ class InviteService {
     }
   }
 
-  Future<InviteCode> generateInviteCode(String roleToGenerate, String token) async {
-    developer.log('Generating invite code for role: $roleToGenerate', name: 'InviteService');
+  Future<InviteCode> generateInviteCode({
+    required String role,
+    String? name,
+    String? email,
+    String? phoneNumber,
+    required String token,
+  }) async {
+    developer.log('Generating invite code for role: $role', name: 'InviteService');
+
+    final Map<String, dynamic> body = {
+      'role': role,
+      'name': name,
+      'email': email,
+      'phone_number': phoneNumber,
+    };
 
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/api/invite/generate'),
@@ -36,7 +49,7 @@ class InviteService {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({'roleToGenerate': roleToGenerate}),
+      body: jsonEncode(body),
     );
 
     if (response.statusCode == 201) {

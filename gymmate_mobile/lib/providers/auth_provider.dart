@@ -17,7 +17,10 @@ class AuthProvider with ChangeNotifier {
 
   final _storage = const FlutterSecureStorage();
 
-  bool get isAuth => _token != null;
+  bool get isAuth {
+    print('[AuthProvider] isAuth getter called. _token: ' + (_token ?? 'null'));
+    return _token != null;
+  }
   String? get token => _token;
   String? get userId => _userId;
   String? get userRole => _userRole;
@@ -57,6 +60,8 @@ class AuthProvider with ChangeNotifier {
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
       _avatarPath = user['avatarPath'] ?? _defaultAvatarForRole(_userRole);
 
+      print('[AuthProvider] After login: _token=$_token, _userData=$_userData, _userRole=$_userRole');
+
       await _storage.write(key: 'user_token', value: _token);
       await _storage.write(key: 'user_data', value: json.encode(_userData));
       await _storage.write(key: 'user_id', value: _userId);
@@ -72,6 +77,54 @@ class AuthProvider with ChangeNotifier {
       return true;
     } catch (e) {
       print('🔑 [AuthProvider] Login error: $e');
+      rethrow;
+    }
+  }
+
+  Future<bool> quickLogin(String phoneNumber, String otp) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/quick-login');
+    print('📱 [AuthProvider] Quick Login started for $phoneNumber');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'phone_number': phoneNumber, 'otp': otp}),
+      );
+
+      print('📱 [AuthProvider] Quick Login response: ${response.statusCode} ${response.body}');
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode != 200) {
+        print('📱 [AuthProvider] Quick Login failed: ${responseData['message']}');
+        throw Exception(responseData['message'] ?? 'Failed to login');
+      }
+
+      _token = responseData['token'];
+      final user = responseData['user'];
+      _userData = user;
+      _userId = user['id'];
+      _userRole = user['role'];
+      _userName = user['name'];
+      _userEmail = user['email'];
+      _gymName = user['gymName'];
+      _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
+      _avatarPath = user['avatarPath'] ?? _defaultAvatarForRole(_userRole);
+
+      await _storage.write(key: 'user_token', value: _token);
+      await _storage.write(key: 'user_data', value: json.encode(_userData));
+      await _storage.write(key: 'user_id', value: _userId);
+      await _storage.write(key: 'user_role', value: _userRole);
+      await _storage.write(key: 'user_name', value: _userName);
+      await _storage.write(key: 'user_email', value: _userEmail);
+      await _storage.write(key: 'gym_name', value: _gymName);
+      await _storage.write(key: 'has_completed_onboarding', value: _hasCompletedOnboarding.toString());
+      await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
+
+      print('🔒 [AuthProvider] Quick Login successful, token stored. Notifying listeners.');
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('📱 [AuthProvider] Quick Login error: $e');
       rethrow;
     }
   }
@@ -114,19 +167,17 @@ class AuthProvider with ChangeNotifier {
     _gymName = null;
     _hasCompletedOnboarding = null;
     _userData = null;
-    
-    // Immediately notify listeners to update UI
-    notifyListeners();
-
+    _avatarPath = null;
+    // Clear secure storage first
     await _storage.deleteAll();
     print('✅ User session cleared from secure storage.');
-    // Call notifyListeners again in case storage clear is async
+    // Now notify listeners
     notifyListeners();
   }
 
   Future<bool> register(Map<String, dynamic> registrationData) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/register');
-    print('🔑 [AuthProvider] Registration started for [32m${registrationData['email']}[0m');
+    print('🔑 [AuthProvider] Registration started for  [32m${registrationData['email']} [0m');
     try {
       final response = await http.post(
         url,

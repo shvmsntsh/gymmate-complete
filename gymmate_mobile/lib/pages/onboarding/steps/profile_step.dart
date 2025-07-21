@@ -12,7 +12,7 @@ class ProfileStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     final provider = Provider.of<OnboardingProvider>(context, listen: false);
     final heightController = TextEditingController(text: provider.height > 0 ? provider.height.toString() : '');
     final weightController = TextEditingController(text: provider.weight > 0 ? provider.weight.toString() : '');
@@ -21,7 +21,7 @@ class ProfileStep extends StatelessWidget {
     return Consumer<OnboardingProvider>(
       builder: (context, provider, _) {
         return Form(
-          key: _formKey,
+          key: formKey,
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -115,7 +115,7 @@ class ProfileStep extends StatelessWidget {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
-                  if (_formKey.currentState?.validate() != true || provider.gender == null || provider.gender!.isEmpty) {
+                  if (formKey.currentState?.validate() != true || provider.gender == null || provider.gender!.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Please fill all fields and select a gender.')),
                     );

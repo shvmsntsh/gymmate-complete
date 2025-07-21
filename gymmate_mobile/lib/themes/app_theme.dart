@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'app_colors.dart';
 
 class AppTheme {
   static const Color _lightCream = Color(0xFFFCFAF6);
   static const Color _lightGold = Color(0xFFB59F5B);
-  static const Color _lightYellow = Color(0xFFFFCC3A);
+  static const Color _lightYellow = AppColors.accentYellow;
   static const Color _lightInput = Color(0xF7F4EDFF);
 
   static const Color _darkBrown = Color(0xFF232014);
   static const Color _darkInput = Color(0xFF3A3320);
   static const Color _darkGold = Color(0xFFB59F5B);
-  static const Color _darkYellow = Color(0xFFFFCC3A);
+  static const Color _darkYellow = AppColors.accentYellow;
 
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
@@ -18,9 +19,8 @@ class AppTheme {
     scaffoldBackgroundColor: _lightCream,
     colorScheme: const ColorScheme.light(
       primary: _lightGold,
-      secondary: _lightYellow,
+      secondary: AppColors.accentYellow,
       surface: Colors.white,
-      background: _lightCream,
       onPrimary: Colors.black,
       onSurface: Colors.black87,
     ),
@@ -47,14 +47,14 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: _lightGold, width: 2),
+        borderSide: const BorderSide(color: _lightGold, width: 2),
       ),
       hintStyle: const TextStyle(color: _lightGold),
       labelStyle: const TextStyle(color: _lightGold),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: _lightYellow,
+        backgroundColor: AppColors.accentYellow,
         foregroundColor: Colors.black,
         minimumSize: const Size.fromHeight(52),
         shape: RoundedRectangleBorder(
@@ -78,9 +78,8 @@ class AppTheme {
     scaffoldBackgroundColor: _darkBrown,
     colorScheme: const ColorScheme.dark(
       primary: _darkGold,
-      secondary: _darkYellow,
+      secondary: AppColors.accentYellow,
       surface: _darkBrown,
-      background: _darkBrown,
       onPrimary: Colors.white,
       onSurface: Colors.white,
     ),
@@ -107,14 +106,14 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: BorderSide(color: _darkGold, width: 2),
+        borderSide: const BorderSide(color: _darkGold, width: 2),
       ),
       hintStyle: const TextStyle(color: _darkGold),
       labelStyle: const TextStyle(color: _darkGold),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: _darkYellow,
+        backgroundColor: AppColors.accentYellow,
         foregroundColor: Colors.black,
         minimumSize: const Size.fromHeight(52),
         shape: RoundedRectangleBorder(

@@ -24,7 +24,7 @@ class WelcomeStep extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Track your progress, join challenges, and achieve your fitness goals with TFT Gyms.',
+                'Track your progress, join challenges, and achieve your fitness goals with GymMate.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Colors.white70,
                 ),

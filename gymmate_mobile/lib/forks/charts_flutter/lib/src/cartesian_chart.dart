@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import 'dart:collection' show LinkedHashMap;
+import 'package:flutter/src/foundation/key.dart';
 import 'package:meta/meta.dart' show immutable, protected;
 
 import 'package:charts_common/common.dart' as common
@@ -40,8 +41,8 @@ abstract class CartesianChart<D> extends BaseChart<D> {
   final LinkedHashMap<String, common.NumericAxisSpec>? disjointMeasureAxes;
   final bool? flipVerticalAxis;
 
-  CartesianChart(
-    List<common.Series<dynamic, D>> seriesList, {
+  const CartesianChart(
+    List<common.Series<dynamic, D>> seriesList, {Key? key, 
     bool? animate,
     Duration? animationDuration,
     this.domainAxis,
@@ -59,7 +60,7 @@ abstract class CartesianChart<D> extends BaseChart<D> {
     this.flipVerticalAxis,
   }) : super(
           seriesList,
-          animate: animate,
+           key: key, animate: animate,
           animationDuration: animationDuration,
           defaultRenderer: defaultRenderer,
           customSeriesRenderers: customSeriesRenderers,
@@ -107,7 +108,7 @@ abstract class CartesianChart<D> extends BaseChart<D> {
   @protected
   LinkedHashMap<String, common.NumericAxis>? createDisjointMeasureAxes() {
     if (disjointMeasureAxes != null) {
-      final disjointAxes = new LinkedHashMap<String, common.NumericAxis>();
+      final disjointAxes = LinkedHashMap<String, common.NumericAxis>();
 
       disjointMeasureAxes!
           .forEach((String axisId, common.NumericAxisSpec axisSpec) {

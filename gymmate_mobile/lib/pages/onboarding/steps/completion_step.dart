@@ -3,9 +3,8 @@ import 'package:gymmate_mobile/providers/onboarding_provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
-import 'dart:math';
 import '../../../main.dart';
-import '../../../pages/plan_page.dart';
+import '../../plan_page.dart';
 // Removed import of 'base_step.dart'
 
 class CompletionStep extends StatelessWidget {
@@ -20,14 +19,14 @@ class CompletionStep extends StatelessWidget {
   Widget build(BuildContext context) {
     // Static title and description widgets
     final title = Text(
-      'Welcome to TFT Gyms!',
+      'Welcome to GymMate!',
       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
         color: Colors.white,
         fontWeight: FontWeight.bold,
       ),
       textAlign: TextAlign.center,
     );
-    final description = const Text(
+    const description = Text(
       'Your fitness journey starts now',
       style: TextStyle(
         fontSize: 16,
@@ -118,9 +117,9 @@ class _CompletionContentState extends State<_CompletionContent> {
                 if (success) {
                   await authProvider.completeOnboarding();
                   if (context.mounted) {
-                    // Navigate to the MainNavigationScaffold which will show the Plan page
+                    // Navigate to the MainNavigationScaffold and show PlanPage (Plan tab)
                     Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const MainNavigationScaffold()),
+                      MaterialPageRoute(builder: (context) => const MainNavigationScaffold(initialTab: 1)),
                       (route) => false,
                     );
                   }

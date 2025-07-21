@@ -301,14 +301,16 @@ router.post('/generate-invite', authenticateToken, async (req, res) => {
 
 // 📌 Validate invite code
 router.post('/validate-invite', async (req, res) => {
-  const { code } = req.body;
-
+  let { code } = req.body;
+  console.log('[DEBUG] /validate-invite incoming code:', code);
+  code = code.trim().toUpperCase();
+  console.log('[DEBUG] Normalized code:', code);
   const { InviteCode } = require('../models/InviteCode');
   const invite = await InviteCode.findOne({ code, used: false });
+  console.log('[DEBUG] Invite lookup result:', invite);
   if (!invite) {
     return res.status(400).json({ message: 'Invalid or expired invite code' });
   }
-
   res.status(200).json({
     role: invite.role,
     gymId: invite.gymId,

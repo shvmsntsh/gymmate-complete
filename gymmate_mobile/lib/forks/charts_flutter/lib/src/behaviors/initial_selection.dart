@@ -25,7 +25,8 @@ import 'chart_behavior.dart' show ChartBehavior, GestureType;
 /// Chart behavior that sets the initial selection for a [selectionModelType].
 @immutable
 class InitialSelection<D> extends ChartBehavior<D> {
-  final desiredGestures = new Set<GestureType>();
+  @override
+  final desiredGestures = <GestureType>{};
 
   final common.SelectionModelType selectionModelType;
   final List<String>? selectedSeriesConfig;
@@ -38,7 +39,7 @@ class InitialSelection<D> extends ChartBehavior<D> {
 
   @override
   common.InitialSelection<D> createCommonBehavior() =>
-      new common.InitialSelection<D>(
+      common.InitialSelection<D>(
           selectionModelType: selectionModelType,
           selectedDataConfig: selectedDataConfig,
           selectedSeriesConfig: selectedSeriesConfig);
@@ -53,9 +54,9 @@ class InitialSelection<D> extends ChartBehavior<D> {
   bool operator ==(Object o) {
     return o is InitialSelection &&
         selectionModelType == o.selectionModelType &&
-        new ListEquality()
+        const ListEquality()
             .equals(selectedSeriesConfig, o.selectedSeriesConfig) &&
-        new ListEquality().equals(selectedDataConfig, o.selectedDataConfig);
+        const ListEquality().equals(selectedDataConfig, o.selectedDataConfig);
   }
 
   @override

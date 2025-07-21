@@ -70,15 +70,17 @@ abstract class BaseLegendContentBuilder implements LegendContentBuilder {
 /// [legendLayout] custom strategy for creating legend widget from list of
 /// widgets that represent a legend entry.
 class TabularLegendContentBuilder extends BaseLegendContentBuilder {
+  @override
   final LegendEntryLayout legendEntryLayout;
+  @override
   final LegendLayout legendLayout;
 
   TabularLegendContentBuilder(
       {LegendEntryLayout? legendEntryLayout, LegendLayout? legendLayout})
-      : this.legendEntryLayout =
+      : legendEntryLayout =
             legendEntryLayout ?? const SimpleLegendEntryLayout(),
-        this.legendLayout =
-            legendLayout ?? new TabularLegendLayout.horizontalFirst();
+        legendLayout =
+            legendLayout ?? TabularLegendLayout.horizontalFirst();
 
   @override
   bool operator ==(Object o) {

@@ -1,9 +1,6 @@
 // DEPRECATED: All login/signup logic is now handled in gamified_entry_screen.dart
 
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../api/api_config.dart';
 import 'login_page.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
@@ -28,8 +25,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _gymNameController = TextEditingController();
 
   bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  final bool _obscurePassword = true;
+  final bool _obscureConfirmPassword = true;
   String _selectedRole = 'gym_owner'; // Default role
   bool _isSuperAdminCode = false;
 

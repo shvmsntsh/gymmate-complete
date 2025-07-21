@@ -6,13 +6,16 @@ const jwt = require('jsonwebtoken');
 
 exports.registerGym = async (req, res) => {
   try {
-    const { name, email, password, inviteCode } = req.body;
+    let { name, email, password, inviteCode } = req.body;
+    console.log('[DEBUG] registerGym fields:', { name, email, password, inviteCode });
     if (!name?.trim() || !email?.trim() || !inviteCode?.trim()) {
       return res.status(400).json({ message: 'Name, email, and invite code are required' });
     }
-
+    inviteCode = inviteCode.trim().toUpperCase();
+    console.log('[DEBUG] Normalized inviteCode:', inviteCode);
     // Check invite code
-    const codeDoc = await InviteCode.findOne({ code: inviteCode.trim(), used: false });
+    const codeDoc = await InviteCode.findOne({ code: inviteCode, used: false });
+    console.log('[DEBUG] Invite lookup result:', codeDoc);
     if (!codeDoc) {
       return res.status(400).json({ message: 'Invalid or expired invite code' });
     }
@@ -43,7 +46,7 @@ exports.registerGym = async (req, res) => {
 
     // Mark invite code as used using the proper function
     const { markInviteCodeAsUsed } = require('../models/InviteCode');
-    await markInviteCodeAsUsed(inviteCode.trim(), email);
+    await markInviteCodeAsUsed(inviteCode, email);
 
     res.status(201).json({ message: 'Gym registered successfully', gym: savedGym });
   } catch (error) {

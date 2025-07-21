@@ -40,6 +40,7 @@ import '../chart_behavior.dart' show ChartBehavior, GestureType;
 ///       the data.
 @immutable
 class Slider<D> extends ChartBehavior<D> {
+  @override
   final Set<GestureType> desiredGestures;
 
   /// Type of input event for the slider.
@@ -59,7 +60,7 @@ class Slider<D> extends ChartBehavior<D> {
   final int? layoutPaintOrder;
 
   /// Initial domain position of the slider, in domain units.
-  final dynamic? initialDomainValue;
+  final dynamic initialDomainValue;
 
   /// Callback function that will be called when the position of the slider
   /// changes during a drag event.
@@ -115,17 +116,17 @@ class Slider<D> extends ChartBehavior<D> {
   factory Slider(
       {common.SelectionTrigger? eventTrigger,
       common.SymbolRenderer? handleRenderer,
-      dynamic? initialDomainValue,
+      dynamic initialDomainValue,
       String? roleId,
       common.SliderListenerCallback? onChangeCallback,
       bool snapToDatum = false,
       common.SliderStyle? style,
       int layoutPaintOrder = common.LayoutViewPaintOrder.slider}) {
     eventTrigger ??= common.SelectionTrigger.tapAndDrag;
-    handleRenderer ??= new common.RectSymbolRenderer();
+    handleRenderer ??= common.RectSymbolRenderer();
     // Default the handle size large enough to tap on a mobile device.
-    style ??= new common.SliderStyle(handleSize: Rectangle<int>(0, 0, 20, 30));
-    return new Slider._internal(
+    style ??= common.SliderStyle(handleSize: const Rectangle<int>(0, 0, 20, 30));
+    return Slider._internal(
         eventTrigger: eventTrigger,
         handleRenderer: handleRenderer,
         initialDomainValue: initialDomainValue,
@@ -139,7 +140,7 @@ class Slider<D> extends ChartBehavior<D> {
 
   static Set<GestureType> _getDesiredGestures(
       common.SelectionTrigger eventTrigger) {
-    final desiredGestures = new Set<GestureType>();
+    final desiredGestures = <GestureType>{};
     switch (eventTrigger) {
       case common.SelectionTrigger.tapAndDrag:
         desiredGestures..add(GestureType.onTap)..add(GestureType.onDrag);
@@ -152,14 +153,14 @@ class Slider<D> extends ChartBehavior<D> {
           ..add(GestureType.onDrag);
         break;
       default:
-        throw new ArgumentError(
-            'Slider does not support the event trigger ' + '"${eventTrigger}"');
+        throw ArgumentError(
+            'Slider does not support the event trigger ' '"$eventTrigger"');
     }
     return desiredGestures;
   }
 
   @override
-  common.Slider<D> createCommonBehavior() => new common.Slider<D>(
+  common.Slider<D> createCommonBehavior() => common.Slider<D>(
       eventTrigger: eventTrigger,
       handleRenderer: handleRenderer,
       initialDomainValue: initialDomainValue as D,

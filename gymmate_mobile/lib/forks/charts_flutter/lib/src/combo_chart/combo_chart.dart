@@ -70,7 +70,7 @@ class NumericComboChart extends CartesianChart<num> {
     // Optionally create primary and secondary measure axes if the chart was
     // configured with them. If no axes were configured, then the chart will
     // use its default types (usually a numeric axis).
-    return new common.NumericCartesianChart(
+    return common.NumericCartesianChart(
         layoutConfig: layoutConfig?.commonLayoutConfig,
         primaryMeasureAxis: primaryMeasureAxis?.createAxis(),
         secondaryMeasureAxis: secondaryMeasureAxis?.createAxis());
@@ -115,7 +115,7 @@ class OrdinalComboChart extends CartesianChart<String> {
     // Optionally create primary and secondary measure axes if the chart was
     // configured with them. If no axes were configured, then the chart will
     // use its default types (usually a numeric axis).
-    return new common.OrdinalCartesianChart(
+    return common.OrdinalCartesianChart(
         layoutConfig: layoutConfig?.commonLayoutConfig,
         primaryMeasureAxis: primaryMeasureAxis?.createAxis(),
         secondaryMeasureAxis: secondaryMeasureAxis?.createAxis());
