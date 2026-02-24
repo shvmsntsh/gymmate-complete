@@ -7,7 +7,6 @@ import '../widgets/progress_bar.dart';
 import '../widgets/animated_form_field.dart';
 import '../widgets/confetti_success.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/animated_entry_options.dart';
 import 'package:http/http.dart' as http;
 import 'package:gymmate_mobile/api/api_config.dart';
 import 'package:flutter/foundation.dart';
