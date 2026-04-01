@@ -731,30 +731,67 @@ exports.getGymDashboardStats = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden: gym_owner only' });
     }
     const gymId = req.user.gymId;
-    // Get all users for this gym
-    const users = await require('../models/User').find({ gymId });
-    // Only count trainers and members for registrations
-    const trainersAndMembers = users.filter(u => u.role === 'gym_trainer' || u.role === 'gym_member');
+    const [users, openInvites, gym] = await Promise.all([
+      require('../models/User').find({ gymId }),
+      InviteCode.find({ gymId, used: false }),
+      Gym.findById(gymId).lean(),
+    ]);
+
+    const members = users.filter((u) => u.role === 'gym_member');
+    const trainers = users.filter((u) => u.role === 'gym_trainer');
+    const trainersAndMembers = [...members, ...trainers];
+
     // Registrations in last 7 days (always Mon-Sun order)
     const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    // Find the date for the most recent Monday
     const now = new Date();
     const monday = new Date(now);
-    const dayOfWeek = monday.getDay(); // 0 (Sun) - 6 (Sat)
-    // If today is not Monday, go back to the most recent Monday
-    const diffToMonday = (dayOfWeek + 6) % 7; // 0 if Mon, 1 if Tue, ..., 6 if Sun
+    const dayOfWeek = monday.getDay();
+    const diffToMonday = (dayOfWeek + 6) % 7;
     monday.setDate(now.getDate() - diffToMonday);
     monday.setHours(0, 0, 0, 0);
+
     const registrations = [];
     for (let i = 0; i < 7; i++) {
       const day = new Date(monday);
       day.setDate(monday.getDate() + i);
       const nextDay = new Date(day);
       nextDay.setDate(day.getDate() + 1);
-      const count = trainersAndMembers.filter(u => u.createdAt >= day && u.createdAt < nextDay).length;
+      const count = trainersAndMembers.filter(
+        (u) => u.createdAt >= day && u.createdAt < nextDay,
+      ).length;
       registrations.push({ day: dayNames[i], count });
     }
-    res.status(200).json({ membersCount: trainersAndMembers.length, trainersCount: users.filter(u => u.role === 'gym_trainer').length, registrations });
+
+    const weeklySignups = registrations.reduce(
+      (sum, entry) => sum + Number(entry.count || 0),
+      0,
+    );
+
+    const brandCompletionChecks = [
+      gym?.gymName,
+      gym?.branding?.logoUrl,
+      gym?.branding?.primaryColor,
+      gym?.branding?.secondaryColor,
+      Array.isArray(gym?.services) && gym.services.length > 0,
+    ];
+    const brandCompletion = Math.round(
+      (brandCompletionChecks.filter(Boolean).length / brandCompletionChecks.length) * 100,
+    );
+
+    res.status(200).json({
+      membersCount: members.length,
+      trainersCount: trainers.length,
+      registrations,
+      activeMembers: members.length,
+      coachCount: trainers.length,
+      weeklySignups,
+      inviteCount: openInvites.length,
+      brandCompletion,
+      chartSeries: registrations.map((entry) => ({
+        label: entry.day,
+        value: Number(entry.count || 0),
+      })),
+    });
   } catch (error) {
     console.error('❌ Error fetching gym dashboard stats:', error);
     res.status(500).json({ message: 'Error fetching gym dashboard stats', error: error.message });

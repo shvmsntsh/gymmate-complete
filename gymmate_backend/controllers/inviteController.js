@@ -3,6 +3,22 @@ const Gym = require('../models/Gym');
 const User = require('../models/User');
 const { hasRole } = require('../utils/roles');
 
+function formatDateLabel(dateValue) {
+  if (!dateValue) return null;
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().split('T')[0];
+}
+
+function buildUsedByLookupVariants(usedBy) {
+  if (!usedBy) return [];
+  const values = [usedBy];
+  try {
+    values.push(usedBy.toString());
+  } catch (_) {}
+  return [...new Set(values.filter(Boolean))];
+}
+
 exports.listInviteCodes = async (req, res) => {
   try {
     let filter = {};
@@ -24,8 +40,53 @@ exports.listInviteCodes = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const codes = await InviteCode.find(filter).sort({ updatedAt: -1 });
-    res.status(200).json({ codes: codes || [] });
+    const codes = await InviteCode.find(filter).sort({ updatedAt: -1 }).lean();
+    const usedValues = [...new Set(codes.flatMap((code) => buildUsedByLookupVariants(code.usedBy)))];
+
+    let usersByKey = new Map();
+    if (usedValues.length > 0) {
+      const usedUsers = await User.find({
+        $or: [
+          { email: { $in: usedValues } },
+          { _id: { $in: usedValues.filter((value) => /^[a-fA-F0-9]{24}$/.test(String(value))) } },
+        ],
+      })
+        .select('name email phone_number role joinDate hasCompletedOnboarding')
+        .lean();
+
+      usersByKey = new Map();
+      for (const user of usedUsers) {
+        if (user.email) usersByKey.set(String(user.email), user);
+        if (user._id) usersByKey.set(String(user._id), user);
+      }
+    }
+
+    const enrichedCodes = codes.map((code) => {
+      const matchedUser =
+        buildUsedByLookupVariants(code.usedBy)
+          .map((key) => usersByKey.get(String(key)))
+          .find(Boolean) || null;
+
+      return {
+        ...code,
+        statusLabel: code.used ? 'Used' : 'Open',
+        createdDateLabel: formatDateLabel(code.createdAt),
+        usedDateLabel: code.used ? formatDateLabel(code.updatedAt) : null,
+        usedByUser: matchedUser
+          ? {
+              id: matchedUser._id,
+              name: matchedUser.name || null,
+              email: matchedUser.email || null,
+              phone_number: matchedUser.phone_number || null,
+              role: matchedUser.role || null,
+              joinedAt: matchedUser.joinDate || null,
+              hasCompletedOnboarding: Boolean(matchedUser.hasCompletedOnboarding),
+            }
+          : null,
+      };
+    });
+
+    res.status(200).json({ codes: enrichedCodes || [] });
   } catch (error) {
     console.error('Error fetching invite codes:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });

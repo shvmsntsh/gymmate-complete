@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -8,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../api/api_config.dart';
 import '../main.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/dashboard_charts.dart';
 import '../widgets/editorial_dashboard_mobile.dart';
 import '../widgets/editorial_mobile.dart';
 import 'branding_settings_page.dart';
@@ -24,6 +22,9 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
   Map<String, dynamic>? gymInfo;
   int membersCount = 0;
   int trainersCount = 0;
+  int inviteCount = 0;
+  int weeklySignups = 0;
+  int brandCompletion = 0;
   List<Map<String, dynamic>> registrations = [];
   bool loading = true;
 
@@ -54,10 +55,13 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
       if (!mounted) return;
       setState(() {
         gymInfo = gymData['gym'] ?? gymData['member'] ?? {};
-        membersCount = statsData['membersCount'] ?? 0;
-        trainersCount = statsData['trainersCount'] ?? 0;
+        membersCount = statsData['activeMembers'] ?? statsData['membersCount'] ?? 0;
+        trainersCount = statsData['coachCount'] ?? statsData['trainersCount'] ?? 0;
+        inviteCount = statsData['inviteCount'] ?? 0;
+        weeklySignups = statsData['weeklySignups'] ?? 0;
+        brandCompletion = statsData['brandCompletion'] ?? 0;
         registrations =
-            (statsData['registrations'] as List<dynamic>?)
+            ((statsData['chartSeries'] ?? statsData['registrations']) as List<dynamic>?)
                 ?.map((e) => Map<String, dynamic>.from(e))
                 .toList() ??
             [];
@@ -76,10 +80,22 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
     final theme = Theme.of(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final gymName = authProvider.gymName ?? gymInfo?['name'] ?? 'Your Gym';
-    final weeklyRegistrations = registrations.fold<int>(
+    final computedWeeklyRegistrations = registrations.fold<int>(
       0,
-      (sum, entry) => sum + ((entry['count'] as num?)?.toInt() ?? 0),
+      (sum, entry) => sum + (((entry['count'] ?? entry['value']) as num?)?.toInt() ?? 0),
     );
+    final weeklyTotal = weeklySignups > 0 ? weeklySignups : computedWeeklyRegistrations;
+    final chartPoints = registrations
+        .map(
+          (entry) => DashboardBarPoint(
+            label: (entry['label'] ?? entry['day'] ?? '').toString(),
+            value: ((entry['value'] ?? entry['count']) as num?)?.toInt() ?? 0,
+          ),
+        )
+        .toList();
+    final bestPoint = chartPoints.isEmpty
+        ? null
+        : chartPoints.reduce((a, b) => a.value >= b.value ? a : b);
 
     if (loading && gymInfo == null) {
       return Scaffold(
@@ -111,30 +127,19 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(gymName, style: theme.textTheme.titleLarge),
-                const SizedBox(height: 18),
                 DashboardHeroCard(
-                  eyebrow: 'Performance Overview',
-                  title: 'The pulse of your gym is steady and readable.',
+                  eyebrow: 'Owner Overview',
+                  title: 'Your gym is moving. Here’s what needs your eye today.',
                   subtitle:
-                      'Keep branding, invites, growth, and the daily member rhythm together without losing the feel of your gym.',
-                  metaLeft: '$membersCount members',
-                  metaRight: '$weeklyRegistrations this week',
+                      'Track member activity, invite new people in, and keep your brand polished without leaving the floor.',
+                  metaLeft: '$membersCount active members',
+                  metaRight: '$weeklyTotal signups this week',
                   actionColor: theme.colorScheme.primary,
-                  onTap: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const BrandingSettingsPage(),
-                      ),
-                    );
-                    if (mounted) {
-                      fetchDashboardData();
-                    }
-                  },
-                  buttonLabel: 'Edit branding',
+                  onTap: () => MainNavigationScaffold.switchTab(1),
+                  buttonLabel: 'Open invites',
                   illustration: Image.asset(
                     'assets/images/owner_illustration.png',
-                    height: 176,
+                    height: 152,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -145,7 +150,7 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
                       child: DashboardStatPanel(
                         label: 'Active Members',
                         value: membersCount.toString(),
-                        caption: 'current floor energy',
+                        caption: 'member roster today',
                         icon: Icons.people_alt_outlined,
                       ),
                     ),
@@ -154,7 +159,7 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
                       child: DashboardStatPanel(
                         label: 'Coaches',
                         value: trainersCount.toString(),
-                        caption: 'staff in rotation',
+                        caption: 'currently assigned',
                         icon: Icons.badge_outlined,
                       ),
                     ),
@@ -163,8 +168,8 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
                 const SizedBox(height: 12),
                 DashboardStatPanel(
                   label: 'Weekly Signups',
-                  value: weeklyRegistrations.toString(),
-                  caption: 'recent new member movement',
+                  value: weeklyTotal.toString(),
+                  caption: 'new joins in 7 days',
                   icon: Icons.trending_up_rounded,
                   minHeight: 132,
                 ),
@@ -172,41 +177,34 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
                 DashboardSectionCard(
                   eyebrow: 'Daily Performance',
                   title: 'Signups across the last seven days.',
+                  subtitle: 'A quick read on the week so far, with your busiest signup day highlighted.',
                   trailing: Text(
                     'LAST 7 DAYS',
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  child: SizedBox(
-                    height: 220,
-                    child: DashboardChart(
-                      title: 'Registrations',
-                      seriesList: [
-                        charts.Series<Map<String, dynamic>, String>(
-                          id: 'Registrations',
-                          colorFn: (_, __) => charts.ColorUtil.fromDartColor(
-                            theme.colorScheme.primary,
-                          ),
-                          domainFn: (entry, _) => entry['day'] as String,
-                          measureFn: (entry, _) => entry['count'] as int,
-                          data: registrations,
-                        ),
-                      ],
-                    ),
+                  child: DashboardBarChartCard(
+                    points: chartPoints,
+                    summaryLeft: '$weeklyTotal new members this week',
+                    summaryRight: bestPoint == null
+                        ? null
+                        : 'Best day: ${bestPoint.label}',
+                    emptyTitle: 'No signup activity yet',
+                    emptySubtitle:
+                        'As new members join, your weekly trend will appear here.',
                   ),
                 ),
                 const SizedBox(height: 18),
                 DashboardSectionCard(
-                  eyebrow: 'Gym Tools',
-                  title:
-                      'Two quick controls that keep your brand and growth moving.',
+                  eyebrow: 'Quick Actions',
+                  title: 'Run the essentials in a minute.',
                   child: Column(
                     children: [
                       DashboardListTileCard(
                         title: 'Branding studio',
                         subtitle:
-                            'Adjust your logo, gym name, and app colors so members feel your identity everywhere.',
+                            'Update logo, gym name, and colors so your gym feels consistent everywhere.',
                         trailingTop: 'Open',
                         trailingBottom: 'Branding',
                         leading: _toolBadge(context, Icons.palette_outlined),
@@ -225,12 +223,27 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
                       DashboardListTileCard(
                         title: 'Invite members',
                         subtitle:
-                            'Create a clean invite path for new people joining your gym.',
+                            'Share a code for new joins and keep your member flow moving.',
                         trailingTop: 'Open',
                         trailingBottom: 'Invites',
                         leading: _toolBadge(context, Icons.qr_code_2_rounded),
                         onTap: () => MainNavigationScaffold.switchTab(1),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                DashboardSectionCard(
+                  eyebrow: 'Brand Health',
+                  title: 'Your gym is showing up with $brandCompletion% brand completion.',
+                  subtitle: '$gymName is carrying your current name, colors, logo, and service mix across GymMate.',
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _statusPill(context, '${inviteCount.toString()} open invites'),
+                      _statusPill(context, '${trainersCount.toString()} coaches assigned'),
+                      _statusPill(context, '${membersCount.toString()} active members'),
                     ],
                   ),
                 ),
@@ -252,6 +265,21 @@ class _GymOwnerDashboardPageState extends State<GymOwnerDashboardPage> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(icon, color: theme.colorScheme.primary),
+    );
+  }
+
+  Widget _statusPill(BuildContext context, String label) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.54),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Text(label, style: theme.textTheme.labelLarge),
     );
   }
 }

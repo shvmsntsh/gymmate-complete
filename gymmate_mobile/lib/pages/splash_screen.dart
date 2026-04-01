@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return const BrandedLoadingScreen(
       title: 'GymMate',
-      subtitle: 'Your Fitness HQ',
+      subtitle: 'Loading your journey',
       showTagline: true,
     );
   }

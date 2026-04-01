@@ -200,6 +200,7 @@ class EditorialPrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Widget? trailing;
   final bool loading;
+  final EditorialPrimaryAffordance affordance;
 
   const EditorialPrimaryButton({
     super.key,
@@ -207,19 +208,58 @@ class EditorialPrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.trailing,
     this.loading = false,
+    this.affordance = EditorialPrimaryAffordance.auto,
   });
+
+  Widget? _buildTrailing(BuildContext context) {
+    if (trailing != null) return trailing;
+    final resolved = affordance == EditorialPrimaryAffordance.auto
+        ? _inferAffordance(label)
+        : affordance;
+    switch (resolved) {
+      case EditorialPrimaryAffordance.plus:
+        return const Icon(
+          Icons.add_rounded,
+          color: AppColors.textOnAccent,
+          size: 24,
+        );
+      case EditorialPrimaryAffordance.arrow:
+        return const Icon(
+          Icons.arrow_forward_rounded,
+          color: AppColors.textOnAccent,
+          size: 24,
+        );
+      case EditorialPrimaryAffordance.none:
+        return null;
+      case EditorialPrimaryAffordance.auto:
+        return null;
+    }
+  }
+
+  EditorialPrimaryAffordance _inferAffordance(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.startsWith('create') ||
+        normalized.startsWith('add') ||
+        normalized.startsWith('upload') ||
+        normalized.startsWith('replace') ||
+        normalized.startsWith('generate')) {
+      return EditorialPrimaryAffordance.plus;
+    }
+    return EditorialPrimaryAffordance.arrow;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final trailingWidget = !loading ? _buildTrailing(context) : null;
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient(),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(999),
         boxShadow: [
           BoxShadow(
             color: AppColors.accentStrong.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
+            blurRadius: 28,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
@@ -229,41 +269,60 @@ class EditorialPrimaryButton extends StatelessWidget {
           backgroundColor: Colors.transparent,
           disabledBackgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+          minimumSize: const Size.fromHeight(78),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (loading)
-              const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.textOnAccent,
-                ),
-              )
-            else
-              Flexible(
-                child: Text(
-                  label,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        child: SizedBox(
+          width: double.infinity,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (loading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
                     color: AppColors.textOnAccent,
-                    fontWeight: FontWeight.w800,
+                  ),
+                )
+              else
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: trailingWidget != null ? 28 : 0,
+                  ),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.textOnAccent,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-            if (!loading && trailing != null) ...[
-              const SizedBox(width: 10),
-              trailing!,
+              if (!loading && trailingWidget != null)
+                Positioned(
+                  right: 0,
+                  child: trailingWidget,
+                ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+enum EditorialPrimaryAffordance {
+  auto,
+  arrow,
+  plus,
+  none,
 }
 
 class EditorialSecondaryButton extends StatelessWidget {

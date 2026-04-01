@@ -12,7 +12,6 @@ import 'package:gymmate_mobile/pages/splash_screen.dart';
 import 'package:gymmate_mobile/themes/app_colors.dart';
 import 'package:gymmate_mobile/themes/app_theme.dart';
 import 'pages/plan_page.dart';
-import 'pages/progress_page.dart';
 import 'pages/coach_page.dart';
 import 'pages/gym_trainer_dashboard_page.dart';
 import 'pages/branding_settings_page.dart';
@@ -113,7 +112,8 @@ class _AuthGateState extends State<AuthGate> {
     if (!_isReady) {
       return const BrandedLoadingScreen(
         title: 'GymMate',
-        subtitle: 'Your Fitness HQ',
+        subtitle: 'Loading your journey',
+        showTagline: true,
         lightweight: true,
       );
     }
@@ -201,7 +201,7 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final isGymMember = isMemberRole(userRole);
     int maxIndex = 0;
     if (isGymMember) {
-      maxIndex = 4; // Dashboard, Progress, Plan, Coach, Profile
+      maxIndex = 3; // Dashboard, Plan, Coach, Profile
     } else if (isTrainerRole(userRole)) {
       maxIndex = 2; // Dashboard, Trainees, Profile
     } else {
@@ -255,16 +255,17 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         ? Colors.white.withValues(alpha: 0.82)
         : Colors.black87.withValues(alpha: 0.72);
     return Padding(
-      padding: const EdgeInsets.only(left: 8, top: 6, bottom: 6, right: 12),
+      padding: const EdgeInsets.only(left: 6, top: 4, bottom: 4, right: 12),
       child: SizedBox(
-        height: 52,
+        height: 60,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 color: theme.brightness == Brightness.dark
                     ? const Color(0xFF1D1A12)
                     : Colors.white,
@@ -274,15 +275,15 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
                       : const Color(0xFFE7D6A7),
                 ),
               ),
-              padding: const EdgeInsets.all(4),
+              padding: const EdgeInsets.all(5),
               child: logoUrl != null && logoUrl.isNotEmpty
                   ? BrandingLogoFrame(
                       source: logoUrl,
-                      size: 36,
+                      size: 40,
                       scale: logoScale,
                       offsetX: logoOffsetX,
                       offsetY: logoOffsetY,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       fallback: asset.isNotEmpty
                           ? Image.asset(asset, fit: BoxFit.contain)
                           : const SizedBox.shrink(),
@@ -301,21 +302,23 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
                     brandName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    style: theme.textTheme.titleLarge?.copyWith(
                       color: textColor,
                       fontWeight: FontWeight.w800,
+                      height: 1,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: subtitleColor,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                    ),
+                  const SizedBox(height: 7),
+                  _RoleSignatureChip(
+                    label: label == 'Superadmin' ? 'Admin' : label,
+                    backgroundColor: theme.brightness == Brightness.dark
+                        ? const Color(0xFF241F16)
+                        : const Color(0xFFFFF4E7),
+                    borderColor: theme.brightness == Brightness.dark
+                        ? const Color(0xFF5B4C26)
+                        : const Color(0xFFE9D2A4),
+                    textColor: subtitleColor,
+                    iconColor: theme.colorScheme.primary,
                   ),
                 ],
               ),
@@ -389,15 +392,8 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       );
     }
 
-    // Add Plan/Coach for gym members
+    // Add member destinations
     if (isGymMember) {
-      destinations.add(
-        const _NavDestination(
-          label: 'Progress',
-          icon: Icons.insights_outlined,
-          page: ProgressPage(),
-        ),
-      );
       destinations.add(
         const _NavDestination(
           label: 'Plan',
@@ -444,6 +440,70 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
           currentIndex: safeIndex,
           onTap: setTab,
         ),
+      ),
+    );
+  }
+}
+
+class _RoleSignatureChip extends StatelessWidget {
+  final String label;
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color textColor;
+  final Color iconColor;
+
+  const _RoleSignatureChip({
+    required this.label,
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.textColor,
+    required this.iconColor,
+  });
+
+  IconData _chipIconForLabel() {
+    switch (label.toLowerCase()) {
+      case 'owner':
+        return Icons.workspace_premium_outlined;
+      case 'trainer':
+        return Icons.fitness_center_rounded;
+      case 'member':
+        return Icons.favorite_outline_rounded;
+      case 'admin':
+        return Icons.admin_panel_settings_outlined;
+      default:
+        return Icons.circle_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_chipIconForLabel(), size: 13, color: iconColor),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.1,
+                height: 1,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'editorial_mobile.dart';
 
+class DashboardBarPoint {
+  final String label;
+  final int value;
+
+  const DashboardBarPoint({required this.label, required this.value});
+}
+
 class DashboardHeroCard extends StatelessWidget {
   final String eyebrow;
   final String title;
@@ -30,6 +37,7 @@ class DashboardHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tone = actionColor ?? theme.colorScheme.primary;
+    final hasAction = buttonLabel != null && onTap != null;
 
     return EditorialSurface(
       padding: const EdgeInsets.all(18),
@@ -37,16 +45,113 @@ class DashboardHeroCard extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 380;
-          final heroHeight = compact ? 228.0 : 240.0;
+          final showBottomAction = hasAction;
+          final heroHeight = compact ? 320.0 : 240.0;
           final illustrationWidth = compact ? 108.0 : 140.0;
           final illustrationBottom = compact ? 6.0 : 0.0;
-          final textRight = compact ? 122.0 : 150.0;
+          final textRight = compact ? 118.0 : 150.0;
           final titleStyle = compact
               ? theme.textTheme.headlineSmall
               : theme.textTheme.headlineMedium;
           final subtitleStyle = compact
               ? theme.textTheme.bodySmall
               : theme.textTheme.bodyMedium;
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                EditorialBlurImage(
+                  height: heroHeight,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          theme.colorScheme.surfaceContainerHighest,
+                          theme.colorScheme.surface,
+                        ],
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface.withValues(
+                                alpha: 0.9,
+                              ),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              eyebrow.toUpperCase(),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: tone,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Text(title, style: titleStyle),
+                          const SizedBox(height: 12),
+                          Text(
+                            subtitle,
+                            style: subtitleStyle?.copyWith(height: 1.5),
+                          ),
+                          const SizedBox(height: 14),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 8,
+                            children: [
+                              _HeroMetaItem(
+                                icon: Icons.access_time_rounded,
+                                label: metaLeft,
+                                tone: tone,
+                              ),
+                              _HeroMetaItem(
+                                icon: Icons.local_fire_department_outlined,
+                                label: metaRight,
+                                tone: tone,
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          if (illustration != null)
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: SizedBox(
+                                width: illustrationWidth + 16,
+                                height: 92,
+                                child: FittedBox(
+                                  fit: BoxFit.contain,
+                                  alignment: Alignment.bottomRight,
+                                  child: illustration!,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                if (hasAction) ...[
+                  const SizedBox(height: 14),
+                  EditorialPrimaryButton(
+                    label: buttonLabel!,
+                    onPressed: onTap!,
+                    affordance: EditorialPrimaryAffordance.arrow,
+                  ),
+                ],
+              ],
+            );
+          }
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,33 +252,261 @@ class DashboardHeroCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (buttonLabel != null && onTap != null)
-                      Positioned(
-                        right: 16,
-                        bottom: 18,
-                        child: Material(
-                          color: tone,
-                          borderRadius: BorderRadius.circular(999),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(999),
-                            onTap: onTap,
-                            child: SizedBox(
-                              width: compact ? 50 : 54,
-                              height: compact ? 50 : 54,
-                              child: Icon(
-                                Icons.arrow_forward_rounded,
-                                color: theme.colorScheme.onPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
+              if (hasAction && showBottomAction) ...[
+                const SizedBox(height: 14),
+                EditorialPrimaryButton(
+                  label: buttonLabel!,
+                  onPressed: onTap!,
+                  affordance: EditorialPrimaryAffordance.arrow,
+                ),
+              ],
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class DashboardBarChartCard extends StatefulWidget {
+  final List<DashboardBarPoint> points;
+  final String emptyTitle;
+  final String emptySubtitle;
+  final String? summaryLeft;
+  final String? summaryRight;
+  final String Function(String label, int value)? detailBuilder;
+
+  const DashboardBarChartCard({
+    super.key,
+    required this.points,
+    required this.emptyTitle,
+    required this.emptySubtitle,
+    this.summaryLeft,
+    this.summaryRight,
+    this.detailBuilder,
+  });
+
+  @override
+  State<DashboardBarChartCard> createState() => _DashboardBarChartCardState();
+}
+
+class _DashboardBarChartCardState extends State<DashboardBarChartCard> {
+  int? _selectedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final points = widget.points;
+    final values = points.map((point) => point.value).toList();
+    final highestValue = values.isEmpty
+        ? 0
+        : values.reduce((a, b) => a > b ? a : b);
+    final highestIndex = highestValue > 0
+        ? values.indexOf(highestValue)
+        : -1;
+    final maxValue = highestValue > 0 ? highestValue : 1;
+    final hasData = values.any((value) => value > 0);
+    final selectedIndex = _selectedIndex ?? (highestIndex >= 0 ? highestIndex : 0);
+    final selectedValue = points.isNotEmpty ? points[selectedIndex].value : 0;
+    final selectedLabel = points.isNotEmpty ? points[selectedIndex].label : '';
+
+    final panelColor = theme.brightness == Brightness.dark
+        ? theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.92)
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8);
+    final gridColor = theme.colorScheme.onSurface.withValues(alpha: 0.12);
+    final inactiveBar = theme.brightness == Brightness.dark
+        ? const Color(0xFF736656)
+        : const Color(0xFFBEAF9A);
+    final activeBar = theme.colorScheme.primary;
+
+    if (!hasData) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: panelColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.16)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.emptyTitle, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(widget.emptySubtitle, style: theme.textTheme.bodyMedium),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      decoration: BoxDecoration(
+        color: panelColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.14),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              if (widget.summaryLeft != null)
+                _ChartSummaryPill(label: widget.summaryLeft!),
+              if (widget.summaryRight != null)
+                _ChartSummaryPill(label: widget.summaryRight!),
+            ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 188,
+            child: Stack(
+              children: [
+                Column(
+                  children: List.generate(3, (index) {
+                    return Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: gridColor, width: 1),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: List.generate(points.length, (index) {
+                    final point = points[index];
+                    final value = point.value;
+                    final fraction = value / maxValue;
+                    final isActive = index == selectedIndex;
+                    final isPeak = index == highestIndex;
+
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _selectedIndex = index),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              SizedBox(
+                                height: 32,
+                                child: isActive
+                                    ? Center(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: theme.colorScheme.surface,
+                                            borderRadius: BorderRadius.circular(999),
+                                            border: Border.all(
+                                              color: theme.colorScheme.outline.withValues(alpha: 0.14),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '$selectedValue',
+                                            style: theme.textTheme.labelMedium?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
+                              const SizedBox(height: 8),
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 220),
+                                    curve: Curves.easeOutCubic,
+                                    width: isActive ? 24 : 20,
+                                    height: 24 + (fraction * 98),
+                                    decoration: BoxDecoration(
+                                      color: isPeak || isActive ? activeBar : inactiveBar,
+                                      borderRadius: BorderRadius.circular(999),
+                                      boxShadow: isActive
+                                          ? [
+                                              BoxShadow(
+                                                color: activeBar.withValues(alpha: 0.22),
+                                                blurRadius: 16,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                point.label,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: isActive
+                                      ? theme.colorScheme.onSurface
+                                      : theme.colorScheme.onSurface.withValues(alpha: 0.56),
+                                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+          if (selectedLabel.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              widget.detailBuilder?.call(selectedLabel, selectedValue) ??
+                  '$selectedLabel recorded $selectedValue.',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartSummaryPill extends StatelessWidget {
+  final String label;
+
+  const _ChartSummaryPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.16),
+        ),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.84),
+        ),
       ),
     );
   }

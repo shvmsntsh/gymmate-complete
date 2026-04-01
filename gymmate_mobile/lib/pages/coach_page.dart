@@ -173,7 +173,7 @@ class _CoachPageState extends State<CoachPage> {
                           icon: Icons.restaurant_menu_rounded,
                         ),
                         EditorialMetricTile(
-                          label: 'Progress',
+                          label: 'Consistency',
                           value: 'Daily rhythm',
                           icon: Icons.show_chart_rounded,
                         ),

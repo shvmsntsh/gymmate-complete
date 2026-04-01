@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 const Map<String, dynamic> kDefaultBranding = {
   'gymName': 'GymMate',
@@ -117,6 +118,11 @@ Uint8List? bytesFromLogoSource(String? source) {
   }
 }
 
+bool isSvgLogoSource(String? source) {
+  if (source == null || source.isEmpty) return false;
+  return source.startsWith('data:image/svg+xml');
+}
+
 ImageProvider? imageProviderFromLogoSource(String? source) {
   final bytes = bytesFromLogoSource(source);
   if (bytes != null) {
@@ -150,8 +156,11 @@ class BrandingLogoFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bytes = bytesFromLogoSource(source);
     final provider = imageProviderFromLogoSource(source);
-    if (provider == null) {
+    final isSvg = isSvgLogoSource(source);
+
+    if (provider == null && !isSvg) {
       return fallback;
     }
 
@@ -166,11 +175,17 @@ class BrandingLogoFrame extends StatelessWidget {
           alignment: Alignment(offsetX, offsetY),
           child: Transform.scale(
             scale: scale,
-            child: Image(
-              image: provider,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => fallback,
-            ),
+            child: isSvg && bytes != null
+                ? SvgPicture.memory(
+                    bytes,
+                    fit: BoxFit.contain,
+                    placeholderBuilder: (_) => fallback,
+                  )
+                : Image(
+                    image: provider!,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => fallback,
+                  ),
           ),
         ),
       ),

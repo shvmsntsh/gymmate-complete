@@ -27,6 +27,10 @@
             <div class="table-overline">{{ chartEyebrow }}</div>
             <h2 class="section-title">{{ chartTitle }}</h2>
             <p class="section-copy">{{ chartCopy }}</p>
+            <div v-if="isOwnerView && !chartLoading && !chartError" class="chart-microcopy">
+              <span class="chart-pill">{{ weeklySignups }} new members this week</span>
+              <span class="chart-pill" v-if="bestSignupDay">Best day: {{ bestSignupDay }}</span>
+            </div>
           </div>
         </div>
 
@@ -107,12 +111,16 @@
         <template v-if="isOwnerView">
           <div class="reach-panel">
             <div class="reach-panel__copy">
-              {{ gymName || "Your gym" }} is showing up inside GymMate with a
-              grounded brand system, <strong>{{ memberCount }}</strong> members,
-              and <strong>{{ inviteCount }}</strong> open invitations ready to
-              be shared.
+              {{ gymName || "Your gym" }} is carrying a clear identity with
+              <strong>{{ brandCompletion }}% brand completion</strong>,
+              <strong>{{ inviteCount }}</strong> active invites, and a member
+              roster that is ready for the next push.
             </div>
             <div class="reach-panel__stats">
+              <div class="reach-pill">
+                <span class="reach-pill__label">Brand</span>
+                <span class="reach-pill__value">{{ brandCompletion }}%</span>
+              </div>
               <div class="reach-pill">
                 <span class="reach-pill__label">Primary</span>
                 <span class="reach-pill__value">{{
@@ -277,6 +285,7 @@ const ownerCount = ref(0);
 const trainerCount = ref(0);
 const memberCount = ref(0);
 const inviteCount = ref(0);
+const brandCompletion = ref(0);
 const recentGyms = ref([]);
 const recentInvites = ref([]);
 const rosterItems = ref([]);
@@ -314,6 +323,18 @@ const servicesPreview = computed(() => {
   return services.value.slice(0, 2).join(" / ");
 });
 
+const weeklySignups = computed(() =>
+  chartSeries.value.reduce((sum, entry) => sum + Number(entry.value || 0), 0),
+);
+
+const bestSignupDay = computed(() => {
+  if (!chartSeries.value.length) return "";
+  const winner = chartSeries.value.reduce((best, entry) =>
+    Number(entry.value || 0) >= Number(best.value || 0) ? entry : best,
+  );
+  return Number(winner.value || 0) > 0 ? winner.label : "";
+});
+
 const pageTitle = computed(() =>
   isOwnerView.value ? "Owner Overview" : "Network Overview",
 );
@@ -331,12 +352,12 @@ const chartEyebrow = computed(() =>
 );
 const chartTitle = computed(() =>
   isOwnerView.value
-    ? "Member and coach movement across the last seven days."
+    ? "Signups across the last seven days."
     : "Membership expansion across the last seven days.",
 );
 const chartCopy = computed(() =>
   isOwnerView.value
-    ? "Use this to spot your strongest days, quieter windows, and where the next invite push could help."
+    ? "A clearer weekly view of when your member flow picks up and when a fresh invite push could help."
     : "Use this to spot where the network is picking up momentum and when signups start to cool off.",
 );
 const chartErrorTitle = computed(() =>
@@ -389,14 +410,14 @@ const sideItems = computed(() =>
 const sideLoading = computed(() => loadingSide.value);
 
 const lowerLeftEyebrow = computed(() =>
-  isOwnerView.value ? "Brand Direction" : "Reach",
+  isOwnerView.value ? "Brand Status" : "Reach",
 );
 const lowerLeftTitle = computed(() =>
   isOwnerView.value ? "How your gym is showing up" : "Global reach",
 );
 const lowerLeftCopy = computed(() =>
   isOwnerView.value
-    ? "Keep your gym name, color direction, and service mix clear before members ever step inside."
+    ? "Keep your gym name, color direction, and invite readiness clear before members ever step inside."
     : "A simple snapshot of how many gyms, owners, and members are moving through the product today.",
 );
 
@@ -445,9 +466,12 @@ async function renderUsageChart() {
 
   const labels = chartSeries.value.map((entry) => entry.label);
   const values = chartSeries.value.map((entry) => entry.value);
+  const peak = values.length ? Math.max(...values) : 0;
+  const ownerInactive = isDark.value ? "rgba(133, 118, 96, 0.78)" : "rgba(183, 165, 139, 0.9)";
+  const ownerActive = isDark.value ? "rgba(224, 186, 115, 0.96)" : "rgba(143, 105, 49, 0.95)";
 
   usageChart = new Chart(usageChartRef.value, {
-    type: isOwnerView.value ? "line" : "bar",
+    type: "bar",
     data: {
       labels,
       datasets: [
@@ -455,7 +479,7 @@ async function renderUsageChart() {
           label: isOwnerView.value ? "Weekly signups" : "GymMate overview",
           data: values,
           backgroundColor: isOwnerView.value
-            ? "rgba(224, 186, 115, 0.18)"
+            ? values.map((value) => (value === peak && peak > 0 ? ownerActive : ownerInactive))
             : [
                 "rgba(181, 139, 77, 0.72)",
                 "rgba(224, 186, 115, 0.86)",
@@ -463,12 +487,13 @@ async function renderUsageChart() {
                 "rgba(125, 200, 191, 0.78)",
               ],
           borderColor: isOwnerView.value
-            ? "rgba(224, 186, 115, 0.96)"
+            ? values.map((value) => (value === peak && peak > 0 ? ownerActive : ownerInactive))
             : "rgba(181, 139, 77, 0.92)",
-          borderRadius: isOwnerView.value ? 18 : 14,
-          borderWidth: 2,
-          fill: isOwnerView.value,
-          tension: 0.38,
+          borderRadius: isOwnerView.value ? 999 : 14,
+          borderSkipped: false,
+          borderWidth: isOwnerView.value ? 0 : 1,
+          barPercentage: isOwnerView.value ? 0.52 : 0.7,
+          categoryPercentage: isOwnerView.value ? 0.72 : 0.8,
         },
       ],
     },
@@ -477,18 +502,32 @@ async function renderUsageChart() {
       responsive: true,
       plugins: {
         legend: {
+          display: !isOwnerView.value,
           labels: { color: chartTextColor() },
+        },
+        tooltip: {
+          backgroundColor: isDark.value ? "rgba(22, 18, 14, 0.96)" : "rgba(255, 251, 245, 0.96)",
+          titleColor: chartTextColor(),
+          bodyColor: chartTextColor(),
+          borderColor: isDark.value ? "rgba(240, 223, 194, 0.12)" : "rgba(32, 26, 21, 0.08)",
+          borderWidth: 1,
+          displayColors: false,
         },
       },
       scales: {
         x: {
-          grid: { color: chartGridColor() },
+          grid: { display: false },
           ticks: { color: chartTextColor() },
+          border: { display: false },
         },
         y: {
           beginAtZero: true,
           grid: { color: chartGridColor() },
-          ticks: { color: chartTextColor() },
+          ticks: {
+            color: chartTextColor(),
+            maxTicksLimit: isOwnerView.value ? 3 : 5,
+          },
+          border: { display: false },
         },
       },
     },
@@ -600,14 +639,15 @@ async function fetchOwnerDashboard() {
 
     memberCount.value = statsData.membersCount || 0;
     ownerCount.value = 1;
-    trainerCount.value = statsData.trainersCount || 0;
+    trainerCount.value = statsData.coachCount || statsData.trainersCount || 0;
     gymCount.value = 1;
-    inviteCount.value = (invitesData.codes || []).filter(
-      (code) => !code.used,
-    ).length;
-    chartSeries.value = (statsData.registrations || []).map((entry) => ({
-      label: entry.day,
-      value: Number(entry.count || 0),
+    inviteCount.value =
+      statsData.inviteCount ||
+      (invitesData.codes || []).filter((code) => !code.used).length;
+    brandCompletion.value = statsData.brandCompletion || 0;
+    chartSeries.value = (statsData.chartSeries || statsData.registrations || []).map((entry) => ({
+      label: entry.label || entry.day,
+      value: Number(entry.value ?? entry.count ?? 0),
     }));
 
     recentInvites.value = (invitesData.codes || []).slice(0, 5).map((code) => ({
@@ -661,25 +701,25 @@ const metrics = computed(() => {
         label: "Active Members",
         value: memberCount.value,
         icon: "mdi-account-group-outline",
-        hint: "People currently training in your gym.",
+        hint: "Your current member roster.",
       },
       {
-        label: "Coaches",
-        value: trainerCount.value,
-        icon: "mdi-badge-account-outline",
-        hint: "Your current leadership and coaching coverage.",
+        label: "Active Invites",
+        value: inviteCount.value,
+        icon: "mdi-ticket-confirmation-outline",
+        hint: "Ready to share with new joins.",
       },
       {
         label: "Weekly Signups",
-        value: chartSeries.value.reduce((sum, entry) => sum + entry.value, 0),
+        value: weeklySignups.value,
         icon: "mdi-trending-up",
-        hint: "New joiners across the last seven days.",
+        hint: "New joins across the last seven days.",
       },
       {
-        label: "Open Invites",
-        value: inviteCount.value,
-        icon: "mdi-ticket-confirmation-outline",
-        hint: "Invites ready to share with members and trainers.",
+        label: "Brand Completion",
+        value: `${brandCompletion.value}%`,
+        icon: "mdi-palette-outline",
+        hint: "How complete your gym identity is right now.",
       },
     ];
   }

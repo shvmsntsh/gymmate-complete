@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../main.dart';
 import '../providers/auth_provider.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -7,9 +8,7 @@ import '../api/api_config.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
-import 'package:gymmate_mobile/pages/onboarding/onboarding_flow.dart';
 import '../services/onboarding_service.dart';
-import '../providers/onboarding_provider.dart';
 import '../widgets/editorial_mobile.dart';
 
 void logPlanPage(String msg) {
@@ -100,6 +99,98 @@ Map<String, dynamic> parseExercise(dynamic ex) {
   return {'name': 'Exercise', 'sets': 3, 'reps': 12, 'rest': 60};
 }
 
+Map<String, dynamic> _planMealItemAsMap(dynamic item) {
+  if (item is Map) return Map<String, dynamic>.from(item);
+  return <String, dynamic>{};
+}
+
+String _planFriendlyLabel(String? value) {
+  if (value == null || value.trim().isEmpty) return '-';
+  final cleaned = value.replaceAll('_', ' ').trim();
+  return cleaned[0].toUpperCase() + cleaned.substring(1).toLowerCase();
+}
+
+String _planMealPrimaryTitle(Map<String, dynamic> item) {
+  final name = item['name']?.toString().trim();
+  if (name != null && name.isNotEmpty) return name;
+  return 'Meal details ready';
+}
+
+String _planMealServingLine(Map<String, dynamic> item) {
+  final quantity = item['quantity']?.toString().trim();
+  if (quantity != null && quantity.isNotEmpty) return quantity;
+  return '';
+}
+
+String _planMealTimeLabel(Map<String, dynamic> item, String fallbackMealType) {
+  final raw = item['time']?.toString().trim();
+  if (raw != null && raw.isNotEmpty) return raw;
+  return _planFriendlyLabel(fallbackMealType);
+}
+
+String _planMealMacroSummary(Map<String, dynamic> item) {
+  final macros = item['macros'];
+  if (macros is! Map) return '';
+  String formatMacro(dynamic raw) {
+    final value = (raw as num?)?.toDouble() ?? 0.0;
+    if ((value - value.roundToDouble()).abs() < 0.05) {
+      return value.round().toString();
+    }
+    return value.toStringAsFixed(1);
+  }
+
+  final protein = macros['protein'] ?? macros['p'];
+  final carbs = macros['carbs'] ?? macros['c'];
+  final fats = macros['fats'] ?? macros['f'];
+  final parts = <String>[];
+  if (protein != null) parts.add('P ${formatMacro(protein)}g');
+  if (carbs != null) parts.add('C ${formatMacro(carbs)}g');
+  if (fats != null) parts.add('F ${formatMacro(fats)}g');
+  return parts.join(' • ');
+}
+
+IconData _planMealIcon(String mealType) {
+  switch (mealType) {
+    case 'breakfast':
+      return Icons.free_breakfast_rounded;
+    case 'lunch':
+      return Icons.lunch_dining_rounded;
+    case 'snack':
+      return Icons.cookie_outlined;
+    case 'dinner':
+      return Icons.dinner_dining_rounded;
+    default:
+      return Icons.restaurant_rounded;
+  }
+}
+
+List<String> _orderedMealKeysFromRaw(Map<String, dynamic> meals) {
+  const preferredOrder = <String>[
+    'breakfast',
+    'mid_morning',
+    'mid-morning',
+    'lunch',
+    'snack',
+    'pre_workout',
+    'pre-workout',
+    'post_workout',
+    'post-workout',
+    'dinner',
+  ];
+
+  final keys = meals.keys.map((key) => key.toString()).toList();
+  final ordered = <String>[];
+
+  for (final key in preferredOrder) {
+    if (keys.contains(key)) ordered.add(key);
+  }
+  for (final key in keys) {
+    if (!ordered.contains(key)) ordered.add(key);
+  }
+
+  return ordered;
+}
+
 class PlanPage extends StatefulWidget {
   const PlanPage({Key? key}) : super(key: key);
 
@@ -151,12 +242,6 @@ class _PlanPageState extends State<PlanPage> {
       {}; // key: mealType, value: {itemIdx: quantity}
   double _totalCaloriesLogged = 0;
 
-  // Add state for daily macro goals (for demo, use static or calculate from plan if available)
-  final double dailyCalGoal = 1800;
-  final double dailyPGoal = 120;
-  final double dailyFGoal = 60;
-  final double dailyCGoal = 220;
-
   // Add state for workout logging
   final List<bool> _workoutCompleted = [];
 
@@ -175,27 +260,272 @@ class _PlanPageState extends State<PlanPage> {
   bool _progressLoading = true;
   String? _progressError;
 
-  // Helper to get calories for a meal item (assume per serving if not specified)
-  double _getCaloriesForMealItem(Map meal, double quantity) {
-    // If meal['cal'] is total for all items, divide equally
-    if (meal['cal'] != null &&
-        meal['items'] is List &&
-        meal['items'].length > 0) {
-      return (meal['cal'] / meal['items'].length) * quantity;
+  double _itemCalories(Map<String, dynamic> item) {
+    final directCal =
+        (item['calories'] as num?)?.toDouble() ??
+        (item['cal'] as num?)?.toDouble();
+    if (directCal != null && directCal > 0) return directCal;
+
+    final macros = item['macros'];
+    if (macros is Map) {
+      final protein =
+          (macros['protein'] as num?)?.toDouble() ??
+          (macros['p'] as num?)?.toDouble() ??
+          0.0;
+      final carbs =
+          (macros['carbs'] as num?)?.toDouble() ??
+          (macros['c'] as num?)?.toDouble() ??
+          0.0;
+      final fats =
+          (macros['fats'] as num?)?.toDouble() ??
+          (macros['f'] as num?)?.toDouble() ??
+          0.0;
+      return (protein * 4) + (carbs * 4) + (fats * 9);
     }
+
     return 0;
   }
 
-  // Helper to get macros for a meal item (divide meal macros equally)
-  Map<String, double> _getMacrosForMealItem(Map meal, double quantity) {
-    final macros = {'p': 0.0, 'f': 0.0, 'c': 0.0};
-    if (meal['p'] != null && meal['items'] is List && meal['items'].length > 0)
-      macros['p'] = (meal['p'] / meal['items'].length) * quantity;
-    if (meal['f'] != null && meal['items'] is List && meal['items'].length > 0)
-      macros['f'] = (meal['f'] / meal['items'].length) * quantity;
-    if (meal['c'] != null && meal['items'] is List && meal['items'].length > 0)
-      macros['c'] = (meal['c'] / meal['items'].length) * quantity;
-    return macros;
+  double _mealPlannedCalories(Map meal) {
+    if (meal['cal'] is num) return (meal['cal'] as num).toDouble();
+    final items = meal['items'] is List
+        ? List<dynamic>.from(meal['items'])
+        : [];
+    return items
+        .map((item) => _itemCalories(_mealItemAsMap(item)))
+        .fold<double>(0, (sum, value) => sum + value);
+  }
+
+  double _asDouble(dynamic raw) => (raw as num?)?.toDouble() ?? 0.0;
+
+  double _round1(double value) => double.parse(value.toStringAsFixed(1));
+
+  String _primaryGoal(List<dynamic> goals) {
+    if (goals.isEmpty) return 'general_fitness';
+    return goals.first.toString().toLowerCase();
+  }
+
+  Map<String, double> _dailyNutritionTargetsFromUser(
+    Map<String, dynamic> userData,
+  ) {
+    final profile = Map<String, dynamic>.from(userData['profile'] ?? {});
+    final age = _asDouble(profile['age']) > 0 ? _asDouble(profile['age']) : 30;
+    final gender = (profile['gender']?.toString().toLowerCase() ?? 'male');
+    final weight = _asDouble(profile['weight']) > 0
+        ? _asDouble(profile['weight'])
+        : 70;
+    final height = _asDouble(profile['height']) > 0
+        ? _asDouble(profile['height'])
+        : 170;
+    final activity =
+        userData['workoutHabits']?['currentActivityLevel']
+            ?.toString()
+            .toLowerCase() ??
+        'sedentary';
+    final goals = List<dynamic>.from(userData['fitnessGoals'] ?? const []);
+    final primaryGoal = _primaryGoal(goals);
+
+    double bmr = gender == 'female'
+        ? 10 * weight + 6.25 * height - 5 * age - 161
+        : 10 * weight + 6.25 * height - 5 * age + 5;
+
+    double activityMult = 1.2;
+    if (activity == 'lightly_active') {
+      activityMult = 1.375;
+    } else if (activity == 'moderately_active') {
+      activityMult = 1.55;
+    } else if (activity == 'very_active') {
+      activityMult = 1.725;
+    } else if (activity == 'extra_active') {
+      activityMult = 1.9;
+    }
+
+    double calories = bmr * activityMult;
+    if (goals.contains('fat_loss')) calories -= 300;
+    if (goals.contains('muscle_gain')) calories += 200;
+    if (calories < 1200) calories = 1200;
+
+    double proteinPerKg = 1.6;
+    double fatPerKg = 0.8;
+    double carbFloorPerKg = 2.0;
+
+    if (primaryGoal.contains('fat')) {
+      proteinPerKg = 2.0;
+      fatPerKg = 0.7;
+      carbFloorPerKg = 2.0;
+    } else if (primaryGoal.contains('muscle')) {
+      proteinPerKg = 1.9;
+      fatPerKg = 0.9;
+      carbFloorPerKg = 3.0;
+    } else if (primaryGoal.contains('strength')) {
+      proteinPerKg = 1.8;
+      fatPerKg = 0.85;
+      carbFloorPerKg = 2.5;
+    } else if (primaryGoal.contains('endur')) {
+      proteinPerKg = 1.6;
+      fatPerKg = 0.75;
+      carbFloorPerKg = 3.0;
+    } else if (primaryGoal.contains('flex')) {
+      proteinPerKg = 1.4;
+      fatPerKg = 0.8;
+      carbFloorPerKg = 2.0;
+    }
+
+    double protein = weight * proteinPerKg;
+    double fat = weight * fatPerKg;
+    final minFat = weight * 0.6;
+    final minCarbs = weight * carbFloorPerKg;
+
+    double carbs = (calories - protein * 4 - fat * 9) / 4;
+    if (carbs < minCarbs) {
+      fat = math.max(minFat, (calories - protein * 4 - minCarbs * 4) / 9);
+      carbs = (calories - protein * 4 - fat * 9) / 4;
+    }
+
+    if (carbs < 0) carbs = 0;
+
+    final normalizedCalories = protein * 4 + carbs * 4 + fat * 9;
+    return {
+      'calories': normalizedCalories.roundToDouble(),
+      'protein': _round1(protein),
+      'carbs': _round1(carbs),
+      'fat': _round1(fat),
+    };
+  }
+
+  Map<String, dynamic> _normalizeMealsToTargets(
+    Map<String, dynamic> rawMeals,
+    Map<String, double> dailyTargets,
+  ) {
+    final normalizedMeals = <String, dynamic>{};
+    final mealKeys = _orderedMealKeysFromRaw(rawMeals);
+    double totalProtein = 0;
+    double totalCarbs = 0;
+    double totalFat = 0;
+
+    for (final mealType in mealKeys) {
+      final meal = rawMeals[mealType] is Map
+          ? Map<String, dynamic>.from(rawMeals[mealType] as Map)
+          : <String, dynamic>{
+              'name': _planFriendlyLabel(mealType),
+              'items': [],
+            };
+      final items = meal['items'] is List
+          ? List<dynamic>.from(meal['items'])
+          : <dynamic>[];
+      for (final rawItem in items) {
+        final item = _planMealItemAsMap(rawItem);
+        final rawMacros = item['macros'];
+        if (rawMacros is Map) {
+          totalProtein += _asDouble(rawMacros['protein'] ?? rawMacros['p']);
+          totalCarbs += _asDouble(rawMacros['carbs'] ?? rawMacros['c']);
+          totalFat += _asDouble(rawMacros['fats'] ?? rawMacros['f']);
+        }
+      }
+      normalizedMeals[mealType] = meal;
+    }
+
+    final proteinScale = totalProtein > 0
+        ? (dailyTargets['protein'] ?? totalProtein) / totalProtein
+        : 1.0;
+    final carbScale = totalCarbs > 0
+        ? (dailyTargets['carbs'] ?? totalCarbs) / totalCarbs
+        : 1.0;
+    final fatScale = totalFat > 0
+        ? (dailyTargets['fat'] ?? totalFat) / totalFat
+        : 1.0;
+
+    for (final mealType in mealKeys) {
+      final meal = Map<String, dynamic>.from(normalizedMeals[mealType] as Map);
+      final items = meal['items'] is List
+          ? List<dynamic>.from(meal['items'])
+          : <dynamic>[];
+      final normalizedItems = <Map<String, dynamic>>[];
+      double mealProtein = 0;
+      double mealCarbs = 0;
+      double mealFat = 0;
+
+      for (final rawItem in items) {
+        final item = _planMealItemAsMap(rawItem);
+        final rawMacros = item['macros'];
+        final macros = rawMacros is Map
+            ? Map<String, dynamic>.from(rawMacros)
+            : {};
+        final protein =
+            _asDouble(macros['protein'] ?? macros['p']) * proteinScale;
+        final carbs = _asDouble(macros['carbs'] ?? macros['c']) * carbScale;
+        final fats = _asDouble(macros['fats'] ?? macros['f']) * fatScale;
+        final normalizedItem = Map<String, dynamic>.from(item);
+        normalizedItem['macros'] = {
+          'protein': protein,
+          'carbs': carbs,
+          'fats': fats,
+        };
+        normalizedItem['calories'] = protein * 4 + carbs * 4 + fats * 9;
+        normalizedItems.add(normalizedItem);
+        mealProtein += protein;
+        mealCarbs += carbs;
+        mealFat += fats;
+      }
+
+      meal['items'] = normalizedItems;
+      meal['p'] = mealProtein;
+      meal['c'] = mealCarbs;
+      meal['f'] = mealFat;
+      meal['cal'] = mealProtein * 4 + mealCarbs * 4 + mealFat * 9;
+      normalizedMeals[mealType] = meal;
+    }
+
+    return normalizedMeals;
+  }
+
+  Map<String, double> _dailyTargetsForPlan(Map<String, dynamic> plan) {
+    final raw = plan['dailyTargets'];
+    if (raw is Map) {
+      return {
+        'calories': _asDouble(raw['calories']),
+        'protein': _asDouble(raw['protein']),
+        'carbs': _asDouble(raw['carbs']),
+        'fat': _asDouble(raw['fat']),
+      };
+    }
+    return _dailyNutritionTargetsFromUser(_authProvider?.userData ?? const {});
+  }
+
+  // Helper to get calories for a meal item
+  double _getCaloriesForMealItem(Map meal, double quantity, dynamic item) {
+    final itemMap = _mealItemAsMap(item);
+    return _itemCalories(itemMap) * quantity;
+  }
+
+  // Helper to get macros for a meal item
+  Map<String, double> _getMacrosForMealItem(
+    Map meal,
+    double quantity,
+    dynamic item,
+  ) {
+    final itemMap = _mealItemAsMap(item);
+    final rawMacros = itemMap['macros'];
+    if (rawMacros is Map) {
+      final protein =
+          (rawMacros['protein'] as num?)?.toDouble() ??
+          (rawMacros['p'] as num?)?.toDouble() ??
+          0.0;
+      final carbs =
+          (rawMacros['carbs'] as num?)?.toDouble() ??
+          (rawMacros['c'] as num?)?.toDouble() ??
+          0.0;
+      final fats =
+          (rawMacros['fats'] as num?)?.toDouble() ??
+          (rawMacros['f'] as num?)?.toDouble() ??
+          0.0;
+      return {
+        'p': protein * quantity,
+        'c': carbs * quantity,
+        'f': fats * quantity,
+      };
+    }
+    return {'p': 0.0, 'f': 0.0, 'c': 0.0};
   }
 
   // Calculate daily totals
@@ -206,7 +536,8 @@ class _PlanPageState extends State<PlanPage> {
       '[PlanPage] _calculateDailyTotals: plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\$mealsRaw',
     );
     final meals = mealsRaw is Map ? mealsRaw : <String, dynamic>{};
-    for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
+    final mealKeys = _orderedMealKeysFromRaw(Map<String, dynamic>.from(meals));
+    for (final mealType in mealKeys) {
       final mealRaw = meals[mealType];
       logPlanPage(
         '[PlanPage] _calculateDailyTotals: meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\$mealRaw',
@@ -217,8 +548,8 @@ class _PlanPageState extends State<PlanPage> {
         final key = '${plan['day']}-meal-$mealType-$i';
         if (_checkboxState[key] == true) {
           final qty = _mealItemQuantities[mealType]?[i] ?? 1.0;
-          cal += _getCaloriesForMealItem(meal, qty);
-          final macros = _getMacrosForMealItem(meal, qty);
+          cal += _getCaloriesForMealItem(meal, qty, items[i]);
+          final macros = _getMacrosForMealItem(meal, qty, items[i]);
           p += macros['p']!;
           f += macros['f']!;
           c += macros['c']!;
@@ -235,7 +566,8 @@ class _PlanPageState extends State<PlanPage> {
     final meals = plan['meals'] is Map
         ? plan['meals'] as Map
         : <String, dynamic>{};
-    for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
+    final mealKeys = _orderedMealKeysFromRaw(Map<String, dynamic>.from(meals));
+    for (final mealType in mealKeys) {
       // Defensive: ensure meal is a Map
       final meal = meals[mealType] is Map
           ? meals[mealType] as Map
@@ -245,7 +577,7 @@ class _PlanPageState extends State<PlanPage> {
         final key = '${plan['day']}-meal-$mealType-$i';
         if (_checkboxState[key] == true) {
           final qty = _mealItemQuantities[mealType]?[i] ?? 1.0;
-          total += _getCaloriesForMealItem(meal, qty);
+          total += _getCaloriesForMealItem(meal, qty, items[i]);
         }
       }
     }
@@ -270,14 +602,14 @@ class _PlanPageState extends State<PlanPage> {
     logPlanPage(
       '[PlanPage] _calculateWorkoutSummary: plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\$workoutRaw',
     );
-    final workout = workoutRaw is Map ? workoutRaw : <String, dynamic>{};
+    final workout = workoutRaw is Map
+        ? Map<String, dynamic>.from(workoutRaw)
+        : <String, dynamic>{};
     final exercisesRaw = workout['exercises'];
     logPlanPage(
       '[PlanPage] _calculateWorkoutSummary: workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw',
     );
-    final exercises = (exercisesRaw is List)
-        ? exercisesRaw.map(parseExercise).toList()
-        : <Map<String, dynamic>>[];
+    final exercises = _workoutPreviewItems(workout);
     final exerciseKeys = List.generate(
       exercises.length,
       (i) => '${plan['day']}-workout-ex-$i',
@@ -376,6 +708,29 @@ class _PlanPageState extends State<PlanPage> {
         _exerciseCompleted = Map<String, bool>.from(json.decode(workoutMap));
       });
     }
+    final mealQuantities = prefs.getString('plan_meal_item_quantities');
+    if (mealQuantities != null) {
+      final decoded = json.decode(mealQuantities);
+      if (decoded is Map) {
+        setState(() {
+          _mealItemQuantities = decoded.map<String, Map<int, double>>((
+            key,
+            value,
+          ) {
+            final raw = value is Map ? value : <String, dynamic>{};
+            return MapEntry(
+              key.toString(),
+              raw.map<int, double>(
+                (itemKey, itemValue) => MapEntry(
+                  int.tryParse(itemKey.toString()) ?? 0,
+                  (itemValue as num?)?.toDouble() ?? 1.0,
+                ),
+              ),
+            );
+          });
+        });
+      }
+    }
   }
 
   Future<void> _saveCheckboxState() async {
@@ -384,6 +739,19 @@ class _PlanPageState extends State<PlanPage> {
     await prefs.setString(
       'plan_exercise_completed',
       json.encode(_exerciseCompleted),
+    );
+    final serializableQuantities = _mealItemQuantities
+        .map<String, Map<String, double>>(
+          (mealType, items) => MapEntry(
+            mealType,
+            items.map<String, double>(
+              (index, quantity) => MapEntry(index.toString(), quantity),
+            ),
+          ),
+        );
+    await prefs.setString(
+      'plan_meal_item_quantities',
+      json.encode(serializableQuantities),
     );
   }
 
@@ -398,8 +766,19 @@ class _PlanPageState extends State<PlanPage> {
       try {
         final decoded = json.decode(cachedPlanStr);
         if (decoded is Map<String, dynamic>) {
+          final enriched = Map<String, dynamic>.from(decoded);
+          final targets = _dailyNutritionTargetsFromUser(userData);
+          final normalizedMeals = _normalizeMealsToTargets(
+            Map<String, dynamic>.from(enriched['meals'] ?? {}),
+            targets,
+          );
           setState(() {
-            _plan = decoded;
+            _plan = {
+              ...enriched,
+              'meals': normalizedMeals,
+              'dailyTargets': targets,
+            };
+            _calorieGoal = targets['calories'];
             _planLoading = false;
             _planError = false;
           });
@@ -488,12 +867,19 @@ class _PlanPageState extends State<PlanPage> {
       if (mealRes.statusCode == 200 && workoutRes.statusCode == 200) {
         final mealPlan = json.decode(mealRes.body);
         final workoutPlan = json.decode(workoutRes.body);
+        final dailyTargets = _dailyNutritionTargetsFromUser(userData);
+        final normalizedMeals = _normalizeMealsToTargets(
+          Map<String, dynamic>.from(mealPlan['meals'] ?? {}),
+          dailyTargets,
+        );
         setState(() {
           _plan = {
-            'meals': mealPlan['meals'],
+            'meals': normalizedMeals,
             'workout': workoutPlan,
             'day': day,
+            'dailyTargets': dailyTargets,
           };
+          _calorieGoal = dailyTargets['calories'];
           _planLoading = false;
           _planError = false;
         });
@@ -563,35 +949,9 @@ class _PlanPageState extends State<PlanPage> {
   void _updateCalorieGoal() {
     final userData = _authProvider?.userData;
     if (userData == null) return;
-    final profile = userData['profile'] ?? {};
-    final age = (profile['age'] as num?)?.toDouble() ?? 30;
-    final gender = profile['gender'] ?? 'male';
-    final weight = (profile['weight'] as num?)?.toDouble() ?? 70;
-    final height = (profile['height'] as num?)?.toDouble() ?? 170;
-    final activity =
-        userData['workoutHabits']?['currentActivityLevel'] ?? 'sedentary';
-    final goals = userData['fitnessGoals'] ?? [];
-    // Mifflin-St Jeor BMR
-    double bmr = gender == 'female'
-        ? 10 * weight + 6.25 * height - 5 * age - 161
-        : 10 * weight + 6.25 * height - 5 * age + 5;
-    // Activity multiplier
-    double activityMult = 1.2;
-    if (activity == 'lightly_active') {
-      activityMult = 1.375;
-    } else if (activity == 'moderately_active')
-      activityMult = 1.55;
-    else if (activity == 'very_active')
-      activityMult = 1.725;
-    else if (activity == 'extra_active')
-      activityMult = 1.9;
-    double calGoal = bmr * activityMult;
-    // Goal adjustment
-    if (goals.contains('fat_loss')) calGoal -= 300;
-    if (goals.contains('muscle_gain')) calGoal += 200;
-    if (calGoal < 1200) calGoal = 1200;
+    final targets = _dailyNutritionTargetsFromUser(userData);
     setState(() {
-      _calorieGoal = calGoal.roundToDouble();
+      _calorieGoal = targets['calories'];
     });
   }
 
@@ -620,9 +980,12 @@ class _PlanPageState extends State<PlanPage> {
     final hasWorkout = plan != null && plan['workout'] is Map;
     final planReady =
         !_planLoading && !_planError && plan != null && hasMeals && hasWorkout;
+    final dailyTargets = plan != null
+        ? _dailyTargetsForPlan(plan)
+        : _dailyNutritionTargetsFromUser(_authProvider?.userData ?? const {});
     double mealPercent = 0;
     double mealCalories = 0;
-    double mealGoal = _calorieGoal ?? 1800;
+    double mealGoal = dailyTargets['calories'] ?? (_calorieGoal ?? 1800);
     double mealLeft = 0;
     double workoutPercent = 0;
     if (planReady) {
@@ -657,11 +1020,10 @@ class _PlanPageState extends State<PlanPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               EditorialSectionHeading(
-                eyebrow: 'Training Plan',
-                title:
-                    'Fuel your next session with a plan that matches your rhythm.',
+                eyebrow: 'Today\'s Plan',
+                title: 'What you should do and eat today is ready.',
                 subtitle:
-                    'Meals, workouts, hydration, and daily movement stay together so you always know what to tackle next.',
+                    'Your workout, meals, hydration, and daily targets stay in one clear view so the next move is always obvious.',
                 trailing: IconButton(
                   onPressed: _planLoading ? null : _refreshPlan,
                   icon: const Icon(Icons.refresh_rounded),
@@ -691,17 +1053,74 @@ class _PlanPageState extends State<PlanPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const EditorialKicker('Today at a Glance'),
+                      Text(
+                        'Today at a glance',
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Start with the essentials: your food target, workout completion, water, steps, and daily focus.',
+                        style: theme.textTheme.bodyMedium,
+                      ),
                       const SizedBox(height: 18),
-                      Center(
-                        child: EditorialProgressRing(
-                          progress: mealPercent,
-                          value: mealCalories.toStringAsFixed(0),
-                          label: 'Calories',
-                          sublabel: '${mealLeft.toStringAsFixed(0)} kcal left',
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHigh.withValues(
+                            alpha: 0.46,
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: colorScheme.outline.withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colorScheme.primary.withValues(alpha: 0.24),
+                                    colorScheme.primary.withValues(alpha: 0.1),
+                                  ],
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.local_fire_department_outlined,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${mealCalories.toStringAsFixed(0)} kcal logged',
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${mealLeft.toStringAsFixed(0)} kcal left to hit today\'s target',
+                                    style: theme.textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              '${(mealPercent * 100).round()}%',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
                       Row(
                         children: [
                           Expanded(
@@ -745,14 +1164,12 @@ class _PlanPageState extends State<PlanPage> {
                       ),
                       if ((plan['usedFallback'] == true ||
                           plan['fallback'] == true)) ...[
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         _fallbackBanner(colorScheme),
                       ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 18),
-                _buildProgressCard(),
                 const SizedBox(height: 18),
                 EditorialSurface(
                   child: Column(
@@ -761,10 +1178,12 @@ class _PlanPageState extends State<PlanPage> {
                       const EditorialSectionHeading(
                         eyebrow: 'Coming Up Next',
                         title: 'Your next workout is ready when you are.',
+                        subtitle:
+                            'A focused session summary keeps the next block of training easy to scan before you open the full workout.',
                       ),
                       const SizedBox(height: 18),
                       EditorialBlurImage(
-                        height: 220,
+                        height: 210,
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -785,13 +1204,13 @@ class _PlanPageState extends State<PlanPage> {
                               bottom: 0,
                               child: Image.asset(
                                 'assets/images/member_illustration.png',
-                                height: 170,
+                                height: 152,
                                 fit: BoxFit.contain,
                               ),
                             ),
                             Positioned(
                               left: 18,
-                              right: 120,
+                              right: 128,
                               top: 18,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -850,15 +1269,32 @@ class _PlanPageState extends State<PlanPage> {
                           ),
                         ],
                       ),
+                      if (workoutItems.isNotEmpty) ...[
+                        const SizedBox(height: 18),
+                        Text('Quick log', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 10),
+                        ...List.generate(
+                          math.min(workoutItems.length, 3),
+                          (index) => Padding(
+                            padding: EdgeInsets.only(
+                              bottom:
+                                  index == math.min(workoutItems.length, 3) - 1
+                                  ? 0
+                                  : 10,
+                            ),
+                            child: _buildWorkoutQuickLogCard(
+                              plan,
+                              workoutItems[index],
+                              index,
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 18),
                       SizedBox(
                         width: double.infinity,
                         child: EditorialPrimaryButton(
                           label: 'Open Workout',
-                          trailing: const Icon(
-                            Icons.arrow_forward_rounded,
-                            color: Color(0xFF390C00),
-                          ),
                           onPressed: _goToWorkoutDetail,
                         ),
                       ),
@@ -873,9 +1309,13 @@ class _PlanPageState extends State<PlanPage> {
                       const EditorialSectionHeading(
                         eyebrow: 'Meals Today',
                         title: 'A steady food rhythm for the day ahead.',
+                        subtitle:
+                            'Each meal is shaped from your current goal and diet settings, with the key information kept easy to scan.',
                       ),
                       const SizedBox(height: 18),
-                      ...['breakfast', 'lunch', 'snack', 'dinner'].map(
+                      ..._orderedMealKeysFromRaw(
+                        Map<String, dynamic>.from(meals),
+                      ).map(
                         (mealType) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _buildMealPreviewCard(
@@ -889,10 +1329,6 @@ class _PlanPageState extends State<PlanPage> {
                         width: double.infinity,
                         child: EditorialPrimaryButton(
                           label: 'Open Full Meal Plan',
-                          trailing: const Icon(
-                            Icons.arrow_forward_rounded,
-                            color: Color(0xFF390C00),
-                          ),
                           onPressed: _goToMealDetail,
                         ),
                       ),
@@ -930,6 +1366,8 @@ class _PlanPageState extends State<PlanPage> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 18),
+                _buildProgressCard(),
               ],
             ],
           ),
@@ -1077,10 +1515,11 @@ class _PlanPageState extends State<PlanPage> {
     final items = meal['items'] is List
         ? List<dynamic>.from(meal['items'])
         : <dynamic>[];
-    final calories = ((meal['cal'] as num?) ?? 0).toDouble();
-    final preview = items.isEmpty
-        ? 'Details will appear here once your meal is ready.'
-        : items.take(2).join(' • ');
+    final calories = _mealPlannedCalories(meal);
+    final leadItem = items.isNotEmpty
+        ? _mealItemAsMap(items.first)
+        : <String, dynamic>{};
+    final timeLabel = _mealTimeLabel(leadItem, mealType);
 
     return Container(
       width: double.infinity,
@@ -1109,7 +1548,22 @@ class _PlanPageState extends State<PlanPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_abc(mealType), style: theme.textTheme.titleMedium),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _abc(mealType),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                    Text(
+                      timeLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 6),
                 Text(
                   '${calories.toStringAsFixed(0)} kcal • ${items.length} items',
@@ -1117,12 +1571,221 @@ class _PlanPageState extends State<PlanPage> {
                     color: theme.colorScheme.primary,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(preview, style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 12),
+                if (items.isEmpty)
+                  Text(
+                    'Details will appear here once your meal is ready.',
+                    style: theme.textTheme.bodySmall,
+                  )
+                else
+                  ...List.generate(
+                    math.min(items.length, 2),
+                    (index) => Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == math.min(items.length, 2) - 1 ? 0 : 10,
+                      ),
+                      child: _buildMealQuickLogRow(
+                        mealType,
+                        index,
+                        _mealItemAsMap(items[index]),
+                      ),
+                    ),
+                  ),
+                if (items.length > 2) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    '+${items.length - 2} more item${items.length - 2 == 1 ? '' : 's'} in the full meal plan',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.68,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMealQuickLogRow(
+    String mealType,
+    int index,
+    Map<String, dynamic> item,
+  ) {
+    final theme = Theme.of(context);
+    final key = '${_plan?['day']}-meal-$mealType-$index';
+    final logged = _checkboxState[key] ?? false;
+    final quantity = _mealItemQuantities[mealType]?[index] ?? 1.0;
+    final macros = _mealMacroSummary(item);
+    const quickOptions = [1.0, 1.5];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: logged
+            ? theme.colorScheme.primary.withValues(alpha: 0.14)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.44),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: logged
+              ? theme.colorScheme.primary.withValues(alpha: 0.5)
+              : theme.colorScheme.outline.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _toggleMealLogged(mealType, index, !logged),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: logged
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(
+                    logged ? Icons.check_rounded : Icons.add_task_rounded,
+                    size: 18,
+                    color: logged
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _mealPrimaryTitle(item),
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        [
+                          _mealServingLine(item),
+                          _mealTimeLabel(item, mealType),
+                        ].where((part) => part.isNotEmpty).join(' • '),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      if (macros.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          macros,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: quickOptions.map((option) {
+              final selected = (quantity - option).abs() < 0.01;
+              return ChoiceChip(
+                label: Text(option == 1.0 ? '1x' : '1.5x'),
+                selected: selected,
+                onSelected: (_) => _updateMealQuantity(mealType, index, option),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkoutQuickLogCard(
+    Map<String, dynamic> plan,
+    Map<String, dynamic> exercise,
+    int index,
+  ) {
+    final theme = Theme.of(context);
+    final exerciseKey = '${plan['day']}-workout-ex-$index';
+    final logged = _exerciseCompleted[exerciseKey] ?? false;
+    final muscle =
+        exercise['muscleGroup']?.toString() ??
+        exercise['focus']?.toString() ??
+        'session';
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: () => _toggleExerciseLogged(exerciseKey, !logged),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: logged
+              ? theme.colorScheme.primary.withValues(alpha: 0.16)
+              : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.56),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: logged
+                ? theme.colorScheme.primary.withValues(alpha: 0.52)
+                : theme.colorScheme.outline.withValues(alpha: 0.18),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: logged
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                logged ? Icons.check_rounded : Icons.fitness_center_rounded,
+                size: 18,
+                color: logged
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    exercise['name']?.toString() ?? 'Exercise',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${exercise['sets'] ?? 0} sets • ${exercise['reps'] ?? 0} reps',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _abc(muscle),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1178,19 +1841,20 @@ class _PlanPageState extends State<PlanPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onMinus,
-                  child: const Icon(Icons.remove_rounded),
-                ),
+              _TrackerControlButton(
+                icon: Icons.remove_rounded,
+                onPressed: onMinus,
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: OutlinedButton(
-                  onPressed: onPlus,
-                  child: const Icon(Icons.add_rounded),
+                child: Text(
+                  progress >= 1 ? 'Goal reached' : 'Keep it moving',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall,
                 ),
               ),
+              const SizedBox(width: 10),
+              _TrackerControlButton(icon: Icons.add_rounded, onPressed: onPlus),
             ],
           ),
         ],
@@ -1216,6 +1880,36 @@ class _PlanPageState extends State<PlanPage> {
     }
   }
 
+  void _toggleMealLogged(String mealType, int index, bool logged) {
+    if (_plan == null) return;
+    final key = '${_plan!['day']}-meal-$mealType-$index';
+    setState(() {
+      _checkboxState[key] = logged;
+    });
+    _recalculateTotalCaloriesLogged(_plan!);
+    _saveCheckboxState();
+  }
+
+  void _updateMealQuantity(String mealType, int index, double quantity) {
+    if (_plan == null) return;
+    final sanitized = quantity <= 0 ? 0.5 : quantity;
+    setState(() {
+      _mealItemQuantities[mealType] = Map<int, double>.from(
+        _mealItemQuantities[mealType] ?? <int, double>{},
+      );
+      _mealItemQuantities[mealType]![index] = sanitized;
+    });
+    _recalculateTotalCaloriesLogged(_plan!);
+    _saveCheckboxState();
+  }
+
+  void _toggleExerciseLogged(String exerciseKey, bool logged) {
+    setState(() {
+      _exerciseCompleted[exerciseKey] = logged;
+    });
+    _saveCheckboxState();
+  }
+
   void _goToMealDetail() async {
     if (_plan == null || _planLoading) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1223,53 +1917,23 @@ class _PlanPageState extends State<PlanPage> {
       );
       return;
     }
-    final plan = _plan;
-    double mealGoal = _calorieGoal ?? 1800;
-    double mealScale = 1.0;
-    if (plan != null) {
-      double planTotal = 0;
-      final mealsRaw = plan['meals'];
-      logPlanPage(
-        '[PlanPage] plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\$mealsRaw',
-      );
-      final meals = mealsRaw is Map ? mealsRaw : <String, dynamic>{};
-      for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
-        final mealRaw = meals[mealType];
-        logPlanPage(
-          '[PlanPage] meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\$mealRaw',
-        );
-        final meal = mealRaw is Map ? mealRaw : <String, dynamic>{};
-        planTotal += (meal['cal'] as num?)?.toDouble() ?? 0.0;
-      }
-      if (planTotal > 0 && planTotal < mealGoal) {
-        mealScale = mealGoal / planTotal;
-      }
-    }
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => MealDetailPage(
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.94,
+        child: _MealLoggingSheet(
           plan: _plan!,
-          checkboxState: Map<String, bool>.from(_checkboxState),
-          mealItemQuantities: Map<String, Map<int, double>>.from(
-            _mealItemQuantities,
-          ),
-          calorieGoal: _calorieGoal,
-          mealScale: mealScale,
+          checkboxState: _checkboxState,
+          mealItemQuantities: _mealItemQuantities,
+          dailyTargets: _dailyTargetsForPlan(_plan!),
+          onToggleItem: _toggleMealLogged,
+          onQuantityChanged: _updateMealQuantity,
+          calculateDailyTotals: _calculateDailyTotals,
         ),
       ),
     );
-    if (result is Map) {
-      setState(() {
-        _checkboxState = Map<String, bool>.from(
-          result['checkboxState'] ?? _checkboxState,
-        );
-        _mealItemQuantities = Map<String, Map<int, double>>.from(
-          result['mealItemQuantities'] ?? _mealItemQuantities,
-        );
-      });
-      _recalculateTotalCaloriesLogged(_plan!);
-    }
   }
 
   void _goToWorkoutDetail() async {
@@ -1291,30 +1955,26 @@ class _PlanPageState extends State<PlanPage> {
     logPlanPage(
       '[PlanPage] workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw',
     );
-    final exercises = (exercisesRaw is List)
-        ? exercisesRaw.map(parseExercise).toList()
-        : <Map<String, dynamic>>[];
+    final exercises = _workoutPreviewItems(workout);
     final exerciseKeys = List.generate(
       exercises.length,
       (i) => '${plan?['day']}-workout-ex-$i',
     );
-    final exerciseChecked = <String, bool>{};
-    for (var k in exerciseKeys) {
-      exerciseChecked[k] = _exerciseCompleted[k] ?? false;
-    }
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            WorkoutDetailPage(plan: plan!, exerciseChecked: exerciseChecked),
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => FractionallySizedBox(
+        heightFactor: 0.94,
+        child: _WorkoutLoggingSheet(
+          plan: plan!,
+          exerciseKeys: exerciseKeys,
+          exerciseCompleted: _exerciseCompleted,
+          onToggleExercise: _toggleExerciseLogged,
+          calculateWorkoutSummary: _calculateWorkoutSummary,
+        ),
       ),
     );
-    if (result is Map && result.containsKey('exerciseChecked')) {
-      setState(() {
-        _exerciseCompleted = Map<String, bool>.from(result['exerciseChecked']);
-      });
-      _saveCheckboxState();
-    }
   }
 
   Widget _fallbackBanner(ColorScheme colorScheme) {
@@ -1344,22 +2004,8 @@ class _PlanPageState extends State<PlanPage> {
     );
   }
 
-  void _editOnboarding() async {
-    final provider = Provider.of<AuthProvider>(context, listen: false);
-    final onboardingProvider = Provider.of<OnboardingProvider>(
-      context,
-      listen: false,
-    );
-    if (_progressData != null) {
-      onboardingProvider.loadFromProgress(_progressData!);
-    }
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const OnboardingFlow()));
-    await provider.refreshUser();
-    await _fetchProgressData();
-    await _loadPlanFromBackend(force: true); // <-- Always force plan refresh
-    if (mounted) setState(() {});
+  void _editOnboarding() {
+    MainNavigationScaffold.switchTab(3);
   }
 
   // Helper to capitalize first letter (Abc format)
@@ -1385,7 +2031,7 @@ class _PlanPageState extends State<PlanPage> {
           children: [
             const EditorialSectionHeading(
               eyebrow: 'Profile Snapshot',
-              title: 'Your stored details need another pull.',
+              title: 'We could not load the details shaping your plan.',
             ),
             const SizedBox(height: 10),
             Text('Error loading profile: $_progressError'),
@@ -1393,11 +2039,7 @@ class _PlanPageState extends State<PlanPage> {
             SizedBox(
               width: double.infinity,
               child: EditorialPrimaryButton(
-                label: 'Retry',
-                trailing: const Icon(
-                  Icons.refresh_rounded,
-                  color: Color(0xFF390C00),
-                ),
+                label: 'Retry Snapshot',
                 onPressed: _fetchProgressData,
               ),
             ),
@@ -1417,114 +2059,159 @@ class _PlanPageState extends State<PlanPage> {
         ? Map<String, dynamic>.from(data['dietPreferences'])
         : <String, dynamic>{};
     final theme = Theme.of(context);
-    final iconColor = theme.colorScheme.primary;
-    final textStyle = theme.textTheme.bodyMedium;
-    final boldStyle = textStyle?.copyWith(fontWeight: FontWeight.bold);
     return EditorialSurface(
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            EditorialSectionHeading(
-              eyebrow: 'Profile Snapshot',
-              title: 'The details shaping your current plan.',
-              subtitle:
-                  'These settings keep your meals, movement, and pacing grounded in your real routine.',
-              trailing: IconButton(
-                icon: const Icon(Icons.edit_rounded),
-                tooltip: 'Edit onboarding',
-                onPressed: _editOnboarding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          EditorialSectionHeading(
+            eyebrow: 'Profile Snapshot',
+            title: 'The details guiding your plan.',
+            subtitle:
+                'A quick read on the profile settings shaping your food and training rhythm today.',
+            trailing: IconButton(
+              icon: const Icon(Icons.edit_rounded),
+              tooltip: 'Open profile',
+              onPressed: _editOnboarding,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCompactSnapshotTile(
+                  icon: Icons.cake_outlined,
+                  label: 'Age',
+                  value: '${profile['age'] ?? '-'}',
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: EditorialMetricTile(
-                    label: 'Age',
-                    value: '${profile['age'] ?? '-'}',
-                    icon: Icons.cake_outlined,
-                  ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildCompactSnapshotTile(
+                  icon: Icons.monitor_weight_outlined,
+                  label: 'Weight',
+                  value: '${profile['weight'] ?? '-'} kg',
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: EditorialMetricTile(
-                    label: 'Weight',
-                    value: '${profile['weight'] ?? '-'} kg',
-                    icon: Icons.monitor_weight_outlined,
-                  ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCompactSnapshotTile(
+                  icon: Icons.person_outline_rounded,
+                  label: 'Gender',
+                  value: _abc(profile['gender']?.toString()),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: EditorialMetricTile(
-                    label: 'Gender',
-                    value: _abc(profile['gender']?.toString()),
-                    icon: Icons.person_outline_rounded,
-                  ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildCompactSnapshotTile(
+                  icon: Icons.height_rounded,
+                  label: 'Height',
+                  value: '${profile['height'] ?? '-'} cm',
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: EditorialMetricTile(
-                    label: 'Height',
-                    value: '${profile['height'] ?? '-'} cm',
-                    icon: Icons.height_rounded,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Icon(Icons.flag, color: iconColor, size: 20),
-                const SizedBox(width: 6),
-                Text('Fitness Goals:', style: boldStyle),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Wrap(
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildProfileContextPanel(
+            icon: Icons.flag_rounded,
+            title: 'Goals',
+            subtitle: 'What this plan is built to support',
+            child: Wrap(
               spacing: 8,
               runSpacing: 8,
               children: fitnessGoals.isEmpty
                   ? [_buildProfileChip('Balanced training')]
-                  : fitnessGoals.map(_buildProfileChip).toList(),
+                  : fitnessGoals
+                        .map((goal) => _buildProfileChip(_abc(goal)))
+                        .toList(),
             ),
-            const SizedBox(height: 14),
-            Row(
+          ),
+          const SizedBox(height: 12),
+          _buildProfileContextPanel(
+            icon: Icons.restaurant_menu_rounded,
+            title: 'Diet context',
+            subtitle: 'Food settings shaping today’s meals',
+            child: Column(
               children: [
-                Icon(Icons.restaurant_menu, color: iconColor, size: 20),
-                const SizedBox(width: 6),
-                Text('Diet Preferences:', style: boldStyle),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildContextStat(
+                        'Diet',
+                        _abc(dietPreferences['type']?.toString()),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildContextStat(
+                        'Meals',
+                        '${dietPreferences['dailyMeals'] ?? '-'} daily',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildContextStat(
+                        'Water',
+                        '${dietPreferences['waterIntake'] ?? '-'} glasses',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _buildContextStat(
+                        'Allergies',
+                        _listSummary(dietPreferences['allergies']),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_listSummary(dietPreferences['restrictions']) !=
+                    'None') ...[
+                  const SizedBox(height: 10),
+                  _buildContextStat(
+                    'Restrictions',
+                    _listSummary(dietPreferences['restrictions']),
+                    fullWidth: true,
+                  ),
+                ],
               ],
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildProfileChip(
-                  'Diet: ${_abc(dietPreferences['type']?.toString())}',
-                ),
-                _buildProfileChip(
-                  'Meals: ${dietPreferences['dailyMeals'] ?? '-'} daily',
-                ),
-                _buildProfileChip(
-                  'Water: ${dietPreferences['waterIntake'] ?? '-'} glasses',
-                ),
-                _buildProfileChip(
-                  'Allergies: ${((dietPreferences['allergies'] is List && (dietPreferences['allergies'] as List).isNotEmpty) ? (dietPreferences['allergies'] as List).map((e) => _abc(e.toString())).join(', ') : 'None')}',
-                ),
-                _buildProfileChip(
-                  'Restrictions: ${((dietPreferences['restrictions'] is List && (dietPreferences['restrictions'] as List).isNotEmpty) ? (dietPreferences['restrictions'] as List).map((e) => _abc(e.toString())).join(', ') : 'None')}',
-                ),
-              ],
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactSnapshotTile({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.18),
         ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(height: 12),
+          Text(value, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text(label.toUpperCase(), style: theme.textTheme.labelMedium),
+        ],
       ),
     );
   }
@@ -1539,6 +2226,124 @@ class _PlanPageState extends State<PlanPage> {
       ),
       child: Text(label, style: theme.textTheme.bodySmall),
     );
+  }
+
+  Widget _buildProfileContextPanel({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.16),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(title, style: theme.textTheme.titleSmall),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.68),
+            ),
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContextStat(
+    String label,
+    String value, {
+    bool fullWidth = false,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.42,
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _listSummary(dynamic value) {
+    if (value is! List || value.isEmpty) return 'None';
+    return value.map((item) => _abc(item.toString())).join(', ');
+  }
+
+  Map<String, dynamic> _mealItemAsMap(dynamic item) {
+    if (item is Map) return Map<String, dynamic>.from(item);
+    return <String, dynamic>{};
+  }
+
+  String _mealPrimaryTitle(Map<String, dynamic> item) {
+    final name = item['name']?.toString().trim();
+    if (name != null && name.isNotEmpty) return name;
+    return 'Meal details ready';
+  }
+
+  String _mealServingLine(Map<String, dynamic> item) {
+    final quantity = item['quantity']?.toString().trim();
+    if (quantity != null && quantity.isNotEmpty) return quantity;
+    return '';
+  }
+
+  String _mealTimeLabel(Map<String, dynamic> item, String fallbackMealType) {
+    final raw = item['time']?.toString().trim();
+    if (raw != null && raw.isNotEmpty) return raw;
+    return _abc(fallbackMealType);
+  }
+
+  String _mealMacroSummary(Map<String, dynamic> item) {
+    final macros = item['macros'];
+    if (macros is! Map) return '';
+    final protein = macros['protein'] ?? macros['p'];
+    final carbs = macros['carbs'] ?? macros['c'];
+    final fats = macros['fats'] ?? macros['f'];
+    final parts = <String>[];
+    if (protein != null) parts.add('P ${protein}g');
+    if (carbs != null) parts.add('C ${carbs}g');
+    if (fats != null) parts.add('F ${fats}g');
+    return parts.join(' • ');
   }
 
   Future<void> _fetchProgressData() async {
@@ -1581,370 +2386,513 @@ class _PlanPageState extends State<PlanPage> {
   }
 }
 
-// MealDetailPage implementation
-class MealDetailPage extends StatefulWidget {
+class _TrackerControlButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _TrackerControlButton({required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.22),
+            ),
+          ),
+          child: Icon(icon, size: 18, color: theme.colorScheme.primary),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanSheetShell extends StatelessWidget {
+  final String eyebrow;
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final Widget? footer;
+
+  const _PlanSheetShell({
+    required this.eyebrow,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+    this.footer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: EditorialBackdrop(
+        safeTop: false,
+        padding: EdgeInsets.zero,
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 54,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: EditorialSectionHeading(
+                                eyebrow: eyebrow,
+                                title: title,
+                                subtitle: subtitle,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        child,
+                      ],
+                    ),
+                  ),
+                ),
+                if (footer != null)
+                  SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                      child: footer!,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MealLoggingSheet extends StatefulWidget {
   final Map<String, dynamic> plan;
   final Map<String, bool> checkboxState;
   final Map<String, Map<int, double>> mealItemQuantities;
-  final double? calorieGoal;
-  final double? mealScale;
-  const MealDetailPage({
-    Key? key,
+  final Map<String, double> dailyTargets;
+  final void Function(String mealType, int index, bool logged) onToggleItem;
+  final void Function(String mealType, int index, double quantity)
+  onQuantityChanged;
+  final Map<String, double> Function(Map<String, dynamic> plan)
+  calculateDailyTotals;
+
+  const _MealLoggingSheet({
     required this.plan,
     required this.checkboxState,
     required this.mealItemQuantities,
-    this.calorieGoal,
-    this.mealScale,
-  }) : super(key: key);
+    required this.dailyTargets,
+    required this.onToggleItem,
+    required this.onQuantityChanged,
+    required this.calculateDailyTotals,
+  });
+
   @override
-  State<MealDetailPage> createState() => _MealDetailPageState();
+  State<_MealLoggingSheet> createState() => _MealLoggingSheetState();
 }
 
-class _MealDetailPageState extends State<MealDetailPage> {
-  late Map<String, bool> _checkboxState;
-  late Map<String, Map<int, double>> _mealItemQuantities;
-  double get _mealScale => widget.mealScale ?? 1.0;
-  double get _calorieGoal => widget.calorieGoal ?? 1800;
-  @override
-  void initState() {
-    super.initState();
-    _checkboxState = Map<String, bool>.from(widget.checkboxState);
-    _mealItemQuantities = Map<String, Map<int, double>>.from(
-      widget.mealItemQuantities,
-    );
-  }
+class _MealLoggingSheetState extends State<_MealLoggingSheet> {
+  static const List<double> _quantityOptions = [0.5, 1.0, 1.5, 2.0];
 
-  double _getCaloriesForMealItem(Map meal, double quantity) {
-    if (meal['cal'] != null &&
-        meal['items'] is List &&
-        meal['items'].length > 0) {
-      return ((meal['cal'] / meal['items'].length) * quantity) * _mealScale;
+  double _itemCalories(Map<String, dynamic> item) {
+    final directCal =
+        (item['calories'] as num?)?.toDouble() ??
+        (item['cal'] as num?)?.toDouble();
+    if (directCal != null && directCal > 0) return directCal;
+
+    final macros = item['macros'];
+    if (macros is Map) {
+      final protein =
+          (macros['protein'] as num?)?.toDouble() ??
+          (macros['p'] as num?)?.toDouble() ??
+          0.0;
+      final carbs =
+          (macros['carbs'] as num?)?.toDouble() ??
+          (macros['c'] as num?)?.toDouble() ??
+          0.0;
+      final fats =
+          (macros['fats'] as num?)?.toDouble() ??
+          (macros['f'] as num?)?.toDouble() ??
+          0.0;
+      return (protein * 4) + (carbs * 4) + (fats * 9);
     }
+
     return 0;
   }
 
-  Map<String, double> _getMacrosForMealItem(Map meal, double quantity) {
-    final macros = {'p': 0.0, 'f': 0.0, 'c': 0.0};
-    if (meal['p'] != null && meal['items'] is List && meal['items'].length > 0)
-      macros['p'] =
-          ((meal['p'] / meal['items'].length) * quantity) * _mealScale;
-    if (meal['f'] != null && meal['items'] is List && meal['items'].length > 0)
-      macros['f'] =
-          ((meal['f'] / meal['items'].length) * quantity) * _mealScale;
-    if (meal['c'] != null && meal['items'] is List && meal['items'].length > 0)
-      macros['c'] =
-          ((meal['c'] / meal['items'].length) * quantity) * _mealScale;
-    return macros;
+  double _mealPlannedCalories(Map meal) {
+    if (meal['cal'] is num) return (meal['cal'] as num).toDouble();
+    final items = meal['items'] is List
+        ? List<dynamic>.from(meal['items'])
+        : [];
+    return items
+        .map((item) => _itemCalories(_planMealItemAsMap(item)))
+        .fold<double>(0, (sum, value) => sum + value);
   }
 
-  Map<String, double> _calculateDailyTotals() {
-    double cal = 0, p = 0, f = 0, c = 0;
-    final meals = widget.plan['meals'] is Map
-        ? widget.plan['meals'] as Map
-        : <String, dynamic>{};
-    for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
-      final meal = meals[mealType] is Map
-          ? meals[mealType] as Map
-          : <String, dynamic>{};
-      final items = meal['items'] is List ? meal['items'] : [];
-      for (int i = 0; i < items.length; i++) {
-        final key = '${widget.plan['day']}-meal-$mealType-$i';
-        if (_checkboxState[key] == true) {
-          final qty = _mealItemQuantities[mealType]?[i] ?? 1.0;
-          cal += _getCaloriesForMealItem(meal, qty);
-          final macros = _getMacrosForMealItem(meal, qty);
-          p += macros['p']!;
-          f += macros['f']!;
-          c += macros['c']!;
-        }
-      }
+  String _quantityLabel(double value) {
+    if ((value - value.roundToDouble()).abs() < 0.01) {
+      return value == 1 ? '1x' : '${value.toInt()}x';
     }
-    return {'cal': cal, 'p': p, 'f': f, 'c': c};
+    return '${value.toStringAsFixed(1)}x';
+  }
+
+  Widget _macroBlock(
+    BuildContext context,
+    String label,
+    double current,
+    double goal,
+    Color color,
+  ) {
+    final percent = goal > 0 ? (current / goal).clamp(0.0, 1.0) : 0.0;
+    final theme = Theme.of(context);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.58),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.18),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(color: color),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${current.toStringAsFixed(0)} / ${goal.toStringAsFixed(0)} g',
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: 10),
+            LinearProgressIndicator(
+              value: percent,
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(999),
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final dailyTotals = _calculateDailyTotals();
+    final theme = Theme.of(context);
+    final dailyTotals = widget.calculateDailyTotals(widget.plan);
+    final calorieGoal = widget.dailyTargets['calories'] ?? 1800;
+    final calorieProgress = calorieGoal > 0
+        ? (dailyTotals['cal']! / calorieGoal).clamp(0.0, 1.0)
+        : 0.0;
+    final caloriesLeft = (calorieGoal - dailyTotals['cal']!).clamp(
+      0.0,
+      calorieGoal,
+    );
     final meals = widget.plan['meals'] is Map
-        ? widget.plan['meals'] as Map
+        ? Map<String, dynamic>.from(widget.plan['meals'] as Map)
         : <String, dynamic>{};
-    final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Meal Details'),
-        backgroundColor: colorScheme.surface,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: () {
-              Navigator.pop(context, {
-                'checkboxState': _checkboxState,
-                'mealItemQuantities': _mealItemQuantities,
-              });
-            },
-            color: colorScheme.primary,
-          ),
-        ],
+
+    return _PlanSheetShell(
+      eyebrow: 'Meal Plan',
+      title: 'Log meals without losing your place.',
+      subtitle:
+          'Tick off what you ate, adjust the portion, and watch your daily totals move right away.',
+      footer: SizedBox(
+        width: double.infinity,
+        child: EditorialPrimaryButton(
+          label: 'Done Logging',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.primary,
-                width: 1.2,
-              ),
-            ),
-            color: Theme.of(context).colorScheme.surface,
-            child: Padding(
-              padding: const EdgeInsets.all(18.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Total: ${dailyTotals['cal']!.toStringAsFixed(0)} / ${_calorieGoal.toStringAsFixed(0)} kcal',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+          EditorialSurface(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${dailyTotals['cal']!.toStringAsFixed(0)} / ${calorieGoal.toStringAsFixed(0)} kcal',
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  caloriesLeft <= 0
+                      ? 'Target reached. Nice work staying on pace.'
+                      : '${caloriesLeft.toStringAsFixed(0)} kcal left for today.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 14),
+                LinearProgressIndicator(
+                  value: calorieProgress,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(999),
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _macroBlock(
+                      context,
+                      'Protein',
+                      dailyTotals['p']!,
+                      widget.dailyTargets['protein'] ?? 120,
+                      theme.colorScheme.tertiary,
                     ),
-                  ),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 8,
-                    children: [
-                      macroSummary(
-                        'P',
-                        dailyTotals['p'] ?? 0.0,
-                        120 * _mealScale,
-                        Theme.of(context).colorScheme.tertiary,
-                      ),
-                      macroSummary(
-                        'F',
-                        dailyTotals['f'] ?? 0.0,
-                        60 * _mealScale,
-                        Theme.of(context).colorScheme.secondary,
-                      ),
-                      macroSummary(
-                        'C',
-                        dailyTotals['c'] ?? 0.0,
-                        220 * _mealScale,
-                        Theme.of(context).colorScheme.primary,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 10),
+                    _macroBlock(
+                      context,
+                      'Carbs',
+                      dailyTotals['c']!,
+                      widget.dailyTargets['carbs'] ?? 220,
+                      theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    _macroBlock(
+                      context,
+                      'Fat',
+                      dailyTotals['f']!,
+                      widget.dailyTargets['fat'] ?? 60,
+                      theme.colorScheme.secondary,
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          ...['breakfast', 'lunch', 'snack', 'dinner'].map((mealType) {
-            final m = meals[mealType] is Map
-                ? meals[mealType]
+          const SizedBox(height: 18),
+          ..._orderedMealKeysFromRaw(Map<String, dynamic>.from(meals)).map((
+            mealType,
+          ) {
+            final meal = meals[mealType] is Map
+                ? Map<String, dynamic>.from(meals[mealType] as Map)
                 : <String, dynamic>{};
-            final items = m['items'] is List
-                ? List<Map<String, dynamic>>.from(m['items'])
-                : <Map<String, dynamic>>[];
-            return Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 1.2,
-                ),
-              ),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              elevation: 1,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
+            final items = meal['items'] is List
+                ? List<dynamic>.from(meal['items'])
+                : <dynamic>[];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: EditorialSurface(
+                padding: const EdgeInsets.all(18),
+                radius: 26,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      mealType[0].toUpperCase() + mealType.substring(1),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    ...List.generate(items.length, (i) {
-                      final item = items[i];
-                      final key = '${widget.plan['day']}-meal-$mealType-$i';
-                      final checked = _checkboxState[key] ?? false;
-                      final qty = _mealItemQuantities[mealType]?[i] ?? 1.0;
-                      return Row(
-                        children: [
-                          Checkbox(
-                            value: checked,
-                            onChanged: (val) {
-                              setState(() {
-                                _checkboxState[key] = val ?? false;
-                              });
-                            },
-                            activeColor: Theme.of(context).colorScheme.primary,
+                    Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          Expanded(
+                          child: Icon(
+                            _planMealIcon(mealType),
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _planFriendlyLabel(mealType),
+                                style: theme.textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_mealPlannedCalories(meal).toStringAsFixed(0)} kcal planned',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    ...List.generate(items.length, (index) {
+                      final item = _planMealItemAsMap(items[index]);
+                      final itemKey =
+                          '${widget.plan['day']}-meal-$mealType-$index';
+                      final logged = widget.checkboxState[itemKey] ?? false;
+                      final quantity =
+                          widget.mealItemQuantities[mealType]?[index] ?? 1.0;
+                      final macros = _planMealMacroSummary(item);
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: index == items.length - 1 ? 0 : 12,
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(22),
+                          onTap: () {
+                            widget.onToggleItem(mealType, index, !logged);
+                            setState(() {});
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: logged
+                                  ? theme.colorScheme.primary.withValues(
+                                      alpha: 0.16,
+                                    )
+                                  : theme.colorScheme.surfaceContainerHigh
+                                        .withValues(alpha: 0.52),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: logged
+                                    ? theme.colorScheme.primary.withValues(
+                                        alpha: 0.55,
+                                      )
+                                    : theme.colorScheme.outline.withValues(
+                                        alpha: 0.18,
+                                      ),
+                              ),
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  item['name'] ?? '',
-                                  style: checked
-                                      ? TextStyle(
-                                          decoration:
-                                              TextDecoration.lineThrough,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.secondary,
-                                        )
-                                      : TextStyle(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                        ),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: logged
+                                            ? theme.colorScheme.primary
+                                            : theme
+                                                  .colorScheme
+                                                  .surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        logged
+                                            ? Icons.check_rounded
+                                            : Icons.add_task_rounded,
+                                        size: 18,
+                                        color: logged
+                                            ? theme.colorScheme.onPrimary
+                                            : theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _planMealPrimaryTitle(item),
+                                            style: theme.textTheme.titleMedium,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            [
+                                                  _planMealServingLine(item),
+                                                  _planMealTimeLabel(
+                                                    item,
+                                                    mealType,
+                                                  ),
+                                                ]
+                                                .where(
+                                                  (part) => part.isNotEmpty,
+                                                )
+                                                .join(' • '),
+                                            style: theme.textTheme.bodySmall,
+                                          ),
+                                          if (macros.isNotEmpty) ...[
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              macros,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .primary,
+                                                  ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  item['quantity'] ?? '',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.secondary,
-                                  ),
-                                ),
-                                Text(
-                                  'P: ${item['macros']?['protein'] ?? 0}g  C: ${item['macros']?['carbs'] ?? 0}g  F: ${item['macros']?['fats'] ?? 0}g',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.tertiary,
-                                  ),
+                                const SizedBox(height: 14),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _quantityOptions.map((option) {
+                                    final selected =
+                                        (quantity - option).abs() < 0.01;
+                                    return ChoiceChip(
+                                      label: Text(_quantityLabel(option)),
+                                      selected: selected,
+                                      onSelected: (_) {
+                                        widget.onQuantityChanged(
+                                          mealType,
+                                          index,
+                                          option,
+                                        );
+                                        setState(() {});
+                                      },
+                                    );
+                                  }).toList(),
                                 ),
                               ],
                             ),
                           ),
-                          SizedBox(
-                            width: 60,
-                            child: TextFormField(
-                              initialValue: qty.toStringAsFixed(1),
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              decoration: InputDecoration(
-                                labelText: 'Qty',
-                                isDense: true,
-                                labelStyle: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
-                                ),
-                              ),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                              onChanged: (val) {
-                                final v = double.tryParse(val) ?? 1.0;
-                                setState(() {
-                                  _mealItemQuantities[mealType] =
-                                      Map<int, double>.from(
-                                        _mealItemQuantities[mealType] ?? {},
-                                      );
-                                  _mealItemQuantities[mealType]![i] = v;
-                                });
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'x1 serving',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
-                          ),
-                        ],
+                        ),
                       );
                     }),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        if (m['cal'] != null)
-                          Chip(
-                            label: Text(
-                              'Cal: ${((m['cal'] ?? 0) * _mealScale).toStringAsFixed(0)}',
-                            ),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        if (m['p'] != null)
-                          Chip(
-                            label: Text(
-                              'P: ${((m['p'] ?? 0) * _mealScale).toStringAsFixed(0)}g',
-                            ),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.tertiary,
-                            ),
-                          ),
-                        if (m['c'] != null)
-                          Chip(
-                            label: Text(
-                              'C: ${((m['c'] ?? 0) * _mealScale).toStringAsFixed(0)}g',
-                            ),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        if (m['f'] != null)
-                          Chip(
-                            label: Text(
-                              'F: ${((m['f'] ?? 0) * _mealScale).toStringAsFixed(0)}g',
-                            ),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
-                          ),
-                        if (m['iron'] != null)
-                          Chip(
-                            label: Text('Iron: ${m['iron']}mg'),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.secondary,
-                            ),
-                          ),
-                        if (m['calcium'] != null)
-                          Chip(
-                            label: Text('Calcium: ${m['calcium']}mg'),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            labelStyle: TextStyle(
-                              color: Theme.of(context).colorScheme.tertiary,
-                            ),
-                          ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -1956,268 +2904,252 @@ class _MealDetailPageState extends State<MealDetailPage> {
   }
 }
 
-// WorkoutDetailPage implementation
-class WorkoutDetailPage extends StatefulWidget {
+class _WorkoutLoggingSheet extends StatefulWidget {
   final Map<String, dynamic> plan;
-  final Map<String, bool> exerciseChecked;
-  const WorkoutDetailPage({
-    Key? key,
+  final List<String> exerciseKeys;
+  final Map<String, bool> exerciseCompleted;
+  final void Function(String exerciseKey, bool logged) onToggleExercise;
+  final Map<String, dynamic> Function(Map<String, dynamic> plan)
+  calculateWorkoutSummary;
+
+  const _WorkoutLoggingSheet({
     required this.plan,
-    required this.exerciseChecked,
-  }) : super(key: key);
+    required this.exerciseKeys,
+    required this.exerciseCompleted,
+    required this.onToggleExercise,
+    required this.calculateWorkoutSummary,
+  });
+
   @override
-  State<WorkoutDetailPage> createState() => _WorkoutDetailPageState();
+  State<_WorkoutLoggingSheet> createState() => _WorkoutLoggingSheetState();
 }
 
-class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
-  late Map<String, bool> _exerciseChecked;
-  @override
-  void initState() {
-    super.initState();
-    _exerciseChecked = Map<String, bool>.from(widget.exerciseChecked);
+class _WorkoutLoggingSheetState extends State<_WorkoutLoggingSheet> {
+  List<MapEntry<String, List<Map<String, dynamic>>>> _exerciseGroups() {
+    final workout = widget.plan['workout'] is Map
+        ? Map<String, dynamic>.from(widget.plan['workout'] as Map)
+        : <String, dynamic>{};
+    final exercisesRaw = workout['exercises'];
+    if (exercisesRaw is List) {
+      return [MapEntry('Session', exercisesRaw.map(parseExercise).toList())];
+    }
+    if (exercisesRaw is Map) {
+      return exercisesRaw.entries.map((entry) {
+        final group = entry.value is Map
+            ? Map<String, dynamic>.from(entry.value as Map)
+            : <String, dynamic>{};
+        final items = group['items'] is List
+            ? List<dynamic>.from(group['items']).map(parseExercise).toList()
+            : <Map<String, dynamic>>[];
+        final label =
+            group['muscleGroup']?.toString() ?? _planFriendlyLabel(entry.key);
+        return MapEntry(label, items);
+      }).toList();
+    }
+    return <MapEntry<String, List<Map<String, dynamic>>>>[];
   }
 
   @override
   Widget build(BuildContext context) {
-    final workout = widget.plan['workout'] is Map ? widget.plan['workout'] : {};
-    final exercisesMap = (workout['exercises'] is Map)
-        ? Map<String, dynamic>.from(workout['exercises'])
+    final theme = Theme.of(context);
+    final workout = widget.plan['workout'] is Map
+        ? Map<String, dynamic>.from(widget.plan['workout'] as Map)
         : <String, dynamic>{};
-    final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Workout Details'),
-        backgroundColor: colorScheme.surface,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: () {
-              Navigator.pop(context, {'exerciseChecked': _exerciseChecked});
-            },
-            color: colorScheme.primary,
-          ),
-        ],
+    final summary = widget.calculateWorkoutSummary(widget.plan);
+    final groups = _exerciseGroups();
+
+    return _PlanSheetShell(
+      eyebrow: 'Workout',
+      title: 'Log your session while it is still in motion.',
+      subtitle:
+          'Mark each move as you finish it and your plan summary will stay in sync behind the sheet.',
+      footer: SizedBox(
+        width: double.infinity,
+        child: EditorialPrimaryButton(
+          label: 'Close Workout',
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.primary,
-                width: 1.2,
-              ),
+          EditorialSurface(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  workout['target']?.toString().trim().isNotEmpty == true
+                      ? workout['target'].toString()
+                      : 'Today\'s training block',
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: EditorialMetricTile(
+                        label: 'Duration',
+                        value:
+                            '${(summary['duration'] as num?)?.round() ?? 0} min',
+                        icon: Icons.timer_outlined,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: EditorialMetricTile(
+                        label: 'Calories',
+                        value:
+                            '${(summary['calories'] as num?)?.round() ?? 0} kcal',
+                        icon: Icons.local_fire_department_outlined,
+                        iconColor: theme.colorScheme.tertiary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: EditorialMetricTile(
+                        label: 'Done',
+                        value: '${summary['completed']}/${summary['total']}',
+                        icon: Icons.check_circle_outline_rounded,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                LinearProgressIndicator(
+                  value: (summary['progress'] as num?)?.toDouble() ?? 0.0,
+                  minHeight: 8,
+                  borderRadius: BorderRadius.circular(999),
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
-            color: Theme.of(context).colorScheme.surface,
-            child: Padding(
-              padding: const EdgeInsets.all(18.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Text(
-                      'Target: ${workout['target'] ?? '-'}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      maxLines: 3,
-                      softWrap: true,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    children: [
-                      Chip(
-                        avatar: Icon(
-                          Icons.timer,
-                          color: Theme.of(context).colorScheme.secondary,
-                          size: 18,
+          ),
+          const SizedBox(height: 18),
+          ...groups.asMap().entries.map((groupEntry) {
+            final groupIndex = groupEntry.key;
+            final group = groupEntry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: EditorialSurface(
+                padding: const EdgeInsets.all(18),
+                radius: 26,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(group.key, style: theme.textTheme.titleLarge),
+                    const SizedBox(height: 12),
+                    ...group.value.asMap().entries.map((exerciseEntry) {
+                      final exerciseIndex = exerciseEntry.key;
+                      final exercise = exerciseEntry.value;
+                      final globalIndex =
+                          groups
+                              .take(groupIndex)
+                              .fold<int>(
+                                0,
+                                (sum, item) => sum + item.value.length,
+                              ) +
+                          exerciseIndex;
+                      final exerciseKey = widget.exerciseKeys[globalIndex];
+                      final logged =
+                          widget.exerciseCompleted[exerciseKey] ?? false;
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: exerciseIndex == group.value.length - 1
+                              ? 0
+                              : 12,
                         ),
-                        label: Text(
-                          'Duration: ${workout['duration'] ?? 0} min',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                        ),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        shape: StadiumBorder(
-                          side: BorderSide(
-                            color: Theme.of(context).colorScheme.secondary,
-                            width: 1,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 2,
-                        ),
-                      ),
-                      Chip(
-                        avatar: Icon(
-                          Icons.local_fire_department,
-                          color: Theme.of(context).colorScheme.tertiary,
-                          size: 18,
-                        ),
-                        label: Text(
-                          'Calories: ${workout['calories'] ?? 0} kcal',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.tertiary,
-                          ),
-                        ),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        shape: StadiumBorder(
-                          side: BorderSide(
-                            color: Theme.of(context).colorScheme.tertiary,
-                            width: 1,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 2,
-                        ),
-                      ),
-                      Chip(
-                        avatar: Icon(
-                          Icons.check_circle,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 18,
-                        ),
-                        label: Text(
-                          '${_exerciseChecked.values.where((v) => v).length} / ${_exerciseChecked.isNotEmpty ? _exerciseChecked.length : 1} done',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        shape: StadiumBorder(
-                          side: BorderSide(
-                            color: Theme.of(context).colorScheme.primary,
-                            width: 1,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Exercises:',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...exercisesMap.entries.expand((entry) {
-                    final group = entry.value;
-                    final groupName = group['muscleGroup'] ?? entry.key;
-                    final items = group['items'] is List
-                        ? List<Map<String, dynamic>>.from(group['items'])
-                        : <Map<String, dynamic>>[];
-                    return [
-                      Text(
-                        groupName,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ),
-                      ...List.generate(items.length, (i) {
-                        final ex = items[i];
-                        final key =
-                            '${widget.plan['day']}-workout-${entry.key}-$i';
-                        final checked = _exerciseChecked[key] ?? false;
-                        return Container(
-                          margin: const EdgeInsets.symmetric(vertical: 6),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: checked
-                                ? Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withOpacity(0.13)
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: checked
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.outline.withOpacity(0.13),
-                              width: checked ? 1.5 : 1,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(22),
+                          onTap: () {
+                            widget.onToggleExercise(exerciseKey, !logged);
+                            setState(() {});
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: logged
+                                  ? theme.colorScheme.primary.withValues(
+                                      alpha: 0.16,
+                                    )
+                                  : theme.colorScheme.surfaceContainerHigh
+                                        .withValues(alpha: 0.54),
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(
+                                color: logged
+                                    ? theme.colorScheme.primary.withValues(
+                                        alpha: 0.55,
+                                      )
+                                    : theme.colorScheme.outline.withValues(
+                                        alpha: 0.18,
+                                      ),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: logged
+                                        ? theme.colorScheme.primary
+                                        : theme
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    logged
+                                        ? Icons.check_rounded
+                                        : Icons.fitness_center_rounded,
+                                    size: 18,
+                                    color: logged
+                                        ? theme.colorScheme.onPrimary
+                                        : theme.colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        exercise['name']?.toString() ??
+                                            'Exercise',
+                                        style: theme.textTheme.titleMedium,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${exercise['sets'] ?? 0} sets • ${exercise['reps'] ?? 0} reps',
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        exercise['muscleGroup']?.toString() ??
+                                            group.key,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Checkbox(
-                                value: checked,
-                                onChanged: (val) {
-                                  setState(() {
-                                    _exerciseChecked[key] = val ?? false;
-                                  });
-                                },
-                                activeColor: Theme.of(
-                                  context,
-                                ).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      ex['name'] ?? '',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: checked
-                                            ? Theme.of(
-                                                context,
-                                              ).colorScheme.primary
-                                            : Theme.of(
-                                                context,
-                                              ).colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${ex['sets']}x${ex['reps']}, ${ex['muscleGroup']}',
-                                      style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.secondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ];
-                  }),
-                ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          }),
         ],
       ),
     );

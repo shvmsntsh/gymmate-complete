@@ -1,11 +1,9 @@
-import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../main.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_dashboard_service.dart';
-import '../widgets/dashboard_charts.dart';
 import '../widgets/editorial_dashboard_mobile.dart';
 import '../widgets/editorial_mobile.dart';
 
@@ -45,13 +43,29 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
     final user = authProvider.userData ?? {};
     final firstName = user['firstName'] ?? authProvider.userName ?? 'Member';
     final gymName = authProvider.gymName ?? 'Your Gym';
-    final activeClasses = '${user['activeClasses'] ?? 0}';
-    final attendance = '${user['attendance'] ?? 0}';
-    final progress = '${user['progress'] ?? 0}';
+    final activeClassesCount = (user['activeClasses'] as num?)?.toInt() ?? 0;
+    final attendanceCount = (user['attendance'] as num?)?.toInt() ?? 0;
+    final progressCount = (user['progress'] as num?)?.toInt() ?? 0;
     final totalLogs = progressParticipation.fold<int>(
       0,
       (sum, entry) => sum + ((entry['count'] as num?)?.toInt() ?? 0),
     );
+    final chartPoints = progressParticipation
+        .map(
+          (entry) => DashboardBarPoint(
+            label: (entry['day'] ?? '').toString(),
+            value: ((entry['count'] as num?)?.toInt() ?? 0),
+          ),
+        )
+        .toList();
+    final bestPoint = chartPoints.isEmpty
+        ? null
+        : chartPoints.reduce((a, b) => a.value >= b.value ? a : b);
+    final consistency = _normalizedPercent(progressParticipation);
+    final consistencyPercent = (consistency * 100).round();
+    final consistencyCaption = totalLogs == 0
+        ? 'Start with today’s plan'
+        : '$totalLogs weekly logs';
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -65,19 +79,21 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Welcome back\n$firstName',
-                  style: theme.textTheme.titleLarge,
+                  'Welcome back, $firstName',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.82),
+                  ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 DashboardHeroCard(
-                  eyebrow: 'Today\'s Workout',
-                  title: 'Stay steady and keep your next session simple.',
+                  eyebrow: 'Today\'s Plan',
+                  title: 'Your next session is ready whenever you are.',
                   subtitle:
-                      '$gymName is ready with your plan, progress, and daily rhythm in one calm view.',
-                  metaLeft: '$activeClasses active',
-                  metaRight: '$totalLogs logs',
+                      'Follow your workout, stay consistent, and keep your rhythm with $gymName all in one place.',
+                  metaLeft: '$activeClassesCount active classes',
+                  metaRight: '$totalLogs weekly logs',
                   actionColor: theme.colorScheme.primary,
-                  onTap: () => MainNavigationScaffold.switchTab(2),
+                  onTap: () => MainNavigationScaffold.switchTab(1),
                   buttonLabel: 'Open plan',
                   illustration: Image.asset(
                     'assets/images/member_illustration.png',
@@ -86,72 +102,68 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                Row(
+                Column(
                   children: [
-                    Expanded(
-                      flex: 5,
-                      child: _GoalRingCard(
-                        progress: _normalizedPercent(progressParticipation),
-                        stepsText: '$totalLogs',
-                      ),
+                    _ConsistencyPanel(
+                      progress: consistency,
+                      value: '$consistencyPercent%',
+                      label: 'Consistency',
+                      caption: consistencyCaption,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        children: [
-                          DashboardStatPanel(
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DashboardStatPanel(
                             label: 'Attendance',
-                            value: attendance,
+                            value: '$attendanceCount',
                             caption: 'gym consistency',
                             icon: Icons.local_fire_department_outlined,
                           ),
-                          const SizedBox(height: 12),
-                          DashboardStatPanel(
-                            label: 'Progress',
-                            value: progress,
-                            caption: 'current momentum',
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DashboardStatPanel(
+                            label: 'Momentum',
+                            value: '$progressCount',
+                            caption: 'current rhythm',
                             icon: Icons.schedule_rounded,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 18),
                 DashboardSectionCard(
-                  eyebrow: 'Weekly Intensity',
-                  title: 'Your effort across the week.',
+                  eyebrow: 'Weekly Rhythm',
+                  title: 'Your movement across the week.',
                   subtitle:
-                      'A quick view of how often you checked in and moved.',
+                      'A simple read on how consistently you showed up and trained.',
                   trailing: Text(
                     'LAST 7 DAYS',
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  child: SizedBox(
-                    height: 220,
-                    child: DashboardChart(
-                      title: 'Workout Progress',
-                      seriesList: [
-                        charts.Series<Map<String, dynamic>, String>(
-                          id: 'ProgressParticipation',
-                          colorFn: (_, __) => charts.ColorUtil.fromDartColor(
-                            theme.colorScheme.primary,
-                          ),
-                          domainFn: (entry, _) => entry['day'] as String,
-                          measureFn: (entry, _) => entry['count'] as int,
-                          data: progressParticipation,
-                        ),
-                      ],
-                    ),
+                  child: DashboardBarChartCard(
+                    points: chartPoints,
+                    summaryLeft: '$totalLogs weekly logs',
+                    summaryRight: bestPoint == null
+                        ? null
+                        : 'Best day: ${bestPoint.label}',
+                    emptyTitle: 'No activity yet',
+                    emptySubtitle:
+                        'As you log sessions and check in, your weekly rhythm will appear here.',
+                    detailBuilder: (label, value) =>
+                        '$label logged $value session${value == 1 ? '' : 's'}.',
                   ),
                 ),
                 const SizedBox(height: 18),
                 DashboardSectionCard(
                   eyebrow: 'Upcoming Focus',
-                  title: 'The next checkpoints to keep in motion.',
+                  title: 'The next checkpoints to keep moving.',
                   trailing: TextButton(
                     onPressed: () => MainNavigationScaffold.switchTab(1),
                     child: const Text('View all'),
@@ -177,7 +189,7 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
           trailingTop: 'Today',
           trailingBottom: 'Start strong',
           leading: _avatarBadge(context, Icons.fitness_center_rounded),
-          onTap: () => MainNavigationScaffold.switchTab(2),
+          onTap: () => MainNavigationScaffold.switchTab(1),
         ),
       ];
     }
@@ -194,7 +206,7 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
           trailingTop: '$count logs',
           trailingBottom: day.toUpperCase(),
           leading: _avatarBadge(context, Icons.calendar_today_rounded),
-          onTap: () => MainNavigationScaffold.switchTab(1),
+          onTap: () => MainNavigationScaffold.switchTab(3),
         ),
       );
     });
@@ -234,26 +246,44 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
   }
 }
 
-class _GoalRingCard extends StatelessWidget {
+class _ConsistencyPanel extends StatelessWidget {
   final double progress;
-  final String stepsText;
+  final String value;
+  final String label;
+  final String caption;
 
-  const _GoalRingCard({required this.progress, required this.stepsText});
+  const _ConsistencyPanel({
+    required this.progress,
+    required this.value,
+    required this.label,
+    required this.caption,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return EditorialSurface(
       padding: const EdgeInsets.all(18),
       radius: 28,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Show up today and the week gets easier.',
+            style: theme.textTheme.titleLarge,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Keep your streak moving with one session at a time. Your consistency builds every time you log a workout.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 18),
           Center(
             child: EditorialProgressRing(
               progress: progress,
-              value: '${(progress * 100).round()}%',
-              label: 'Daily Goal',
-              sublabel: '$stepsText weekly logs',
+              value: value,
+              label: label,
+              sublabel: caption,
               size: 148,
             ),
           ),

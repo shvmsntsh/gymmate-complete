@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/api/api_config.dart';
 import 'package:gymmate_mobile/main.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
-import 'package:gymmate_mobile/themes/app_colors.dart';
 import 'package:gymmate_mobile/widgets/animated_form_field.dart';
 import 'package:gymmate_mobile/widgets/confetti_success.dart';
 import 'package:gymmate_mobile/widgets/phase_one_shell.dart';
@@ -522,15 +521,15 @@ class _HeroPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const PhaseOneBadge(label: 'Welcome Back'),
+          const PhaseOneBadge(label: 'Start Your Session'),
           const SizedBox(height: 18),
           Text.rich(
             TextSpan(
-              text: 'Your gym, ',
+              text: 'Track. Train. ',
               style: theme.textTheme.displayLarge,
               children: [
                 TextSpan(
-                  text: 'one strong home base.',
+                  text: 'Stay consistent.',
                   style: theme.textTheme.displayLarge?.copyWith(
                     color: theme.colorScheme.primary,
                   ),
@@ -540,7 +539,7 @@ class _HeroPanel extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'From first login to daily check-ins, GymMate keeps your training world clear, steady, and ready for the next session.',
+            'Log workouts, follow your plan, and stay connected with your gym every day.',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
               height: 1.55,
@@ -551,24 +550,24 @@ class _HeroPanel extends StatelessWidget {
             spacing: 18,
             runSpacing: 14,
             children: [
-              _MetricChip(value: 'Daily', label: 'Training Focus'),
-              _MetricChip(value: 'Coach-led', label: 'Gym Energy'),
-              _MetricChip(value: 'All Week', label: 'Member Momentum'),
+              _MetricChip(value: 'Daily', label: 'Workout Tracking'),
+              _MetricChip(value: 'Coach-led', label: 'Trainer Updates'),
+              _MetricChip(value: 'All Week', label: 'Progress & Stats'),
             ],
           ),
           const SizedBox(height: 28),
-          PhaseOnePrimaryButton(label: 'Log In', onTap: onLogin),
+          PhaseOnePrimaryButton(label: 'Continue Training', onTap: onLogin),
           const SizedBox(height: 14),
           OutlinedButton(
             onPressed: onJoin,
-            child: const Text('Create Account'),
+            child: const Text('Join Your Gym'),
           ),
           const SizedBox(height: 6),
           Align(
             alignment: Alignment.center,
             child: TextButton(
               onPressed: onQuickJoin,
-              child: const Text('Quick Join by Phone'),
+              child: const Text('Join in Seconds (OTP)'),
             ),
           ),
         ],
@@ -827,7 +826,7 @@ class _RoleCarouselState extends State<_RoleCarousel> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final activeIndex = _page.round().clamp(0, widget.roles.length - 1) as int;
+    final activeIndex = _page.round().clamp(0, widget.roles.length - 1);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
