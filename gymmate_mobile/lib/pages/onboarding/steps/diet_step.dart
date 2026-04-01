@@ -1,151 +1,94 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/onboarding_provider.dart';
 
+import 'package:gymmate_mobile/providers/onboarding_provider.dart';
+import 'package:gymmate_mobile/widgets/editorial_mobile.dart';
+import 'package:gymmate_mobile/widgets/editorial_onboarding.dart';
 
 class DietStep extends StatelessWidget {
   final VoidCallback onNext;
-  const DietStep({
-    Key? key,
-    required this.onNext,
-  }) : super(key: key);
+
+  const DietStep({super.key, required this.onNext});
 
   @override
   Widget build(BuildContext context) {
     final dietTypes = [
-      {'icon': Icons.restaurant_menu, 'label': 'Vegetarian', 'value': 'vegetarian', 'desc': 'Plant-based diet with dairy and eggs'},
-      {'icon': Icons.grass, 'label': 'Vegan', 'value': 'vegan', 'desc': 'Strictly plant-based diet'},
-      {'icon': Icons.set_meal, 'label': 'Non-Vegetarian', 'value': 'non_vegetarian', 'desc': 'Includes all food groups'},
-      {'icon': Icons.food_bank, 'label': 'Flexible', 'value': 'flexible', 'desc': 'No specific dietary restrictions'},
+      (
+        icon: Icons.eco_outlined,
+        title: 'Vegetarian',
+        value: 'vegetarian',
+        description: 'Plant-forward meals with dairy or eggs where needed.',
+      ),
+      (
+        icon: Icons.spa_outlined,
+        title: 'Vegan',
+        value: 'vegan',
+        description: 'Fully plant-based nutrition from breakfast to recovery.',
+      ),
+      (
+        icon: Icons.restaurant_menu_rounded,
+        title: 'Non-Vegetarian',
+        value: 'non_vegetarian',
+        description: 'A broader menu with full protein and meal variety.',
+      ),
+      (
+        icon: Icons.tune_rounded,
+        title: 'Flexible',
+        value: 'flexible',
+        description: 'A balanced approach without strict food boundaries.',
+      ),
     ];
 
     return Consumer<OnboardingProvider>(
       builder: (context, provider, _) {
-        final selectedType = provider.dietPreferences['type'];
-        print('[DietStep] provider.dietPreferences["type"]: $selectedType');
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 32),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Diet Preferences',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Text(
-                'Tell us about your eating habits',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                children: dietTypes.map((diet) => _buildDietCard(
-                  context,
-                  icon: diet['icon'] as IconData,
-                  title: diet['label'] as String,
-                  description: diet['desc'] as String,
-                  isSelected: selectedType == diet['value'],
-                  onSelect: () {
-                    provider.setDietPreferences({
-                      ...provider.dietPreferences,
-                      'type': diet['value'],
-                    });
-                  },
-                )).toList(),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  if (provider.dietPreferences['type'] == null) {
+        final selectedType = provider.dietPreferences['type'] as String?;
+
+        return OnboardingStepLayout(
+          eyebrow: 'Nutrition',
+          title: 'Set a food style that fits your actual week.',
+          subtitle:
+              'The goal here is guidance you can keep. Choose the meal style that feels most natural for your routine.',
+          body: Column(
+            children: dietTypes
+                .map(
+                  (diet) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: OnboardingOptionCard(
+                      title: diet.title,
+                      description: diet.description,
+                      icon: diet.icon,
+                      selected: selectedType == diet.value,
+                      onTap: () {
+                        provider.setDietPreferences({
+                          ...provider.dietPreferences,
+                          'type': diet.value,
+                        });
+                      },
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+          footer: EditorialPrimaryButton(
+            label: 'Continue',
+            onPressed: selectedType == null
+                ? () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please select a diet preference.')),
+                      const SnackBar(
+                        content: Text(
+                          'Choose the meal style you want GymMate to follow.',
+                        ),
+                      ),
                     );
-                    return;
                   }
-                  onNext();
-                },
-                child: const Text('Continue'),
-              ),
+                : onNext,
+            trailing: const Icon(
+              Icons.arrow_forward_rounded,
+              color: Colors.white,
             ),
-          ],
+          ),
         );
       },
     );
   }
-
-  Widget _buildDietCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-    required bool isSelected,
-    required VoidCallback onSelect,
-  }) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: InkWell(
-        onTap: onSelect,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: isSelected ? FontWeight.bold : null,
-                          ),
-                    ),
-                    Text(
-                      description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-} 
+}

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:gymmate_mobile/api/api_config.dart';
 
 class TraineesListPage extends StatefulWidget {
   const TraineesListPage({Key? key}) : super(key: key);
@@ -44,7 +45,7 @@ class _TraineesListPageState extends State<TraineesListPage> {
   }
 
   Future<List<Map<String, dynamic>>> fetchGymMembers(String token) async {
-    final url = Uri.parse('http://localhost:5050/api/user/gym-members');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/user/gym-members');
     final res = await http.get(url, headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -143,7 +144,7 @@ class _TraineeDetailPageState extends State<TraineeDetailPage> {
   }
 
   Future<Map<String, dynamic>> fetchPlan(String type, String token, String memberId) async {
-    final url = Uri.parse('http://localhost:5050/api/plans/$type?memberId=$memberId');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/plans/$type?memberId=$memberId');
     final res = await http.get(url, headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $token',
@@ -158,7 +159,7 @@ class _TraineeDetailPageState extends State<TraineeDetailPage> {
   Future<void> savePlan(String type, Map<String, dynamic> plan) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final token = authProvider.token;
-    final url = Uri.parse('http://localhost:5050/api/plans/${widget.traineeId}/$type');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/plans/${widget.traineeId}/$type');
     final res = await http.post(url,
       headers: {
         'Content-Type': 'application/json',

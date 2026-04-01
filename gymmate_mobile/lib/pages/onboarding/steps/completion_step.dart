@@ -1,71 +1,42 @@
-import 'package:provider/provider.dart';
-import 'package:gymmate_mobile/providers/onboarding_provider.dart';
-import 'package:gymmate_mobile/providers/auth_provider.dart';
-import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
-import '../../../main.dart';
-import '../../plan_page.dart';
-// Removed import of 'base_step.dart'
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:gymmate_mobile/main.dart';
+import 'package:gymmate_mobile/providers/auth_provider.dart';
+import 'package:gymmate_mobile/providers/onboarding_provider.dart';
+import 'package:gymmate_mobile/widgets/editorial_mobile.dart';
+import 'package:gymmate_mobile/widgets/editorial_onboarding.dart';
 
 class CompletionStep extends StatelessWidget {
   final VoidCallback onNext;
 
-  const CompletionStep({
-    Key? key,
-    required this.onNext,
-  }) : super(key: key);
+  const CompletionStep({super.key, required this.onNext});
 
   @override
   Widget build(BuildContext context) {
-    // Static title and description widgets
-    final title = Text(
-      'Welcome to GymMate!',
-      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-      ),
-      textAlign: TextAlign.center,
-    );
-    const description = Text(
-      'Your fitness journey starts now',
-      style: TextStyle(
-        fontSize: 16,
-      ),
-      textAlign: TextAlign.center,
-    );
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        title,
-        const SizedBox(height: 16),
-        description,
-        const SizedBox(height: 32),
-        _CompletionContent(onNext: onNext),
-      ],
-    );
+    return _CompletionContent(onNext: onNext);
   }
 }
 
 class _CompletionContent extends StatefulWidget {
   final VoidCallback onNext;
 
-  const _CompletionContent({
-    Key? key,
-    required this.onNext,
-  }) : super(key: key);
+  const _CompletionContent({required this.onNext});
 
   @override
   State<_CompletionContent> createState() => _CompletionContentState();
 }
 
 class _CompletionContentState extends State<_CompletionContent> {
-  late ConfettiController _confettiController;
+  late final ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(seconds: 5));
-    _confettiController.play();
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 4),
+    )..play();
   }
 
   @override
@@ -74,8 +45,48 @@ class _CompletionContentState extends State<_CompletionContent> {
     super.dispose();
   }
 
+  Future<void> _saveAndContinue() async {
+    final provider = context.read<OnboardingProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final token = authProvider.token;
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Your session expired. Please log in again.'),
+        ),
+      );
+      return;
+    }
+
+    final success = await provider.completeOnboarding(token);
+    if (!success) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'We could not save your setup right now. Please try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    await authProvider.completeOnboarding();
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const MainNavigationScaffold(initialTab: 0),
+      ),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<OnboardingProvider>();
+
     return Stack(
       children: [
         Align(
@@ -84,61 +95,107 @@ class _CompletionContentState extends State<_CompletionContent> {
             confettiController: _confettiController,
             blastDirectionality: BlastDirectionality.explosive,
             particleDrag: 0.05,
-            emissionFrequency: 0.05,
-            numberOfParticles: 50,
+            emissionFrequency: 0.04,
+            numberOfParticles: 32,
             gravity: 0.05,
             shouldLoop: false,
             colors: const [
-              Colors.green,
-              Colors.blue,
-              Colors.pink,
-              Colors.orange,
-              Colors.purple
+              Color(0xFFFFB59D),
+              Color(0xFFFF5711),
+              Color(0xFFFFD6C2),
+              Color(0xFF80CBC4),
             ],
           ),
         ),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              onPressed: () async {
-                final provider = Provider.of<OnboardingProvider>(context, listen: false);
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                final token = authProvider.token;
-
-                if (token == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Authentication token missing')),
-                  );
-                  return;
-                }
-
-                bool success = await provider.completeOnboarding(token);
-                if (success) {
-                  await authProvider.completeOnboarding();
-                  if (context.mounted) {
-                    // Navigate to the MainNavigationScaffold and show PlanPage (Plan tab)
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const MainNavigationScaffold(initialTab: 1)),
-                      (route) => false,
-                    );
-                  }
-                } else {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Failed to complete onboarding')),
-                    );
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        OnboardingStepLayout(
+          eyebrow: 'Ready',
+          title: 'Your GymMate space is ready to open.',
+          subtitle:
+              'You’ve set the basics, your focus, and your training rhythm. Save it once and step into your first dashboard.',
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              EditorialBlurImage(
+                height: 190,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const Positioned(
+                      left: 18,
+                      top: 18,
+                      child: EditorialKicker('Ready to train'),
+                    ),
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 22,
+                      child: Text(
+                        'A calmer plan, cleaner progress, and a more personal dashboard are waiting on the other side.',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Text('Save and Continue with Your Journey'),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  SizedBox(
+                    width: 150,
+                    child: OnboardingValueTile(
+                      label: 'Goals',
+                      value: provider.fitnessGoals.isEmpty
+                          ? 'Pending'
+                          : '${provider.fitnessGoals.length} chosen',
+                      icon: Icons.track_changes_rounded,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 150,
+                    child: OnboardingValueTile(
+                      label: 'Diet',
+                      value: _titleCase(
+                        provider.dietPreferences['type'] as String?,
+                      ),
+                      icon: Icons.restaurant_rounded,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 150,
+                    child: OnboardingValueTile(
+                      label: 'Challenge',
+                      value: _titleCase(
+                        provider.firstChallenge['type'] as String?,
+                      ),
+                      icon: Icons.emoji_events_outlined,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          footer: EditorialPrimaryButton(
+            label: 'Save and Enter Dashboard',
+            onPressed: _saveAndContinue,
+            trailing: const Icon(
+              Icons.arrow_forward_rounded,
+              color: Colors.white,
             ),
-          ],
+          ),
         ),
       ],
     );
+  }
+
+  static String _titleCase(String? value) {
+    if (value == null || value.isEmpty) return 'Pending';
+    return value
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 }

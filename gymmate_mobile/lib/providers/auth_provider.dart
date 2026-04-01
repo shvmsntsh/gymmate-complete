@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:gymmate_mobile/api/api_config.dart';
+import 'package:gymmate_mobile/utils/branding_utils.dart';
+import 'package:gymmate_mobile/utils/role_utils.dart';
 
 class AuthProvider with ChangeNotifier {
   String? _token;
@@ -14,13 +16,12 @@ class AuthProvider with ChangeNotifier {
   bool? _hasCompletedOnboarding;
   Map<String, dynamic>? _userData;
   String? _avatarPath;
+  Map<String, dynamic> _branding = normalizeBranding(null);
 
   final _storage = const FlutterSecureStorage();
 
-  bool get isAuth {
-    print('[AuthProvider] isAuth getter called. _token: ' + (_token ?? 'null'));
-    return _token != null;
-  }
+  bool get isAuth => _token != null;
+
   String? get token => _token;
   String? get userId => _userId;
   String? get userRole => _userRole;
@@ -30,10 +31,10 @@ class AuthProvider with ChangeNotifier {
   bool get hasCompletedOnboarding => _hasCompletedOnboarding ?? false;
   Map<String, dynamic>? get userData => _userData;
   String? get avatarPath => _avatarPath;
+  Map<String, dynamic> get branding => _branding;
 
   Future<bool> login(String email, String password) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
-    print('🔑 [AuthProvider] Login started for $email');
     try {
       final response = await http.post(
         url,
@@ -41,26 +42,29 @@ class AuthProvider with ChangeNotifier {
         body: json.encode({'email': email, 'password': password}),
       );
 
-      print('🔑 [AuthProvider] Login response: ${response.statusCode} ${response.body}');
       final responseData = json.decode(response.body);
 
       if (response.statusCode != 200) {
-        print('🔑 [AuthProvider] Login failed: ${responseData['message']}');
         throw Exception(responseData['message'] ?? 'Failed to login');
       }
 
       _token = responseData['token'];
       final user = responseData['user'];
-      _userData = user;
+      final normalizedRole =
+          user['normalizedRole'] ?? normalizeRole(user['role']);
+      _userData = {
+        ...user,
+        'role': normalizedRole,
+        'normalizedRole': normalizedRole,
+      };
       _userId = user['id'];
-      _userRole = user['role'];
+      _userRole = normalizedRole;
       _userName = user['name'];
       _userEmail = user['email'];
       _gymName = user['gymName'];
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
       _avatarPath = user['avatarPath'] ?? _defaultAvatarForRole(_userRole);
-
-      print('[AuthProvider] After login: _token=$_token, _userData=$_userData, _userRole=$_userRole');
+      await _loadBrandingForGym(user['gymId']);
 
       await _storage.write(key: 'user_token', value: _token);
       await _storage.write(key: 'user_data', value: json.encode(_userData));
@@ -69,21 +73,22 @@ class AuthProvider with ChangeNotifier {
       await _storage.write(key: 'user_name', value: _userName);
       await _storage.write(key: 'user_email', value: _userEmail);
       await _storage.write(key: 'gym_name', value: _gymName);
-      await _storage.write(key: 'has_completed_onboarding', value: _hasCompletedOnboarding.toString());
+      await _storage.write(
+        key: 'has_completed_onboarding',
+        value: _hasCompletedOnboarding.toString(),
+      );
       await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
-      
-      print('🔒 [AuthProvider] Login successful, token stored. Notifying listeners.');
+      await _storage.write(key: 'branding_data', value: json.encode(_branding));
+
       notifyListeners();
       return true;
     } catch (e) {
-      print('🔑 [AuthProvider] Login error: $e');
       rethrow;
     }
   }
 
   Future<bool> quickLogin(String phoneNumber, String otp) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/quick-login');
-    print('📱 [AuthProvider] Quick Login started for $phoneNumber');
     try {
       final response = await http.post(
         url,
@@ -91,24 +96,29 @@ class AuthProvider with ChangeNotifier {
         body: json.encode({'phone_number': phoneNumber, 'otp': otp}),
       );
 
-      print('📱 [AuthProvider] Quick Login response: ${response.statusCode} ${response.body}');
       final responseData = json.decode(response.body);
 
       if (response.statusCode != 200) {
-        print('📱 [AuthProvider] Quick Login failed: ${responseData['message']}');
         throw Exception(responseData['message'] ?? 'Failed to login');
       }
 
       _token = responseData['token'];
       final user = responseData['user'];
-      _userData = user;
+      final normalizedRole =
+          user['normalizedRole'] ?? normalizeRole(user['role']);
+      _userData = {
+        ...user,
+        'role': normalizedRole,
+        'normalizedRole': normalizedRole,
+      };
       _userId = user['id'];
-      _userRole = user['role'];
+      _userRole = normalizedRole;
       _userName = user['name'];
       _userEmail = user['email'];
       _gymName = user['gymName'];
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
       _avatarPath = user['avatarPath'] ?? _defaultAvatarForRole(_userRole);
+      await _loadBrandingForGym(user['gymId']);
 
       await _storage.write(key: 'user_token', value: _token);
       await _storage.write(key: 'user_data', value: json.encode(_userData));
@@ -117,48 +127,62 @@ class AuthProvider with ChangeNotifier {
       await _storage.write(key: 'user_name', value: _userName);
       await _storage.write(key: 'user_email', value: _userEmail);
       await _storage.write(key: 'gym_name', value: _gymName);
-      await _storage.write(key: 'has_completed_onboarding', value: _hasCompletedOnboarding.toString());
+      await _storage.write(
+        key: 'has_completed_onboarding',
+        value: _hasCompletedOnboarding.toString(),
+      );
       await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
+      await _storage.write(key: 'branding_data', value: json.encode(_branding));
 
-      print('🔒 [AuthProvider] Quick Login successful, token stored. Notifying listeners.');
       notifyListeners();
       return true;
     } catch (e) {
-      print('📱 [AuthProvider] Quick Login error: $e');
       rethrow;
     }
   }
 
   Future<bool> tryAutoLogin() async {
-    print('🔄 [AuthProvider] Attempting auto-login...');
     final token = await _storage.read(key: 'user_token');
     if (token == null) {
-      print('🔄 [AuthProvider] No token found for auto-login.');
       return false;
     }
 
     // Reconstruct the user object from stored data
     final userDataStr = await _storage.read(key: 'user_data');
     if (userDataStr != null) {
-      _userData = json.decode(userDataStr);
+      final storedUser = json.decode(userDataStr) as Map<String, dynamic>;
+      final normalizedRole =
+          storedUser['normalizedRole'] ?? normalizeRole(storedUser['role']);
+      _userData = {
+        ...storedUser,
+        'role': normalizedRole,
+        'normalizedRole': normalizedRole,
+      };
     }
 
     _token = token;
     _userId = await _storage.read(key: 'user_id');
-    _userRole = await _storage.read(key: 'user_role');
+    _userRole = normalizeRole(await _storage.read(key: 'user_role'));
     _userName = await _storage.read(key: 'user_name');
     _userEmail = await _storage.read(key: 'user_email');
     _gymName = await _storage.read(key: 'gym_name');
-    _hasCompletedOnboarding = (await _storage.read(key: 'has_completed_onboarding')) == 'true';
-    _avatarPath = await _storage.read(key: 'avatar_path') ?? _defaultAvatarForRole(_userRole);
+    _hasCompletedOnboarding =
+        (await _storage.read(key: 'has_completed_onboarding')) == 'true';
+    _avatarPath =
+        await _storage.read(key: 'avatar_path') ??
+        _defaultAvatarForRole(_userRole);
+    final brandingData = await _storage.read(key: 'branding_data');
+    if (brandingData != null) {
+      _branding = normalizeBranding(json.decode(brandingData));
+    } else {
+      await _loadBrandingForGym(_userData?['gymId']);
+    }
 
-    print('🔄 [AuthProvider] Token found, auto-login successful. Notifying listeners.');
     notifyListeners();
     return true;
   }
 
   Future<void> logout() async {
-    print('Logging out user...');
     _token = null;
     _userId = null;
     _userRole = null;
@@ -168,35 +192,38 @@ class AuthProvider with ChangeNotifier {
     _hasCompletedOnboarding = null;
     _userData = null;
     _avatarPath = null;
+    _branding = normalizeBranding(null);
     // Clear secure storage first
     await _storage.deleteAll();
-    print('✅ User session cleared from secure storage.');
     // Now notify listeners
     notifyListeners();
   }
 
   Future<bool> register(Map<String, dynamic> registrationData) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/register');
-    print('🔑 [AuthProvider] Registration started for  [32m${registrationData['email']} [0m');
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: json.encode(registrationData),
       );
-      print('🔑 [AuthProvider] Registration response: ${response.statusCode} ${response.body}');
       final responseData = json.decode(response.body);
 
       if (response.statusCode != 201) {
-        print('🔑 [AuthProvider] Registration failed: ${responseData['error'] ?? responseData['message']}');
-        throw Exception(responseData['error'] ?? responseData['message'] ?? 'Failed to register');
+        throw Exception(
+          responseData['error'] ??
+              responseData['message'] ??
+              'Failed to register',
+        );
       }
 
-      // TEMPORARY: Wait for backend to commit user before login
       await Future.delayed(const Duration(seconds: 1));
 
       // Registration successful, now log in
-      final loginSuccess = await login(registrationData['email'], registrationData['password']);
+      final loginSuccess = await login(
+        registrationData['email'],
+        registrationData['password'],
+      );
       if (loginSuccess) {
         // Set default avatar for role
         _avatarPath = _defaultAvatarForRole(_userRole);
@@ -204,7 +231,6 @@ class AuthProvider with ChangeNotifier {
       }
       return loginSuccess;
     } catch (e) {
-      print('🔑 [AuthProvider] Registration error: $e');
       rethrow;
     }
   }
@@ -218,7 +244,6 @@ class AuthProvider with ChangeNotifier {
   Future<void> refreshUser() async {
     if (_token == null) return;
     try {
-      final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
       // We don't have the password, so instead, fetch user profile by token if such endpoint exists
       final profileUrl = Uri.parse('${ApiConfig.baseUrl}/api/auth/me');
       final response = await http.get(
@@ -227,42 +252,52 @@ class AuthProvider with ChangeNotifier {
       );
       if (response.statusCode == 200) {
         final user = json.decode(response.body);
-        _userData = user;
+        final normalizedRole =
+            user['normalizedRole'] ?? normalizeRole(user['role']);
+        _userData = {
+          ...user,
+          'role': normalizedRole,
+          'normalizedRole': normalizedRole,
+        };
         _userId = user['id'];
-        _userRole = user['role'];
+        _userRole = normalizedRole;
         _userName = user['name'];
         _userEmail = user['email'];
         _gymName = user['gymName'];
         _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
-        _avatarPath = user['avatarPath'] ?? await _storage.read(key: 'avatar_path') ?? _defaultAvatarForRole(_userRole);
+        _avatarPath =
+            user['avatarPath'] ??
+            await _storage.read(key: 'avatar_path') ??
+            _defaultAvatarForRole(_userRole);
+        await _loadBrandingForGym(user['gymId']);
         await _storage.write(key: 'user_data', value: json.encode(_userData));
         await _storage.write(key: 'user_id', value: _userId);
         await _storage.write(key: 'user_role', value: _userRole);
         await _storage.write(key: 'user_name', value: _userName);
         await _storage.write(key: 'user_email', value: _userEmail);
         await _storage.write(key: 'gym_name', value: _gymName);
-        await _storage.write(key: 'has_completed_onboarding', value: _hasCompletedOnboarding.toString());
+        await _storage.write(
+          key: 'has_completed_onboarding',
+          value: _hasCompletedOnboarding.toString(),
+        );
         await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
+        await _storage.write(
+          key: 'branding_data',
+          value: json.encode(_branding),
+        );
         notifyListeners();
-      } else {
-        print('Failed to refresh user: ${response.body}');
       }
-    } catch (e) {
-      print('Error refreshing user: $e');
-    }
+    } catch (_) {}
   }
 
   String _defaultAvatarForRole(String? role) {
-    switch (role) {
-      case 'superadmin':
+    switch (normalizeRole(role)) {
+      case 'admin':
         return 'assets/logos/superadmin_logo.png';
-      case 'gym_owner':
       case 'owner':
         return 'assets/avatars/o_m_1.png';
-      case 'gym_trainer':
       case 'trainer':
         return 'assets/avatars/t_m_1.png';
-      case 'gym_member':
       case 'member':
         return 'assets/avatars/m_m_1.png';
       default:
@@ -270,9 +305,42 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> _loadBrandingForGym(dynamic gymId) async {
+    if (gymId == null || gymId.toString().isEmpty) {
+      _branding = normalizeBranding({'gymName': _gymName});
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/gym/branding/$gymId'),
+      );
+
+      if (response.statusCode == 200) {
+        _branding = normalizeBranding(json.decode(response.body));
+      } else {
+        _branding = normalizeBranding({'gymName': _gymName});
+      }
+    } catch (_) {
+      _branding = normalizeBranding({'gymName': _gymName});
+    }
+  }
+
+  Future<void> refreshBranding() async {
+    await _loadBrandingForGym(_userData?['gymId']);
+    _gymName = _branding['gymName']?.toString() ?? _gymName;
+    if (_userData != null) {
+      _userData = {..._userData!, 'gymName': _gymName};
+      await _storage.write(key: 'user_data', value: json.encode(_userData));
+    }
+    await _storage.write(key: 'gym_name', value: _gymName);
+    await _storage.write(key: 'branding_data', value: json.encode(_branding));
+    notifyListeners();
+  }
+
   Future<void> setAvatarPath(String path) async {
     _avatarPath = path;
     await _storage.write(key: 'avatar_path', value: path);
     notifyListeners();
   }
-} 
+}

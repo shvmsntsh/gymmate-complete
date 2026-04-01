@@ -8,6 +8,6 @@ router.get('/meal', protect, planController.getMealPlanForUser);
 // Fetch workout plan for user
 router.get('/workout', protect, planController.getWorkoutPlanForUser);
 // Trainer/owner override plan for member
-router.post('/:memberId/:type', protect, requireRole(['gym_trainer', 'gym_owner']), planController.trainerUpdatePlan);
+router.post('/:memberId/:type', protect, requireRole(['trainer', 'owner']), planController.trainerUpdatePlan);
 
 module.exports = router;

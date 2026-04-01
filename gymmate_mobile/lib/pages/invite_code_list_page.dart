@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:gymmate_mobile/services/auth_service.dart';
 import 'package:gymmate_mobile/services/invite_service.dart';
 import 'package:gymmate_mobile/models/invite_code_model.dart';
 import 'dart:developer' as developer;
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
-import 'package:gymmate_mobile/main.dart';
-import 'package:gymmate_mobile/widgets/animated_form_field.dart';
+import 'package:gymmate_mobile/utils/role_utils.dart';
 
 class InviteCodeListPage extends StatefulWidget {
   const InviteCodeListPage({super.key});
@@ -21,8 +19,6 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
   final InviteService _inviteService = InviteService();
   bool isLoading = true;
   String? error;
-  final AuthService _authService = AuthService();
-  Map<String, dynamic>? _currentUser;
 
   @override
   void initState() {
@@ -39,7 +35,9 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.isAuth) {
       setState(() {
-        _inviteCodesFuture = _inviteService.fetchInviteCodes(authProvider.token!);
+        _inviteCodesFuture = _inviteService.fetchInviteCodes(
+          authProvider.token!,
+        );
       });
     } else {
       // Handle not being authenticated
@@ -52,14 +50,15 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
   Future<void> _generateCode() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isAuth) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Authentication error.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Authentication error.')));
       return;
     }
 
-    final isSuperadmin = authProvider.userRole == 'superadmin';
-    final isGymOwner = authProvider.userRole == 'gym_owner';
+    final currentRole = normalizeRole(authProvider.userRole);
+    final isAdmin = isAdminRole(currentRole);
+    final isGymOwner = isOwnerRole(currentRole);
 
     String? roleToGenerate;
     String? name;
@@ -78,16 +77,17 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
       name = result['name'];
       email = result['email'];
       phoneNumber = result['phone_number'];
-
-    } else if (isSuperadmin) {
+    } else if (isAdmin) {
       roleToGenerate = 'gym_owner';
       // For superadmin, we might need a different dialog or flow
       // to collect gym owner details, but for now, we'll focus on gym_owner flow.
     }
-    
+
     if (roleToGenerate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You are not allowed to generate invite codes.')),
+        const SnackBar(
+          content: Text('You are not allowed to generate invite codes.'),
+        ),
       );
       return;
     }
@@ -100,22 +100,29 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
         phoneNumber: phoneNumber,
         token: authProvider.token!,
       );
-      developer.log('Generated code: ${newCode.code}', name: 'InviteCodeListPage');
+      developer.log(
+        'Generated code: ${newCode.code}',
+        name: 'InviteCodeListPage',
+      );
       _refreshList();
       _showGeneratedCodeDialog(newCode.code, roleToGenerate);
     } catch (e) {
-      developer.log('Failed to generate invite code: $e', name: 'InviteCodeListPage', error: e);
+      developer.log(
+        'Failed to generate invite code: $e',
+        name: 'InviteCodeListPage',
+        error: e,
+      );
       if (mounted) {
         String errorMessage = e.toString();
-        if (errorMessage.contains("User with this phone number already exists")) {
+        if (errorMessage.contains(
+          "User with this phone number already exists",
+        )) {
           errorMessage = "A user with this phone number already exists.";
         } else {
           errorMessage = "Failed to generate code: ${e.toString()}";
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red),
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
         );
       }
     }
@@ -127,18 +134,20 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
       builder: (context) => AlertDialog(
         title: const Text('Invite Code Generated'),
         content: Column(
-                          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-            Text('Share this code with a new ${role == 'gym_owner' ? 'gym owner' : 'gym member'}:'),
+          children: [
+            Text(
+              'Share this code with a new ${role == 'gym_owner' ? 'gym owner' : 'gym member'}:',
+            ),
             const SizedBox(height: 16),
             SelectableText(
               code,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-              actions: [
+            ),
+          ],
+        ),
+        actions: [
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: code));
@@ -149,13 +158,13 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
             },
             child: const Text('Copy'),
           ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
-                  ),
-              ],
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
-        );
+    );
   }
 
   @override
@@ -170,44 +179,60 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-          child: Column(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 50),
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 50,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error: ${snapshot.error}',
                       textAlign: TextAlign.center,
-                ),
-              const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _refreshList,
                       child: const Text('Try Again'),
-                    )
-            ],
-          ),
-        ),
+                    ),
+                  ],
+                ),
+              ),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            final authProvider = Provider.of<AuthProvider>(context, listen: false);
-            final isGymOwner = authProvider.userRole == 'gym_owner';
+            final authProvider = Provider.of<AuthProvider>(
+              context,
+              listen: false,
+            );
+            final isGymOwner = isOwnerRole(authProvider.userRole);
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.no_meeting_room,
-                      size: 60, color: Colors.grey),
+                  const Icon(
+                    Icons.no_meeting_room,
+                    size: 60,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(height: 20),
                   Text(
-                    isGymOwner ? 'No Member Invite Codes Found' : 'No Invite Codes Found',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    isGymOwner
+                        ? 'No Member Invite Codes Found'
+                        : 'No Invite Codes Found',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     isGymOwner
-                      ? 'Generate a new code to invite gym members.'
-                      : 'Generate a new code to get started.',
-                    style: const TextStyle(color: Colors.grey)),
+                        ? 'Generate a new code to invite gym members.'
+                        : 'Generate a new code to get started.',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             );
@@ -215,19 +240,22 @@ class _InviteCodeListPageState extends State<InviteCodeListPage> {
             final codes = snapshot.data!;
             return RefreshIndicator(
               onRefresh: () async => _refreshList(),
-            child: ListView.builder(
+              child: ListView.builder(
                 itemCount: codes.length,
-              itemBuilder: (context, index) {
+                itemBuilder: (context, index) {
                   final code = codes[index];
                   return ListTile(
                     leading: Icon(
                       code.used ? Icons.check_circle : Icons.hourglass_empty,
                       color: code.used ? Colors.green : Colors.orange,
                     ),
-                    title: Text(code.code,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(
+                      code.code,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     subtitle: Text(
-                        'Role: ${code.role} | Used: ${code.used ? 'Yes' : 'No'}'),
+                      'Role: ${code.role} | Used: ${code.used ? 'Yes' : 'No'}',
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -292,8 +320,14 @@ class __GenerateInviteDialogState extends State<_GenerateInviteDialog> {
                 value: _selectedRole,
                 hint: const Text('Select Role'),
                 items: [
-                  const DropdownMenuItem(value: 'gym_member', child: Text('Gym Member')),
-                  const DropdownMenuItem(value: 'gym_trainer', child: Text('Gym Trainer')),
+                  const DropdownMenuItem(
+                    value: 'gym_member',
+                    child: Text('Gym Member'),
+                  ),
+                  const DropdownMenuItem(
+                    value: 'gym_trainer',
+                    child: Text('Gym Trainer'),
+                  ),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -306,7 +340,8 @@ class __GenerateInviteDialogState extends State<_GenerateInviteDialog> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Full Name'),
-                validator: (value) => value == null || value.isEmpty ? 'Name is required' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Name is required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -314,8 +349,12 @@ class __GenerateInviteDialogState extends State<_GenerateInviteDialog> {
                 decoration: const InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Email is required';
-                  if (!RegExp(r"^\S+@\S+\.\S+$").hasMatch(value)) return 'Invalid email format';
+                  if (value == null || value.isEmpty) {
+                    return 'Email is required';
+                  }
+                  if (!RegExp(r"^\S+@\S+\.\S+$").hasMatch(value)) {
+                    return 'Invalid email format';
+                  }
                   return null;
                 },
               ),
@@ -325,8 +364,12 @@ class __GenerateInviteDialogState extends State<_GenerateInviteDialog> {
                 decoration: const InputDecoration(labelText: 'Phone Number'),
                 keyboardType: TextInputType.phone,
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Phone number is required';
-                  if (!RegExp(r'^(?:\+91)?[6-9]\d{9}$').hasMatch(value)) return 'Invalid Indian phone number';
+                  if (value == null || value.isEmpty) {
+                    return 'Phone number is required';
+                  }
+                  if (!RegExp(r'^(?:\+91)?[6-9]\d{9}$').hasMatch(value)) {
+                    return 'Invalid Indian phone number';
+                  }
                   return null;
                 },
               ),

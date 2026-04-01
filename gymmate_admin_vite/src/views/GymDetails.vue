@@ -1,42 +1,106 @@
 <template>
-  <v-app>
-    <v-main>
-      <v-container>
-        <v-card elevation="4" class="mx-auto my-10" max-width="700">
-          <v-card-title class="text-h5 font-weight-bold">
-            Gym Details
-          </v-card-title>
-          <v-card-text v-if="gym">
-            <p><strong>Name:</strong> {{ gym.name }}</p>
-            <p><strong>Email:</strong> {{ gym.email }}</p>
-            <p><strong>Address:</strong> {{ gym.address }}</p>
-            <p><strong>Contact:</strong> {{ gym.contactNumber }}</p>
-            <p><strong>Services:</strong> {{ gym.services?.join(', ') }}</p>
-          </v-card-text>
-          <v-card-text v-else>
-            <v-alert type="error">Gym not found or failed to load.</v-alert>
-          </v-card-text>
-        </v-card>
-      </v-container>
-    </v-main>
-  </v-app>
+  <AdminShell
+    :is-dark="isDark"
+    title="Gym Details"
+    eyebrow="Gym Profile"
+    description="See the main details for this gym in one place."
+    @toggle-theme="toggleTheme"
+    @logout="logout"
+  >
+    <section class="admin-surface admin-panel">
+      <div class="section-header">
+        <div>
+          <div class="table-overline">Gym Record</div>
+          <h2 class="section-title">Registered gym information</h2>
+        </div>
+      </div>
+
+      <StateBlock
+        v-if="error"
+        title="Gym not found"
+        :copy="error"
+        icon="mdi-domain-off"
+        tone="error"
+      />
+      <StateBlock
+        v-else-if="loading"
+        title="Loading gym details"
+        copy="Loading the selected gym profile."
+        icon="mdi-timer-sand"
+      />
+      <div v-else-if="gym" class="detail-grid">
+        <div class="detail-card">
+          <div class="detail-card__label">Name</div>
+          <div class="detail-card__value">{{ gym.name || 'Not provided' }}</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-card__label">Email</div>
+          <div class="detail-card__value">{{ gym.email || 'Not provided' }}</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-card__label">Address</div>
+          <div class="detail-card__value">{{ gym.address || 'Not provided' }}</div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-card__label">Contact</div>
+          <div class="detail-card__value">{{ gym.contactNumber || gym.phone || 'Not provided' }}</div>
+        </div>
+        <div class="detail-card" style="grid-column: 1 / -1;">
+          <div class="detail-card__label">Services</div>
+          <div class="detail-card__value">{{ formattedServices }}</div>
+        </div>
+      </div>
+    </section>
+  </AdminShell>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AdminShell from '../components/AdminShell.vue'
+import StateBlock from '../components/StateBlock.vue'
+import { useAdminTheme } from '../composables/useAdminTheme'
+import { apiFetch, clearAdminSession } from '../lib/api'
 
 const route = useRoute()
+const router = useRouter()
 const gym = ref(null)
+const loading = ref(false)
+const error = ref('')
+const { isDark, toggleTheme } = useAdminTheme()
 
-onMounted(async () => {
+const formattedServices = computed(() => {
+  if (!gym.value?.services?.length) {
+    return 'Not provided'
+  }
+
+  return Array.isArray(gym.value.services) ? gym.value.services.join(', ') : gym.value.services
+})
+
+async function fetchGym() {
+  loading.value = true
+  error.value = ''
+  gym.value = null
+
   try {
     const id = route.params.id
-    const res = await fetch(`http://localhost:5050/api/gym/${id}`)
+    const res = await apiFetch(`/api/gym/${id}`)
     const data = await res.json()
+    if (!res.ok) {
+      throw new Error(data.message || 'Gym not found')
+    }
     gym.value = data
   } catch (err) {
-    console.error('Failed to fetch gym:', err)
+    error.value = err?.message || 'We could not load this gym right now.'
+  } finally {
+    loading.value = false
   }
-})
+}
+
+function logout() {
+  clearAdminSession()
+  router.push('/login')
+}
+
+onMounted(fetchGym)
 </script>

@@ -1,156 +1,157 @@
 <template>
-  <v-app>
-    <!-- App bar with hamburger and theme toggle -->
-<v-app-bar app flat color="transparent">
-  <!-- Left side: hamburger and title -->
-  <v-btn icon @click="drawer = !drawer">
-    <v-icon>mdi-menu</v-icon>
-  </v-btn>
- <v-toolbar-title class="ml-2" style="cursor: pointer" @click="router.push('/')">
-   The Training Theory
- </v-toolbar-title>
-  
-  <!-- Fill spacer -->
-  <v-spacer />
+  <PublicAuthShell :is-dark="isDark" @toggle-theme="toggleTheme">
+    <template #hero>
+      <div class="stack">
+        <div>
+          <div class="eyebrow">Owner & Admin Login</div>
+          <h1 class="display-headline">
+            Step into your GymMate workspace and keep everything moving
+            smoothly.
+          </h1>
+          <p class="lead-copy">
+            Sign in to review your gym, support your members, or manage the
+            wider network with a calmer control surface.
+          </p>
+        </div>
 
-  <!-- Right side: theme toggle -->
-  <v-btn icon @click="toggleTheme">
-    <v-icon>{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
-  </v-btn>
-</v-app-bar>
-
-    <!-- Navigation drawer -->
-    <v-navigation-drawer v-model="drawer" app temporary>
-      <v-list>
-        <v-list-item to="/" @click="drawer = false">Home</v-list-item>
-        <v-list-item to="/login" @click="drawer = false">Login</v-list-item>
-        <v-list-item to="/register-gym" @click="drawer = false">Register</v-list-item>
-      </v-list>
-    </v-navigation-drawer>
-
-    <v-main>
-      <v-container fluid class="fill-height pa-0">
-        <v-row no-gutters class="fill-height align-stretch">
-          <!-- Left image panel -->
-          <v-col cols="12" md="5" lg="4" class="d-flex justify-center align-center pa-4">
-            <v-img
-              src="/gym_illustration.png"
-              alt="Gym Illustration"
-              class="rounded-lg hidden-sm-and-down"
-              max-width="500"
-              max-height="500"
-              width="100%"
-              height="auto"
-              aspect-ratio="1"
-              cover
+        <div class="landing-media">
+          <video
+            autoplay
+            muted
+            loop
+            playsinline
+            :poster="`${assetBase}images/gymbghomepagelight.png`"
+          >
+            <source
+              :src="`${assetBase}videos/gym_pool_cafe.mp4`"
+              type="video/mp4"
             />
-          </v-col>
-          <!-- Right form panel -->
-          <v-col cols="12" md="7" lg="8" class="d-flex justify-center align-center pa-4 pa-md-10">
-            <v-card elevation="8" class="pa-6" max-width="500" width="100%">
-              <v-card-title class="text-center text-h4 font-weight-bold mb-4">
-                TFT Gyms
-              </v-card-title>
-              <v-card-subtitle class="text-subtitle-1 text-center mb-4">
-                Login to manage your gym account
-              </v-card-subtitle>
-              <v-form @submit.prevent="submit" class="mt-4">
-                <v-text-field v-model="form.email" label="Email" type="email" required></v-text-field>
-                <v-text-field
-                  v-model="form.password"
-                  label="Password"
-                  :type="showPassword ? 'text' : 'password'"
-                  :append-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
-                  @click:append="showPassword = !showPassword"
-                  required
-                />
-                <v-btn type="submit" color="primary" class="mt-4" block>Login</v-btn>
-                <v-btn color="secondary" class="mt-2" block @click="router.push('/register-gym')">
-                  Don't have an account? Register
-                </v-btn>
-              </v-form>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-main>
+          </video>
+        </div>
+      </div>
+    </template>
 
-    <!-- Snackbar for feedback -->
+    <div class="stack">
+      <div>
+        <div class="eyebrow">Login</div>
+        <h2 class="section-title">Welcome back</h2>
+        <p class="section-copy">
+          Use your account details to enter your GymMate dashboard.
+        </p>
+      </div>
+
+      <v-form class="stack" @submit.prevent="submit">
+        <div>
+          <div class="field-label">Email</div>
+          <v-text-field
+            v-model="form.email"
+            density="comfortable"
+            hide-details="auto"
+            placeholder="admin@gymmate.com"
+            type="email"
+            variant="outlined"
+            required
+          />
+        </div>
+
+        <div>
+          <div class="field-label">Password</div>
+          <v-text-field
+            v-model="form.password"
+            :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+            :type="showPassword ? 'text' : 'password'"
+            density="comfortable"
+            hide-details="auto"
+            placeholder="Enter your password"
+            variant="outlined"
+            @click:append-inner="showPassword = !showPassword"
+            required
+          />
+        </div>
+
+        <div class="cta-row">
+          <v-btn
+            color="primary"
+            size="large"
+            type="submit"
+            :loading="submitting"
+            >Login</v-btn
+          >
+          <v-btn
+            size="large"
+            variant="tonal"
+            @click="router.push('/register-gym')"
+            >Register Gym</v-btn
+          >
+        </div>
+      </v-form>
+    </div>
+
     <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">
       {{ snackbarText }}
     </v-snackbar>
-  </v-app>
+  </PublicAuthShell>
 </template>
 
 <script setup>
-import { ref, watchEffect, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useTheme } from 'vuetify'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import PublicAuthShell from "../components/PublicAuthShell.vue";
+import { useAdminTheme } from "../composables/useAdminTheme";
+import { apiFetch, setAdminSession } from "../lib/api";
 
-const router = useRouter()
-const theme = useTheme()
+const assetBase = import.meta.env.BASE_URL;
+const router = useRouter();
+const form = ref({ email: "", password: "" });
+const showPassword = ref(false);
+const snackbar = ref(false);
+const snackbarText = ref("");
+const snackbarColor = ref("");
+const submitting = ref(false);
+const { isDark, toggleTheme } = useAdminTheme();
 
-const drawer = ref(false)
-const form = ref({ email: '', password: '' })
-const showPassword = ref(false)
-const snackbar = ref(false)
-const snackbarText = ref('')
-const snackbarColor = ref('')
-
-// Theme handling
-const isDark = ref(
-  localStorage.getItem('gymmate_theme') === 'dark' ||
-  (!localStorage.getItem('gymmate_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
-)
-theme.global.name.value = isDark.value ? 'dark' : 'light'
-
-onMounted(() => {
-  const userPref = localStorage.getItem('gymmate_theme')
-  const systemPrefers = window.matchMedia('(prefers-color-scheme: dark)').matches
-  theme.global.name.value = userPref ? userPref : (systemPrefers ? 'dark' : 'light')
-})
-
-function toggleTheme() {
-  isDark.value = !isDark.value
-  theme.global.name.value = isDark.value ? 'dark' : 'light'
-  localStorage.setItem('gymmate_theme', isDark.value ? 'dark' : 'light')
-}
-
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-  if (!localStorage.getItem('gymmate_theme')) {
-    isDark.value = e.matches
-    theme.global.name.value = e.matches ? 'dark' : 'light'
-  }
-})
-
-watchEffect(() => {
-  theme.global.name.value = isDark.value ? 'dark' : 'light'
-})
-
-// Form handling
-function showMessage(message, color = 'success') {
-  snackbarText.value = message
-  snackbarColor.value = color
-  snackbar.value = true
+function showMessage(message, color = "success") {
+  snackbarText.value = message;
+  snackbarColor.value = color;
+  snackbar.value = true;
 }
 
 async function submit() {
+  submitting.value = true;
+
   try {
-    const res = await fetch('http://localhost:5050/api/gym/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form.value)
-    })
-    const data = await res.json()
+    const res = await apiFetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify(form.value),
+      skipAuth: true,
+    });
+    const data = await res.json();
+
     if (res.ok) {
-      localStorage.setItem('gymmate_logged_in', 'true')
-      router.push('/admin')
+      const normalizedRole = data.user?.normalizedRole || data.user?.role;
+      if (
+        normalizedRole !== "admin" &&
+        normalizedRole !== "superadmin" &&
+        normalizedRole !== "owner" &&
+        normalizedRole !== "gym_owner"
+      ) {
+        showMessage(
+          "This login does not have access to the web workspace.",
+          "error",
+        );
+        return;
+      }
+
+      setAdminSession(data);
+      showMessage("Login successful");
+      router.push("/dashboard");
     } else {
-      showMessage(data.message || 'Login failed', 'error')
+      showMessage(data.message || "Login failed", "error");
     }
   } catch {
-    showMessage('Something went wrong. Please try again.', 'error')
+    showMessage("Something went wrong. Please try again.", "error");
+  } finally {
+    submitting.value = false;
   }
 }
 </script>
-EOF

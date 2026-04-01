@@ -11,6 +11,7 @@ class AnimatedFormField extends StatefulWidget {
   final bool enabled;
   final bool? isValid;
   final int? maxLength;
+  final ValueChanged<String>? onChanged;
 
   const AnimatedFormField({
     super.key,
@@ -23,6 +24,7 @@ class AnimatedFormField extends StatefulWidget {
     this.enabled = true,
     this.isValid,
     this.maxLength,
+    this.onChanged,
   });
 
   @override
@@ -42,7 +44,7 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> {
 
   void _validate() {
     if (widget.validator == null) return;
-    
+
     // Only validate if the field has been interacted with (not empty)
     if (widget.controller.text.isNotEmpty) {
       final res = widget.validator!(widget.controller.text);
@@ -66,14 +68,16 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final gold = theme.colorScheme.primary;
     final hintStyle = theme.inputDecorationTheme.hintStyle?.copyWith(
-      color: gold.withOpacity(0.7),
+      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
     );
     Widget? suffix;
     if (widget.isPassword) {
       suffix = IconButton(
-        icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off, size: 20),
+        icon: Icon(
+          _obscure ? Icons.visibility : Icons.visibility_off,
+          size: 20,
+        ),
         color: theme.iconTheme.color,
         onPressed: () => setState(() => _obscure = !_obscure),
       );
@@ -92,33 +96,34 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> {
     }
 
     return TextFormField(
-      controller: widget.controller,
-      obscureText: widget.isPassword ? _obscure : false,
-      keyboardType: widget.keyboardType,
-      validator: widget.validator,
-      enabled: widget.enabled,
-      style: theme.textTheme.bodyLarge,
-      maxLength: widget.maxLength,
-      decoration: InputDecoration(
-        hintText: widget.hintText,
-        hintStyle: hintStyle,
-        filled: true,
-        fillColor: theme.inputDecorationTheme.fillColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: gold.withOpacity(0.5), width: 1.5),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: gold.withOpacity(0.3), width: 1.2),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: gold, width: 2),
-        ),
-        suffixIcon: suffix,
-      ),
-    ).animate().fadeIn(duration: 400.ms, delay: (widget.index * 100).ms).slideY(begin: 0.1, end: 0, duration: 400.ms, delay: (widget.index * 100).ms, curve: Curves.easeOut);
+          controller: widget.controller,
+          obscureText: widget.isPassword ? _obscure : false,
+          keyboardType: widget.keyboardType,
+          validator: widget.validator,
+          enabled: widget.enabled,
+          onChanged: widget.onChanged,
+          style: theme.textTheme.bodyLarge,
+          maxLength: widget.maxLength,
+          decoration: InputDecoration(
+            hintText: widget.hintText,
+            hintStyle: hintStyle,
+            filled: theme.inputDecorationTheme.filled,
+            fillColor: theme.inputDecorationTheme.fillColor,
+            contentPadding: theme.inputDecorationTheme.contentPadding,
+            border: theme.inputDecorationTheme.border,
+            enabledBorder: theme.inputDecorationTheme.enabledBorder,
+            focusedBorder: theme.inputDecorationTheme.focusedBorder,
+            suffixIcon: suffix,
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 400.ms, delay: (widget.index * 100).ms)
+        .slideY(
+          begin: 0.1,
+          end: 0,
+          duration: 400.ms,
+          delay: (widget.index * 100).ms,
+          curve: Curves.easeOut,
+        );
   }
-} 
+}

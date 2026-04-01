@@ -66,6 +66,8 @@ dependencies:
   animations: ^2.0.8
   flutter_switch: ^0.3.2
   salomon_bottom_bar: ^3.3.2
+  file_picker: ^8.1.2
+  palette_generator: ^0.3.3+5
 
 dev_dependencies:
   flutter_test:

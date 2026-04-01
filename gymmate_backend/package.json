@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "migrate:default-gym": "node scripts/migrate-default-gym.js",
+    "seed:demo": "node scripts/seed-demo-data.js",
+    "seed:qa": "node scripts/seed-qa-data.js",
     "serve": "node index.js",
     "start": "node index.js",
     "lint": "eslint .",

@@ -1,6 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:gymmate_mobile/widgets/animated_background.dart';
+import 'package:gymmate_mobile/widgets/brand_loader.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget nextScreen;
@@ -8,7 +12,7 @@ class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key, required this.nextScreen}) : super(key: key);
 
   @override
-  _SplashScreenState createState() => _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen> {
@@ -20,86 +24,94 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _navigateToNextScreen() {
     Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => widget.nextScreen,
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 1000),
-          ),
-        );
-      }
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              widget.nextScreen,
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 800),
+        ),
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return const BrandedLoadingScreen(
+      title: 'GymMate',
+      subtitle: 'Your Fitness HQ',
+      showTagline: true,
+    );
+  }
+}
+
+class BrandedLoadingScreen extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool showTagline;
+  final bool lightweight;
+
+  const BrandedLoadingScreen({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    this.showTagline = false,
+    this.lightweight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF232112),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App Logo
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFF8D84B),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFF8D84B).withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 2,
+      body: Stack(
+        children: [
+          AnimatedBackground(denserGlow: true, lightweight: lightweight),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  BrandLoader(
+                    size: showTagline ? 164 : 144,
+                    label: subtitle.toUpperCase(),
+                    compact: lightweight,
                   ),
+                  const SizedBox(height: 24),
+                  Text(
+                        title,
+                        style: GoogleFonts.manrope(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1.8,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(delay: 120.ms, duration: 650.ms)
+                      .slideY(begin: 0.15, curve: Curves.easeOutCubic),
+                  const SizedBox(height: 10),
+                  Text(
+                        showTagline ? 'Your Fitness HQ' : subtitle,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.72,
+                          ),
+                        ),
+                      )
+                      .animate()
+                      .fadeIn(delay: 260.ms, duration: 650.ms)
+                      .slideY(begin: 0.18, curve: Curves.easeOutCubic),
                 ],
               ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/images/ttt_logo.png',
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            )
-            .animate()
-            .scaleXY(
-              begin: 0.8,
-              end: 1.0,
-              duration: 800.ms,
-              curve: Curves.elasticOut,
-            ).then(duration: 500.ms)
-            .shimmer(
-              duration: 1200.ms,
-              color: const Color(0xFFF8D84B).withOpacity(0.5),
             ),
-            
-            const SizedBox(height: 24),
-            
-            // App Name
-            const Text(
-              'The Training Theory',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-                color: Color(0xFFF8D84B),
-              ),
-            )
-            .animate()
-            .fadeIn(delay: 500.ms, duration: 800.ms)
-            .slideY(begin: 0.5, curve: Curves.easeOut),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

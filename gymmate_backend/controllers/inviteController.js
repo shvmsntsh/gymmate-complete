@@ -1,65 +1,62 @@
 const { InviteCode } = require('../models/InviteCode');
 const Gym = require('../models/Gym');
 const User = require('../models/User');
+const { hasRole } = require('../utils/roles');
 
 exports.listInviteCodes = async (req, res) => {
-  console.log("🔥 listInviteCodes route hit");
-  console.log("🔐 Authenticated user:", req.user);
-
   try {
     let filter = {};
 
-    if (req.user.role === 'gym_owner') {
-      filter = { gymId: req.user.gymId, role: { $in: ['gym_member', 'gym_trainer'] } };
-    } else if (req.user.role === 'superadmin') {
-      filter = {}; // show all codes
+    if (hasRole(req.user, ['owner'])) {
+      const currentGym = req.user.gymId
+        ? await Gym.findById(req.user.gymId).select('gymName')
+        : null;
+      filter = {
+        role: { $in: ['gym_member', 'gym_trainer'] },
+        $or: [
+          { gymId: req.user.gymId || null },
+          ...(currentGym?.gymName ? [{ gymName: currentGym.gymName }] : []),
+        ],
+      };
+    } else if (hasRole(req.user, ['admin'])) {
+      filter = {};
     } else {
-      return res.status(403).json({ message: "Access denied" });
+      return res.status(403).json({ message: 'Access denied' });
     }
 
-    console.log("🔎 Filter being used:", filter);
-
     const codes = await InviteCode.find(filter).sort({ updatedAt: -1 });
-
-    console.log(`✅ Found ${codes.length} invite codes`);
     res.status(200).json({ codes: codes || [] });
   } catch (error) {
-    console.error("❌ Error fetching invite codes:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
+    console.error('Error fetching invite codes:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
 // Generate invite code (for gym_owner or superadmin)
 exports.generateInviteCode = async (req, res) => {
-  console.log('🔔 Invite code generation attempt by:', req.user.email);
-  console.log('📥 Full request body:', req.body);
   try {
     const { role, phone_number, name, email } = req.body;
     const currentUser = req.user;
-
-    console.log('Requesting user role:', currentUser.role);
-    console.log('Role to generate:', role);
 
     if (!role) {
       return res.status(400).json({ message: 'role is required' });
     }
 
     // Superadmin can only create gym_owner codes
-    if (currentUser.role === 'superadmin' && role !== 'gym_owner') {
+    if (hasRole(currentUser, ['admin']) && role !== 'gym_owner') {
       return res.status(403).json({ message: 'Superadmin can only generate codes for gym_owner' });
     }
 
     // Gym owner can only create gym_member or gym_trainer codes
     const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : '';
-    console.log('Normalized role:', normalizedRole);
-    if (currentUser.role === 'gym_owner' && !['gym_member', 'gym_trainer'].includes(normalizedRole)) {
+    if (hasRole(currentUser, ['owner']) && !['gym_member', 'gym_trainer'].includes(normalizedRole)) {
       return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member or gym_trainer' });
     }
     
     // For a gym_owner creating an invite, we need their gymId
     let gymId = null;
     let gymName = null;
-    if(currentUser.role === 'gym_owner') {
+    if (hasRole(currentUser, ['owner'])) {
       if (!currentUser.gymId) {
         return res.status(400).json({ message: 'Gym owner must be associated with a gym.' });
       }
@@ -92,7 +89,6 @@ exports.generateInviteCode = async (req, res) => {
         registered: false,
       });
       await newUser.save({ validateBeforeSave: false }); // Bypass password requirement
-      console.log('✅ Invited user created:', newUser);
     }
 
     const code = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -106,11 +102,9 @@ exports.generateInviteCode = async (req, res) => {
     });
     
     await invite.save();
-    
-    console.log('✅ Invite code generated:', invite);
     res.status(201).json(invite); // Return the full invite object
   } catch (err) {
-    console.error('❌ Error generating invite code:', err);
+    console.error('Error generating invite code:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

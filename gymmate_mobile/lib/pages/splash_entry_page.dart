@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/animated_entry_options.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 
@@ -25,7 +24,6 @@ class _SplashEntryPageState extends State<SplashEntryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: const Color(0xFF232112),
       body: SafeArea(
@@ -33,7 +31,7 @@ class _SplashEntryPageState extends State<SplashEntryPage> {
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 400),
             child: _showOptions
-                ? AnimatedEntryOptions(
+                ? _EntryOptionsCard(
                     key: const ValueKey('entry'),
                     onLogin: () => _navigateTo(const LoginPage()),
                     onJoin: () => _navigateTo(const RegisterPage()),
@@ -44,4 +42,59 @@ class _SplashEntryPageState extends State<SplashEntryPage> {
       ),
     );
   }
-} 
+}
+
+class _EntryOptionsCard extends StatelessWidget {
+  final VoidCallback onLogin;
+  final VoidCallback onJoin;
+
+  const _EntryOptionsCard({
+    super.key,
+    required this.onLogin,
+    required this.onJoin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 360,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2D2A18),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Welcome to GymMate',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Sign in to continue or join your gym with an invite code.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, height: 1.5),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: onLogin,
+            child: const Text('Login'),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: onJoin,
+            child: const Text('Join a Gym'),
+          ),
+        ],
+      ),
+    );
+  }
+}

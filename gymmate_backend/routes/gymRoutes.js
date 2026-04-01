@@ -1,18 +1,49 @@
 const express = require('express');
 const router = express.Router();
 const Gym = require('../models/Gym');
+const User = require('../models/User');
+const { InviteCode } = require('../models/InviteCode');
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/authMiddleware');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
+const { hasRole } = require('../utils/roles');
+
+function normalizeServices(services) {
+  if (Array.isArray(services)) {
+    return services
+      .flatMap((service) => String(service || '').split(','))
+      .map((service) => service.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof services === 'string') {
+    return services
+      .split(',')
+      .map((service) => service.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
 
 router.post('/register', async (req, res) => {
-  console.log('🔔 Received POST /register');
-  console.log('📦 Request body:', req.body);
 
   try {
-    const { gymName, email, password, address, contactNumber, services } = req.body;
+    const {
+      gymName: rawGymName,
+      name,
+      email,
+      password,
+      address,
+      contactNumber,
+      phone,
+      services,
+    } = req.body;
+    const gymName = rawGymName || name;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const normalizedContactNumber = contactNumber || phone;
 
-    if (!gymName || !email) {
+    if (!gymName || !normalizedEmail) {
       return res.status(400).json({ message: 'Name and email are required' });
     }
 
@@ -22,36 +53,29 @@ router.post('/register', async (req, res) => {
     if (!req.body.address) {
       return res.status(400).json({ message: 'Address is required' });
     }
-    if (!req.body.phone) {
+    if (!normalizedContactNumber) {
       return res.status(400).json({ message: 'Phone number is required' });
     }
 
     // 🧹 Clean up falsy/null diet, workout, fitnessGoals fields and log them
     ['diet', 'workout', 'fitnessGoals'].forEach(field => {
       if (!req.body[field]) {
-        console.log(`🧹 Cleaning up falsy or null field: ${field}`);
         delete req.body[field];
       }
     });
 
-    const existingGym = await Gym.findOne({ email });
+    const existingGym = await Gym.findOne({ email: normalizedEmail });
     if (existingGym) {
       return res.status(400).json({ message: 'Gym already exists' });
     }
 
-    // Determine actual role based on existing gym count and gym name
-    let assignedRole;
-    const totalGyms = await Gym.countDocuments({});
-    if (totalGyms === 0) {
-      assignedRole = 'superadmin'; // First user becomes superadmin
-    } else {
-      const existingGymWithSameName = await Gym.findOne({ gymName });
-      if (existingGymWithSameName) {
-        assignedRole = 'gym_member'; // User registering with existing gym name becomes a member
-      } else {
-        assignedRole = 'gym_owner'; // New gym name means this is a new gym owner
-      }
+    const existingOwner = await User.findOne({ email: normalizedEmail });
+    if (existingOwner) {
+      return res.status(400).json({ message: 'An account with this email already exists' });
     }
+
+    const assignedRole = 'gym_owner';
+    const normalizedServices = normalizeServices(services);
 
     let hashedPassword = password;
     if (password) {
@@ -59,11 +83,11 @@ router.post('/register', async (req, res) => {
     }
     const newGymData = {
       gymName,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       address,
-      contactNumber,
-      services,
+      contactNumber: normalizedContactNumber,
+      services: normalizedServices,
       role: assignedRole,
     };
 
@@ -77,10 +101,28 @@ router.post('/register', async (req, res) => {
       newGymData.fitnessGoals = req.body.fitnessGoals;
     }
 
-    console.log('🛠 Final gym data to be saved:', newGymData);
     const newGym = new Gym(newGymData);
-
     await newGym.save();
+
+    let ownerUser;
+    try {
+      ownerUser = new User({
+        name: gymName,
+        email: normalizedEmail,
+        password,
+        role: assignedRole,
+        gymId: newGym._id,
+        phone_number: normalizedContactNumber || undefined,
+      });
+
+      await ownerUser.save();
+
+      newGym.owner = ownerUser._id;
+      await newGym.save();
+    } catch (ownerError) {
+      await Gym.findByIdAndDelete(newGym._id).catch(() => {});
+      throw ownerError;
+    }
 
     const { InviteCode } = require('../models/InviteCode');
     let invite;
@@ -95,7 +137,6 @@ router.post('/register', async (req, res) => {
     }
 
     if (invite) {
-      console.log(`✅ Marking invite code ${invite.code} as used by ${email}`);
       await InviteCode.updateOne(
         { _id: invite._id },
         {
@@ -106,30 +147,79 @@ router.post('/register', async (req, res) => {
           }
         }
       );
-    } else {
-      console.log('⚠️ No valid invite code matched for update.');
     }
 
-    res.status(201).json({ message: 'Gym registered successfully', gym: newGym });
+    res.status(201).json({
+      message: 'Gym registered successfully',
+      gym: {
+        id: newGym._id,
+        gymName: newGym.gymName,
+        name: newGym.gymName,
+        email: newGym.email,
+        address: newGym.address || '',
+        contactNumber: newGym.contactNumber || '',
+        services: normalizeServices(newGym.services),
+        status: newGym.status,
+      },
+      owner: {
+        id: ownerUser._id,
+        name: ownerUser.name,
+        email: ownerUser.email,
+        role: ownerUser.role,
+        gymId: ownerUser.gymId,
+      },
+    });
   } catch (error) {
-    console.error('❌ Error:', error);
+    console.error('Error registering gym:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+router.get('/list', authenticateToken, async (req, res) => {
+  try {
+    if (!hasRole(req.user, ['admin'])) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const gyms = await Gym.find({})
+      .sort({ createdAt: -1 })
+      .select('gymName email address contactNumber services status createdAt');
+
+    return res.status(200).json(
+      gyms.map((gym) => ({
+        id: gym._id,
+        name: gym.gymName,
+        email: gym.email,
+        address: gym.address || '',
+        contactNumber: gym.contactNumber || '',
+        services: normalizeServices(gym.services),
+        status: gym.status,
+        createdAt: gym.createdAt,
+      })),
+    );
+  } catch (error) {
+    console.error('Error fetching gym list:', error);
+    return res.status(500).json({ message: 'Failed to fetch gyms' });
   }
 });
 
 // ✅ Gym Login Route
 router.post('/login', async (req, res) => {
-  console.log('🔐 Received POST /login');
-  console.log('📥 Request body:', req.body);
 
   try {
-    const { email, password } = req.body;
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const { password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     const gym = await Gym.findOne({ email });
-    if (!gym || gym.password !== password) {
+    if (!gym || !gym.password) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, gym.password);
+    if (!passwordMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
@@ -162,7 +252,7 @@ router.post('/login', async (req, res) => {
       role: gym.role,
     });
   } catch (error) {
-    console.error('❌ Error during login:', error);
+    console.error('Error during gym login:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
@@ -171,47 +261,187 @@ router.post('/login', async (req, res) => {
 router.get('/services', async (req, res) => {
   try {
     const gyms = await Gym.find({}, 'services'); // Only fetch the 'services' field from all gyms
-    const services = gyms.flatMap(g => g.services || []);
+    const services = gyms.flatMap(g => normalizeServices(g.services));
     const uniqueServices = [...new Set(services)];
     res.status(200).json({ services: uniqueServices });
   } catch (error) {
-    console.error('❌ Error fetching services:', error);
+    console.error('Error fetching services:', error);
     res.status(500).json({ message: 'Failed to fetch services', error: error.message });
+  }
+});
+
+router.get('/services/distribution', authenticateToken, async (req, res) => {
+  try {
+    if (!hasRole(req.user, ['admin'])) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const gyms = await Gym.find({}, 'services');
+    const counts = new Map();
+
+    gyms.forEach((gym) => {
+      normalizeServices(gym.services).forEach((service) => {
+        counts.set(service, (counts.get(service) || 0) + 1);
+      });
+    });
+
+    return res.status(200).json(
+      Array.from(counts.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count),
+    );
+  } catch (error) {
+    console.error('Error fetching services distribution:', error);
+    return res.status(500).json({ message: 'Failed to fetch service distribution' });
+  }
+});
+
+router.get('/branding/:gymId', async (req, res) => {
+  try {
+    const gym = await Gym.findById(req.params.gymId).select(
+      'gymName branding.logoUrl branding.primaryColor branding.secondaryColor branding.logoScale branding.logoOffsetX branding.logoOffsetY'
+    );
+
+    if (!gym) {
+      return res.status(404).json({ message: 'Gym not found' });
+    }
+
+    return res.status(200).json({
+      gymName: gym.gymName,
+      logoUrl: gym.branding?.logoUrl || null,
+      primaryColor: gym.branding?.primaryColor || '#B59F5B',
+      secondaryColor: gym.branding?.secondaryColor || '#F8D84B',
+      logoScale: gym.branding?.logoScale ?? 1,
+      logoOffsetX: gym.branding?.logoOffsetX ?? 0,
+      logoOffsetY: gym.branding?.logoOffsetY ?? 0,
+    });
+  } catch (error) {
+    console.error('Error fetching gym branding:', error);
+    return res.status(500).json({ message: 'Failed to fetch gym branding' });
+  }
+});
+
+router.put('/branding', authenticateToken, async (req, res) => {
+  try {
+    if (!hasRole(req.user, ['owner', 'admin'])) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const targetGymId = hasRole(req.user, ['admin'])
+      ? (req.body.gymId || req.user.gymId)
+      : req.user.gymId;
+
+    if (!targetGymId) {
+      return res.status(400).json({ message: 'No gym available for branding update' });
+    }
+
+    const gym = await Gym.findById(targetGymId);
+    if (!gym) {
+      return res.status(404).json({ message: 'Gym not found' });
+    }
+
+    const gymName = typeof req.body.gymName === 'string' ? req.body.gymName.trim() : '';
+    const logoUrl = typeof req.body.logoUrl === 'string' ? req.body.logoUrl.trim() : '';
+    const primaryColor = typeof req.body.primaryColor === 'string' ? req.body.primaryColor.trim() : '';
+    const secondaryColor = typeof req.body.secondaryColor === 'string' ? req.body.secondaryColor.trim() : '';
+    const logoScale = Number(req.body.logoScale);
+    const logoOffsetX = Number(req.body.logoOffsetX);
+    const logoOffsetY = Number(req.body.logoOffsetY);
+
+    if (!gymName) {
+      return res.status(400).json({ message: 'Gym name is required' });
+    }
+
+    const hexColorPattern = /^#?[0-9A-Fa-f]{6}$/;
+    if (primaryColor && !hexColorPattern.test(primaryColor)) {
+      return res.status(400).json({ message: 'Primary color must be a 6-digit hex value' });
+    }
+    if (secondaryColor && !hexColorPattern.test(secondaryColor)) {
+      return res.status(400).json({ message: 'Secondary color must be a 6-digit hex value' });
+    }
+
+    const normalizeHex = (value, fallback) => {
+      if (!value) return fallback;
+      return value.startsWith('#') ? value.toUpperCase() : `#${value.toUpperCase()}`;
+    };
+
+    gym.gymName = gymName;
+    gym.branding = {
+      ...(gym.branding || {}),
+      logoUrl: logoUrl || null,
+      primaryColor: normalizeHex(primaryColor, gym.branding?.primaryColor || '#B59F5B'),
+      secondaryColor: normalizeHex(secondaryColor, gym.branding?.secondaryColor || '#F8D84B'),
+      logoScale: Number.isFinite(logoScale) ? Math.min(Math.max(logoScale, 0.8), 2) : (gym.branding?.logoScale ?? 1),
+      logoOffsetX: Number.isFinite(logoOffsetX) ? Math.min(Math.max(logoOffsetX, -1), 1) : (gym.branding?.logoOffsetX ?? 0),
+      logoOffsetY: Number.isFinite(logoOffsetY) ? Math.min(Math.max(logoOffsetY, -1), 1) : (gym.branding?.logoOffsetY ?? 0),
+    };
+
+    await gym.save();
+
+    await User.updateMany(
+      { gymId: targetGymId },
+      { $set: { gymName } }
+    );
+
+    await InviteCode.updateMany(
+      { gymId: targetGymId },
+      { $set: { gymName } }
+    );
+
+    return res.status(200).json({
+      message: 'Branding updated successfully',
+      branding: {
+        gymName: gym.gymName,
+        logoUrl: gym.branding?.logoUrl || null,
+        primaryColor: gym.branding?.primaryColor || '#B59F5B',
+        secondaryColor: gym.branding?.secondaryColor || '#F8D84B',
+        logoScale: gym.branding?.logoScale ?? 1,
+        logoOffsetX: gym.branding?.logoOffsetX ?? 0,
+        logoOffsetY: gym.branding?.logoOffsetY ?? 0,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating gym branding:', error);
+    return res.status(500).json({ message: 'Failed to update gym branding' });
   }
 });
 
 // GET /api/gym/members
 router.get('/members', authenticateToken, async (req, res) => {
   try {
-    console.log(`🔎 Fetching members for role: ${req.user.role}, gymId: ${req.user.gymId}`);
 
-    let gyms;
-    if (req.user.role === 'superadmin') {
-      gyms = await Gym.find({});
-    } else if (req.user.role === 'gym_owner') {
-      const owner = await Gym.findById(req.user.gymId);
-      gyms = await Gym.find({ role: 'gym_member', gymName: owner.gymName });
-    } else if (req.user.role === 'gym_member') {
-      gyms = await Gym.find({ _id: req.user.gymId });
+    let members;
+    if (hasRole(req.user, ['admin'])) {
+      members = await User.find({ role: { $in: ['gym_owner', 'gym_trainer', 'gym_member'] } })
+        .select('name email role gymId createdAt');
+    } else if (hasRole(req.user, ['owner'])) {
+      members = await User.find({
+        gymId: req.user.gymId,
+        role: { $in: ['gym_trainer', 'gym_member'] }
+      }).select('name email role gymId createdAt');
+    } else if (hasRole(req.user, ['member'])) {
+      members = await User.find({ _id: req.user.id })
+        .select('name email role gymId createdAt');
     } else {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    res.status(200).json({ members: gyms });
+    res.status(200).json({ members });
   } catch (error) {
-    console.error('❌ Error fetching members:', error);
+    console.error('Error fetching members:', error);
     res.status(500).json({ message: 'Error fetching members', error: error.message });
   }
 });
 
 // GET /api/gym/all-members (superadmin only)
 router.get('/all-members', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'superadmin') {
-    return res.status(403).json({ message: 'Forbidden: superadmin only' });
+  if (!hasRole(req.user, ['admin'])) {
+    return res.status(403).json({ message: 'Forbidden' });
   }
   try {
-    const gyms = await Gym.find({});
-    return res.status(200).json({ members: gyms });
+    const members = await User.find({ role: { $in: ['gym_owner', 'gym_trainer', 'gym_member'] } })
+      .select('name email role gymId createdAt');
+    return res.status(200).json({ members });
   } catch (error) {
     console.error('Error fetching all members:', error);
     return res.status(500).json({ message: 'Error fetching all members' });
@@ -221,13 +451,34 @@ router.get('/all-members', authenticateToken, async (req, res) => {
 // GET /api/gym/self - Returns the current logged-in gym user
 router.get('/self', authenticateToken, async (req, res) => {
   try {
-    const gym = await Gym.findById(req.user.id);
+    const gymId = req.user.gymId || req.user._id;
+    if (!gymId) {
+      return res.status(404).json({ message: 'Gym not associated with current user' });
+    }
+    const gym = await Gym.findById(gymId);
     if (!gym) {
       return res.status(404).json({ message: 'Gym not found' });
     }
-    res.status(200).json({ member: gym });
+
+    const gymSummary = {
+      id: gym._id,
+      name: gym.gymName,
+      gymName: gym.gymName,
+      email: gym.email,
+      address: gym.address || '',
+      contactNumber: gym.contactNumber || '',
+      services: normalizeServices(gym.services),
+      status: gym.status,
+      branding: gym.branding || {},
+      owner: gym.owner || null,
+    };
+
+    res.status(200).json({
+      member: gymSummary,
+      gym: gymSummary,
+    });
   } catch (error) {
-    console.error('❌ Error fetching self gym info:', error);
+    console.error('Error fetching self gym info:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
@@ -235,11 +486,11 @@ router.get('/self', authenticateToken, async (req, res) => {
 // GET /api/gym/login-stats - Returns login counts per day for current week
 router.get('/login-stats', authenticateToken, async (req, res) => {
   try {
-    if (req.user.role !== 'gym_member') {
+    if (!hasRole(req.user, ['member'])) {
       return res.status(403).json({ message: 'Forbidden: gym_member only' });
     }
 
-    const gym = await Gym.findById(req.user.id);
+    const gym = await Gym.findById(req.user.gymId);
     if (!gym || !Array.isArray(gym.loginTimestamps)) {
       return res.status(200).json({ logins: [] });
     }
@@ -267,7 +518,7 @@ router.get('/login-stats', authenticateToken, async (req, res) => {
 
     return res.status(200).json({ logins: result });
   } catch (error) {
-    console.error('❌ Error generating login stats:', error);
+    console.error('Error generating login stats:', error);
     return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
@@ -302,12 +553,9 @@ router.post('/generate-invite', authenticateToken, async (req, res) => {
 // 📌 Validate invite code
 router.post('/validate-invite', async (req, res) => {
   let { code } = req.body;
-  console.log('[DEBUG] /validate-invite incoming code:', code);
   code = code.trim().toUpperCase();
-  console.log('[DEBUG] Normalized code:', code);
   const { InviteCode } = require('../models/InviteCode');
   const invite = await InviteCode.findOne({ code, used: false });
-  console.log('[DEBUG] Invite lookup result:', invite);
   if (!invite) {
     return res.status(400).json({ message: 'Invalid or expired invite code' });
   }
@@ -325,16 +573,27 @@ router.get('/:id', async (req, res) => {
     if (!gym) {
       return res.status(404).json({ message: 'Gym not found' });
     }
-    res.status(200).json(gym); // Send raw gym document
+    res.status(200).json({
+      id: gym._id,
+      name: gym.gymName,
+      gymName: gym.gymName,
+      email: gym.email,
+      address: gym.address || '',
+      contactNumber: gym.contactNumber || '',
+      phone: gym.contactNumber || '',
+      services: normalizeServices(gym.services),
+      status: gym.status,
+      createdAt: gym.createdAt,
+    });
   } catch (error) {
-    console.error('❌ Error fetching gym by ID:', error);
+    console.error('Error fetching gym by ID:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
 // ✅ Update onboarding data (diet, workout, goals)
 router.put('/onboarding', authenticateToken, async (req, res) => {
   try {
-    if (req.user.role !== 'gym_member') {
+    if (!hasRole(req.user, ['member'])) {
       return res.status(403).json({ message: 'Only gym_members can update onboarding data' });
     }
 
@@ -349,11 +608,15 @@ router.put('/onboarding', authenticateToken, async (req, res) => {
       updateFields.fitnessGoals = req.body.fitnessGoals;
     }
 
-    const updated = await Gym.findByIdAndUpdate(req.user.id, { $set: updateFields }, { new: true });
+    if (!req.user.gymId) {
+      return res.status(400).json({ message: 'No gym assigned to current user' });
+    }
+
+    const updated = await Gym.findByIdAndUpdate(req.user.gymId, { $set: updateFields }, { new: true });
 
     return res.status(200).json({ message: 'Onboarding data updated', gym: updated });
   } catch (error) {
-    console.error('❌ Error updating onboarding data:', error);
+    console.error('Error updating onboarding data:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });

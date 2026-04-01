@@ -1,184 +1,146 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/onboarding_provider.dart';
+
+import 'package:gymmate_mobile/providers/onboarding_provider.dart';
+import 'package:gymmate_mobile/widgets/editorial_mobile.dart';
+import 'package:gymmate_mobile/widgets/editorial_onboarding.dart';
 
 class GoalsStep extends StatelessWidget {
   final VoidCallback onNext;
 
-  const GoalsStep({
-    super.key,
-    required this.onNext,
-  });
+  const GoalsStep({super.key, required this.onNext});
 
   @override
   Widget build(BuildContext context) {
     final goals = [
-      {
-        'icon': Icons.fitness_center,
-        'title': 'Build Muscle',
-        'description': 'Gain strength and muscle mass',
-        'value': 'muscle_gain',
-      },
-      {
-        'icon': Icons.directions_run,
-        'title': 'Fat Loss',
-        'description': 'Burn fat and improve fitness',
-        'value': 'fat_loss',
-      },
-      {
-        'icon': Icons.self_improvement,
-        'title': 'General Fitness',
-        'description': 'Maintain overall fitness and well-being',
-        'value': 'general_fitness',
-      },
-      {
-        'icon': Icons.sports_score,
-        'title': 'Performance',
-        'description': 'Enhance athletic abilities',
-        'value': 'performance',
-      },
-      {
-        'icon': Icons.sports_handball,
-        'title': 'Strength',
-        'description': 'Build raw strength and power',
-        'value': 'strength',
-      },
-      {
-        'icon': Icons.timer,
-        'title': 'Endurance',
-        'description': 'Improve stamina and endurance',
-        'value': 'endurance',
-      },
-      {
-        'icon': Icons.sports_gymnastics,
-        'title': 'Flexibility',
-        'description': 'Enhance mobility and flexibility',
-        'value': 'flexibility',
-      },
-      {
-        'icon': Icons.balance,
-        'title': 'Weight Maintenance',
-        'description': 'Maintain current weight and fitness',
-        'value': 'weight_maintenance',
-      },
+      (
+        icon: Icons.fitness_center_rounded,
+        title: 'Build Muscle',
+        description: 'Add size, strength, and a steadier lifting rhythm.',
+        value: 'muscle_gain',
+      ),
+      (
+        icon: Icons.local_fire_department_outlined,
+        title: 'Fat Loss',
+        description: 'Lean out while keeping training momentum intact.',
+        value: 'fat_loss',
+      ),
+      (
+        icon: Icons.favorite_outline_rounded,
+        title: 'General Fitness',
+        description:
+            'Feel stronger, lighter, and more consistent week to week.',
+        value: 'general_fitness',
+      ),
+      (
+        icon: Icons.sports_martial_arts_rounded,
+        title: 'Performance',
+        description: 'Train for sharper speed, output, and athletic control.',
+        value: 'performance',
+      ),
+      (
+        icon: Icons.hardware_rounded,
+        title: 'Strength',
+        description: 'Prioritize heavier lifts and raw force production.',
+        value: 'strength',
+      ),
+      (
+        icon: Icons.directions_run_rounded,
+        title: 'Endurance',
+        description: 'Build the stamina to move better for longer sessions.',
+        value: 'endurance',
+      ),
     ];
 
     return Consumer<OnboardingProvider>(
       builder: (context, provider, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'Your Goals',
-                style: Theme.of(context).textTheme.headlineSmall,
+        return OnboardingStepLayout(
+          eyebrow: 'Goals',
+          title: 'Choose the outcomes you want your training to chase.',
+          subtitle:
+              'Pick one or more priorities. GymMate will keep these goals at the center of your plan and progress story.',
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: provider.fitnessGoals.isEmpty
+                    ? const [
+                        OnboardingChipOption(
+                          label: 'Select at least one goal',
+                          selected: false,
+                          onTap: null,
+                        ),
+                      ]
+                    : provider.fitnessGoals
+                          .map(
+                            (goal) => OnboardingChipOption(
+                              label: _titleFor(goal),
+                              selected: true,
+                              onTap: () => provider.toggleFitnessGoal(goal),
+                            ),
+                          )
+                          .toList(),
               ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'What do you want to achieve? (Select multiple)',
-                style: Theme.of(context).textTheme.bodyMedium,
+              const SizedBox(height: 16),
+              Column(
+                children: goals
+                    .map(
+                      (goal) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: OnboardingOptionCard(
+                          title: goal.title,
+                          description: goal.description,
+                          icon: goal.icon,
+                          selected: provider.fitnessGoals.contains(goal.value),
+                          onTap: () => provider.toggleFitnessGoal(goal.value),
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView(
-                children: goals.map((goal) => _buildGoalCard(
-                  context,
-                  icon: goal['icon'] as IconData,
-                  title: goal['title'] as String,
-                  description: goal['description'] as String,
-                  isSelected: provider.fitnessGoals.contains(goal['value']),
-                  onSelect: () => provider.toggleFitnessGoal(goal['value'] as String),
-                )).toList(),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  if (provider.fitnessGoals.isEmpty) {
+            ],
+          ),
+          footer: EditorialPrimaryButton(
+            label: 'Keep Going',
+            onPressed: provider.fitnessGoals.isEmpty
+                ? () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please select at least one fitness goal.')),
+                      const SnackBar(
+                        content: Text(
+                          'Choose at least one training goal to continue.',
+                        ),
+                      ),
                     );
-                    return;
                   }
-                  onNext();
-                },
-                child: const Text('Continue'),
-              ),
+                : onNext,
+            trailing: const Icon(
+              Icons.arrow_forward_rounded,
+              color: Colors.white,
             ),
-          ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildGoalCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String description,
-    required bool isSelected,
-    required VoidCallback onSelect,
-  }) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: InkWell(
-        onTap: onSelect,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.onPrimary
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: isSelected ? FontWeight.bold : null,
-                          ),
-                    ),
-                    Text(
-                      description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Icon(
-                  Icons.check_circle,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
+  static String _titleFor(String goal) {
+    switch (goal) {
+      case 'muscle_gain':
+        return 'Build Muscle';
+      case 'fat_loss':
+        return 'Fat Loss';
+      case 'general_fitness':
+        return 'General Fitness';
+      case 'performance':
+        return 'Performance';
+      case 'strength':
+        return 'Strength';
+      case 'endurance':
+        return 'Endurance';
+      default:
+        return goal;
+    }
   }
 }

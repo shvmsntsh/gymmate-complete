@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
 import 'package:gymmate_mobile/widgets/animated_form_field.dart';
-import 'package:gymmate_mobile/themes/app_colors.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:gymmate_mobile/widgets/phase_one_shell.dart';
 
 class QuickJoinScreen extends StatefulWidget {
   final VoidCallback onBack;
@@ -11,7 +10,7 @@ class QuickJoinScreen extends StatefulWidget {
   const QuickJoinScreen({Key? key, required this.onBack}) : super(key: key);
 
   @override
-  _QuickJoinScreenState createState() => _QuickJoinScreenState();
+  State<QuickJoinScreen> createState() => _QuickJoinScreenState();
 }
 
 class _QuickJoinScreenState extends State<QuickJoinScreen> {
@@ -32,90 +31,87 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
         _phoneController.text.trim(),
         _otpController.text.trim(),
       );
-      // On success, navigation is handled by main.dart's Consumer
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   @override
+  void dispose() {
+    _phoneController.dispose();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: widget.onBack,
-              ),
-              const SizedBox(height: 8),
-              Text('Quick Join', style: theme.textTheme.headlineSmall),
-              if (_error != null) ...[
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 560),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PhaseOneTopBar(onBack: widget.onBack),
+          const SizedBox(height: 22),
+          PhaseOneSurface(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const PhaseOneBadge(label: 'Quick Join'),
+                const SizedBox(height: 18),
+                const PhaseOneSectionTitle(
+                  eyebrow: 'Phone Access',
+                  title: 'Jump back into your gym with your phone.',
+                  subtitle:
+                      'Use the number your gym has on file and the 4-digit access code they shared with you.',
+                ),
+                const SizedBox(height: 24),
+                if (_error != null) ...[
+                  PhaseOneStatusBanner(message: _error!),
+                  const SizedBox(height: 18),
+                ],
+                AnimatedFormField(
+                  controller: _phoneController,
+                  hintText: 'Phone Number',
+                  keyboardType: TextInputType.phone,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    return v.trim().length >= 8 ? null : 'Invalid number';
+                  },
+                  index: 0,
+                ),
+                const SizedBox(height: 14),
+                AnimatedFormField(
+                  controller: _otpController,
+                  hintText: '4-Digit Access Code',
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    return v.trim().length == 4 ? null : 'Must be 4 digits';
+                  },
+                  index: 1,
+                ),
                 const SizedBox(height: 8),
-                Text(_error!, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error)),
+                Text(
+                  'Best for members and trainers who want a faster way back into their training day.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 22),
+                PhaseOnePrimaryButton(
+                  label: 'Enter Your Gym',
+                  onTap: _onQuickLogin,
+                  loading: _loading,
+                ),
               ],
-              const SizedBox(height: 24),
-              AnimatedFormField(
-                controller: _phoneController,
-                hintText: 'Phone Number (+91)',
-                keyboardType: TextInputType.phone,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Required';
-                  // Basic validation for Indian phone numbers
-                  if (!RegExp(r'^(?:\+91)?[6-9]\d{9}$').hasMatch(v)) {
-                    return 'Invalid phone number';
-                  }
-                  return null;
-                },
-                index: 0,
-              ),
-              const SizedBox(height: 16),
-              AnimatedFormField(
-                controller: _otpController,
-                hintText: '4-Digit OTP',
-                keyboardType: TextInputType.number,
-                maxLength: 4,
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Required';
-                  if (v.length != 4) return 'Must be 4 digits';
-                  return null;
-                },
-                index: 1,
-              ),
-              const SizedBox(height: 24),
-              _loading
-                  ? const CircularProgressIndicator()
-                  : GestureDetector(
-                      onTap: _onQuickLogin,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentYellow,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text(
-                            'Verify & Login',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: AppColors.textOnAccent,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ).animate().scaleXY(begin: 0.98, end: 1.0, duration: 200.ms, curve: Curves.easeOut),
-            ],
-          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0, duration: 400.ms),
-        ),
+            ),
+          ),
+          const PhaseOneFooterNote(label: 'Ready when your gym is'),
+        ],
       ),
     );
   }
-} 
+}

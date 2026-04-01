@@ -4,10 +4,6 @@ import 'package:gymmate_mobile/api/api_config.dart';
 
 class ApiDashboardService {
   static Future<Map<String, dynamic>> fetchDashboardStats(String token) async {
-    print('🔍 Fetching dashboard stats...');
-    print('🔗 URL: ${ApiConfig.baseUrl}/api/auth/dashboard/stats');
-    print('🎫 Token: $token');
-
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/api/auth/dashboard/stats'),
       headers: {
@@ -16,21 +12,17 @@ class ApiDashboardService {
       },
     );
 
-    print('📥 Response status code: ${response.statusCode}');
-    print('📄 Response body: ${response.body}');
-
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('✅ Parsed dashboard stats: $data');
       return data;
     } else {
-      print('❌ Failed to load dashboard stats: ${response.body}');
       throw Exception('Failed to load dashboard stats');
     }
   }
 
-  static Future<List<Map<String, dynamic>>> fetchCategorizedMembers(String token) async {
-    print('🔍 Fetching categorized members...');
+  static Future<List<Map<String, dynamic>>> fetchCategorizedMembers(
+    String token,
+  ) async {
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/api/auth/members/categorized'),
       headers: {
@@ -39,20 +31,20 @@ class ApiDashboardService {
       },
     );
 
-    print('📥 Response status code: ${response.statusCode}');
-    print('📄 Response body: ${response.body}');
-
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('✅ Parsed categorized members: $data');
-      return List<Map<String, dynamic>>.from(data['gymOwners']);
+      final owners = data['gymOwners'] as List<dynamic>? ?? const [];
+      return owners
+          .map((entry) => Map<String, dynamic>.from(entry as Map))
+          .toList();
     } else {
-      print('❌ Failed to load categorized members: ${response.body}');
       throw Exception('Failed to load categorized members');
     }
   }
 
-  static Future<List<Map<String, dynamic>>> fetchGymRegistrationsLast7Days(String token) async {
+  static Future<List<Map<String, dynamic>>> fetchGymRegistrationsLast7Days(
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/api/gym/registrations/last7days'),
@@ -67,7 +59,7 @@ class ApiDashboardService {
       } else {
         throw Exception('Failed to load gym registrations');
       }
-    } catch (e) {
+    } catch (_) {
       // Fallback to sample data
       return [
         {'day': 'Mon', 'count': 2},
@@ -81,7 +73,9 @@ class ApiDashboardService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> fetchTrainerAttendanceProgress(String token) async {
+  static Future<List<Map<String, dynamic>>> fetchTrainerAttendanceProgress(
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/api/trainer/attendance-progress'),
@@ -96,7 +90,7 @@ class ApiDashboardService {
       } else {
         throw Exception('Failed to load trainer attendance/progress');
       }
-    } catch (e) {
+    } catch (_) {
       // Fallback to sample data
       return [
         {'day': 'Mon', 'count': 5},
@@ -110,7 +104,9 @@ class ApiDashboardService {
     }
   }
 
-  static Future<List<Map<String, dynamic>>> fetchMemberProgressParticipation(String token) async {
+  static Future<List<Map<String, dynamic>>> fetchMemberProgressParticipation(
+    String token,
+  ) async {
     try {
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/api/member/progress-participation'),
@@ -125,7 +121,7 @@ class ApiDashboardService {
       } else {
         throw Exception('Failed to load member progress/participation');
       }
-    } catch (e) {
+    } catch (_) {
       // Fallback to sample data
       return [
         {'day': 'Mon', 'count': 1},
@@ -138,4 +134,4 @@ class ApiDashboardService {
       ];
     }
   }
-} 
+}

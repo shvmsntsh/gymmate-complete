@@ -4,7 +4,6 @@ import '../services/onboarding_service.dart';
 import '../providers/auth_provider.dart';
 import '../pages/onboarding/onboarding_flow.dart';
 import '../providers/onboarding_provider.dart';
-import 'dart:convert';
 
 class ProgressPage extends StatefulWidget {
   const ProgressPage({Key? key}) : super(key: key);
@@ -33,19 +32,16 @@ class _ProgressPageState extends State<ProgressPage> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
       if (token == null) throw Exception('No authentication token available');
-      
+
       final service = OnboardingService();
       service.setToken(token);
       final data = await service.getUserProgress();
-      
-      print('🔍 Progress Data: ${jsonEncode(data)}');
-      
+
       setState(() {
         _progressData = data;
         _loading = false;
       });
     } catch (e) {
-      print('❌ Error fetching progress: $e');
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -56,12 +52,11 @@ class _ProgressPageState extends State<ProgressPage> {
   void _editOnboarding() {
     final provider = Provider.of<OnboardingProvider>(context, listen: false);
     if (_progressData != null) {
-      print('[ProgressPage] Passing dietPreferences to provider: ${_progressData!['dietPreferences']}');
       provider.loadFromProgress(_progressData!);
     }
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const OnboardingFlow()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const OnboardingFlow()));
   }
 
   @override
@@ -87,8 +82,6 @@ class _ProgressPageState extends State<ProgressPage> {
     if (_progressData == null) {
       return const Center(child: Text('No progress data found.'));
     }
-
-    print('🔄 Building Progress Page with data: ${jsonEncode(_progressData)}');
 
     final profile = (_progressData!['profile'] is Map)
         ? Map<String, dynamic>.from(_progressData!['profile'])
@@ -122,13 +115,25 @@ class _ProgressPageState extends State<ProgressPage> {
         children: [
           _buildSection('Profile', _buildValueWidget(_formatProfile(profile))),
           const SizedBox(height: 16),
-          _buildSection('Fitness Goals', _buildValueWidget(_formatFitnessGoals(fitnessGoals))),
+          _buildSection(
+            'Fitness Goals',
+            _buildValueWidget(_formatFitnessGoals(fitnessGoals)),
+          ),
           const SizedBox(height: 16),
-          _buildSection('Diet Preferences', _buildValueWidget(_formatDietPreferences(dietPreferences))),
+          _buildSection(
+            'Diet Preferences',
+            _buildValueWidget(_formatDietPreferences(dietPreferences)),
+          ),
           const SizedBox(height: 16),
-          _buildSection('Workout Preferences', _buildValueWidget(_formatWorkoutHabits(workoutHabits))),
+          _buildSection(
+            'Workout Preferences',
+            _buildValueWidget(_formatWorkoutHabits(workoutHabits)),
+          ),
           const SizedBox(height: 16),
-          _buildSection('Challenge', _buildValueWidget(_formatChallenge(challenge))),
+          _buildSection(
+            'Challenge',
+            _buildValueWidget(_formatChallenge(challenge)),
+          ),
         ],
       ),
     );
@@ -170,17 +175,26 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   List<String> _formatFitnessGoals(List<String> goals) {
-    return goals.map((goal) => goal.replaceAll('_', ' ').toUpperCase()).toList();
+    return goals
+        .map((goal) => goal.replaceAll('_', ' ').toUpperCase())
+        .toList();
   }
 
   Map<String, dynamic> _formatDietPreferences(Map<String, dynamic> prefs) {
-    print('🥗 Diet Preferences Data: ${jsonEncode(prefs)}');
-    
-    final allergies = (prefs['allergies'] as List?)?.map((e) => e.toString().toUpperCase()).toList() ?? [];
-    final restrictions = (prefs['restrictions'] as List?)?.map((e) => e.toString().toUpperCase()).toList() ?? [];
-    
+    final allergies =
+        (prefs['allergies'] as List?)
+            ?.map((e) => e.toString().toUpperCase())
+            .toList() ??
+        [];
+    final restrictions =
+        (prefs['restrictions'] as List?)
+            ?.map((e) => e.toString().toUpperCase())
+            .toList() ??
+        [];
+
     return {
-      'Diet Type': prefs['type']?.toString().replaceAll('_', ' ').toUpperCase() ?? '-',
+      'Diet Type':
+          prefs['type']?.toString().replaceAll('_', ' ').toUpperCase() ?? '-',
       'Daily Meals': prefs['dailyMeals']?.toString() ?? '-',
       'Water Intake': '${prefs['waterIntake']?.toString() ?? '-'} glasses',
       'Allergies': allergies.isEmpty ? 'None' : allergies.join(', '),
@@ -189,26 +203,39 @@ class _ProgressPageState extends State<ProgressPage> {
   }
 
   Map<String, dynamic> _formatWorkoutHabits(Map<String, dynamic> habits) {
-    print('🏋️ Workout Habits Data: ${jsonEncode(habits)}');
-    
-    final favoriteExercises = (habits['favoriteExercises'] as List?)
-        ?.map((e) => e.toString().replaceAll('_', ' ').toUpperCase())
-        .toList() ?? [];
-    
+    final favoriteExercises =
+        (habits['favoriteExercises'] as List?)
+            ?.map((e) => e.toString().replaceAll('_', ' ').toUpperCase())
+            .toList() ??
+        [];
+
     return {
-      'Preferred Time': habits['preferredTime']?.toString().replaceAll('_', ' ').toUpperCase() ?? '-',
-      'Activity Level': habits['currentActivityLevel']?.toString().replaceAll('_', ' ').toUpperCase() ?? '-',
+      'Preferred Time':
+          habits['preferredTime']
+              ?.toString()
+              .replaceAll('_', ' ')
+              .toUpperCase() ??
+          '-',
+      'Activity Level':
+          habits['currentActivityLevel']
+              ?.toString()
+              .replaceAll('_', ' ')
+              .toUpperCase() ??
+          '-',
       'Workouts Per Week': habits['workoutsPerWeek']?.toString() ?? '-',
-      'Session Duration': '${habits['sessionDuration']?.toString() ?? '-'} minutes',
-      'Favorite Exercises': favoriteExercises.isEmpty ? '-' : favoriteExercises.join(', '),
+      'Session Duration':
+          '${habits['sessionDuration']?.toString() ?? '-'} minutes',
+      'Favorite Exercises': favoriteExercises.isEmpty
+          ? '-'
+          : favoriteExercises.join(', '),
       'Has Injuries': habits['hasInjuries'] == true ? 'Yes' : 'No',
     };
   }
 
   Map<String, dynamic> _formatChallenge(Map<String, dynamic> challenge) {
-    print('🎯 Challenge Data: ${jsonEncode(challenge)}');
-    
-    if (challenge.isEmpty || !challenge['isAccepted'] || challenge['type'] == null) {
+    if (challenge.isEmpty ||
+        !challenge['isAccepted'] ||
+        challenge['type'] == null) {
       return {'Status': 'No active challenge'};
     }
 
@@ -216,8 +243,8 @@ class _ProgressPageState extends State<ProgressPage> {
       'Type': challenge['type'].toString().replaceAll('_', ' ').toUpperCase(),
       'Status': challenge['isCompleted'] == true ? 'COMPLETED' : 'IN PROGRESS',
       'Progress': '${challenge['progress']?.toString() ?? '0'}%',
-      'Start Date': challenge['startDate'] != null 
-          ? DateTime.parse(challenge['startDate']).toString().split('.')[0] 
+      'Start Date': challenge['startDate'] != null
+          ? DateTime.parse(challenge['startDate']).toString().split('.')[0]
           : '-',
     };
   }
@@ -226,7 +253,9 @@ class _ProgressPageState extends State<ProgressPage> {
     if (value == null) {
       return const Text('-', style: TextStyle(color: Colors.grey));
     } else if (value is Map) {
-      if (value.isEmpty) return const Text('-', style: TextStyle(color: Colors.grey));
+      if (value.isEmpty) {
+        return const Text('-', style: TextStyle(color: Colors.grey));
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: value.entries.map<Widget>((entry) {
@@ -261,23 +290,35 @@ class _ProgressPageState extends State<ProgressPage> {
         }).toList(),
       );
     } else if (value is List) {
-      if (value.isEmpty) return const Text('-', style: TextStyle(color: Colors.grey));
+      if (value.isEmpty) {
+        return const Text('-', style: TextStyle(color: Colors.grey));
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: value.map<Widget>((item) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2.0),
-          child: Row(
-            children: [
-              const Text('• ', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
-              Expanded(
-                child: Text(
-                  item.toString(),
-                  style: const TextStyle(color: Colors.white),
+        children: value
+            .map<Widget>(
+              (item) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2.0),
+                child: Row(
+                  children: [
+                    const Text(
+                      '• ',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        item.toString(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        )).toList(),
+            )
+            .toList(),
       );
     } else {
       return Text(
@@ -286,4 +327,4 @@ class _ProgressPageState extends State<ProgressPage> {
       );
     }
   }
-} 
+}

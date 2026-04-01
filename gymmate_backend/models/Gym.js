@@ -2,11 +2,25 @@ const mongoose = require('mongoose');
 
 const gymSchema = new mongoose.Schema({
   gymName: { type: String, required: true },
+  slug: { type: String, unique: true, sparse: true },
   email: { type: String, required: true, unique: true },
   password: String,
   address: String,
   contactNumber: String,
   services: [String],
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  },
+  branding: {
+    logoUrl: { type: String, default: null },
+    primaryColor: { type: String, default: '#4A90E2' },
+    secondaryColor: { type: String, default: '#03DAC6' },
+    logoScale: { type: Number, default: 1 },
+    logoOffsetX: { type: Number, default: 0 },
+    logoOffsetY: { type: Number, default: 0 }
+  },
   role: {
     type: String,
     enum: ['superadmin', 'gym_owner', 'gym_member'],
@@ -45,15 +59,8 @@ const gymSchema = new mongoose.Schema({
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   }
 }, { timestamps: true });
-
-gymSchema.post('save', function(error, doc, next) {
-  if (error) {
-    console.error('❌ Gym schema validation error:', error);
-  }
-  next(error);
-});
 
 module.exports = mongoose.model('Gym', gymSchema);

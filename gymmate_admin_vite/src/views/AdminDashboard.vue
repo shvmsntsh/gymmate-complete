@@ -1,246 +1,739 @@
 <template>
-  <v-app :theme="isDark ? 'dark' : 'light'">
-    <!-- Theme Toggle Button -->
-    <v-btn icon class="ma-2 position-absolute" style="top: 0; right: 0; z-index: 1000;" @click="toggleTheme">
-      <v-icon>{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
-    </v-btn>
+  <AdminShell
+    :is-dark="isDark"
+    :title="pageTitle"
+    :eyebrow="pageEyebrow"
+    :description="pageDescription"
+    @toggle-theme="toggleTheme"
+    @logout="logout"
+  >
+    <div class="overview-metrics">
+      <StatCard
+        v-for="metric in metrics"
+        :key="metric.label"
+        :label="metric.label"
+        :value="metric.value"
+        :icon="metric.icon"
+        :hint="metric.hint"
+      />
+    </div>
 
-    <v-navigation-drawer app permanent>
-      <v-list>
-        <v-list-item-title class="text-h6 text-center my-4">Admin Panel</v-list-item-title>
-        <v-divider></v-divider>
-        <v-list-item link to="/admin">
-          <v-list-item-icon><v-icon>mdi-view-dashboard</v-icon></v-list-item-icon>
-          <v-list-item-content><v-list-item-title>Dashboard</v-list-item-title></v-list-item-content>
-        </v-list-item>
-        <v-list-item link to="/members">
-          <v-list-item-icon><v-icon>mdi-account-group</v-icon></v-list-item-icon>
-          <v-list-item-content><v-list-item-title>Manage Members</v-list-item-title></v-list-item-content>
-        </v-list-item>
-        <v-list-item link to="/add-service">
-          <v-list-item-icon><v-icon>mdi-dumbbell</v-icon></v-list-item-icon>
-          <v-list-item-content><v-list-item-title>Add Service</v-list-item-title></v-list-item-content>
-        </v-list-item>
-        <v-list-item @click="$router.push('/login')">
-          <v-list-item-icon><v-icon>mdi-logout</v-icon></v-list-item-icon>
-          <v-list-item-content><v-list-item-title>Logout</v-list-item-title></v-list-item-content>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
+    <div class="overview-grid" style="margin-top: 20px">
+      <section
+        class="admin-surface admin-panel overview-card overview-card--chart"
+      >
+        <div class="section-header">
+          <div>
+            <div class="table-overline">{{ chartEyebrow }}</div>
+            <h2 class="section-title">{{ chartTitle }}</h2>
+            <p class="section-copy">{{ chartCopy }}</p>
+          </div>
+        </div>
 
-    <v-main>
-      <v-container fluid>
-        <v-row dense class="mb-4">
-          <v-col cols="12" md="4">
-            <v-card elevation="3" class="pa-4">
-              <v-card-title>Total Gyms</v-card-title>
-              <v-card-subtitle class="text-h5 font-weight-bold">{{ gymCount }}</v-card-subtitle>
-            </v-card>
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-card elevation="3" class="pa-4">
-              <v-card-title>Active Members</v-card-title>
-              <v-card-subtitle class="text-h5 font-weight-bold">{{ memberCount }}</v-card-subtitle>
-            </v-card>
-          </v-col>
-          <v-col cols="12" md="4">
-            <v-card elevation="3" class="pa-4">
-              <v-card-title>Services Offered</v-card-title>
-              <v-card-subtitle class="text-h5 font-weight-bold">{{ serviceCount }}</v-card-subtitle>
-            </v-card>
-          </v-col>
-        </v-row>
+        <StateBlock
+          v-if="chartError"
+          :title="chartErrorTitle"
+          :copy="chartError"
+          icon="mdi-chart-bar"
+          tone="error"
+        />
+        <StateBlock
+          v-else-if="chartLoading"
+          :title="chartLoadingTitle"
+          :copy="chartLoadingCopy"
+          icon="mdi-timer-sand"
+        />
+        <canvas v-else ref="usageChartRef"></canvas>
+      </section>
 
-        <v-row>
-          <v-col cols="12">
-            <v-card elevation="3" class="pa-4">
-              <v-card-title>Recent Gym Registrations</v-card-title>
-              <v-data-table
-                :headers="[
-                  { text: 'Gym Name', value: 'name' },
-                  { text: 'Email', value: 'email' },
-                  { text: 'Address', value: 'address' },
-                  { text: 'Services', value: 'services' }
-                ]"
-                :items="recentGyms"
-                class="elevation-1"
-              ></v-data-table>
-            </v-card>
-          </v-col>
-        </v-row>
+      <section
+        class="admin-surface admin-panel overview-card overview-card--partners"
+      >
+        <div class="section-header">
+          <div>
+            <div class="table-overline">{{ sideEyebrow }}</div>
+            <h2 class="section-title">{{ sideTitle }}</h2>
+            <p class="section-copy">{{ sideCopy }}</p>
+          </div>
+        </div>
 
-        <v-row>
-          <v-col cols="12">
-            <v-card elevation="3" class="pa-4">
-              <v-card-title>Usage Overview</v-card-title>
-              <v-card-text>
-                <canvas id="usageChart" style="max-height: 300px;"></canvas>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
+        <StateBlock
+          v-if="sideError"
+          :title="sideErrorTitle"
+          :copy="sideError"
+          icon="mdi-alert-circle-outline"
+          tone="error"
+        />
+        <StateBlock
+          v-else-if="sideLoading"
+          :title="sideLoadingTitle"
+          :copy="sideLoadingCopy"
+          icon="mdi-timer-sand"
+        />
+        <StateBlock
+          v-else-if="sideItems.length === 0"
+          :title="sideEmptyTitle"
+          :copy="sideEmptyCopy"
+          :icon="isOwnerView ? 'mdi-ticket-outline' : 'mdi-domain-off'"
+        />
+        <div v-else class="partner-list">
+          <button
+            v-for="item in sideItems"
+            :key="item.id"
+            type="button"
+            class="partner-item"
+            @click="handleSideItem(item)"
+          >
+            <div>
+              <div class="partner-item__title">{{ item.title }}</div>
+              <div class="partner-item__copy">{{ item.copy }}</div>
+            </div>
+            <div class="partner-item__status">{{ item.status }}</div>
+          </button>
+        </div>
+      </section>
+    </div>
 
-        <v-row>
-          <v-col cols="12">
-            <v-card elevation="3" class="pa-4">
-              <v-card-title>Services Distribution</v-card-title>
-              <v-card-text>
-                <canvas id="serviceChart" style="max-height: 300px;"></canvas>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-main>
-  </v-app>
+    <div class="overview-grid overview-grid--bottom" style="margin-top: 20px">
+      <section class="admin-surface admin-panel overview-card">
+        <div class="section-header">
+          <div>
+            <div class="table-overline">{{ lowerLeftEyebrow }}</div>
+            <h2 class="section-title">{{ lowerLeftTitle }}</h2>
+            <p class="section-copy">{{ lowerLeftCopy }}</p>
+          </div>
+        </div>
+
+        <template v-if="isOwnerView">
+          <div class="reach-panel">
+            <div class="reach-panel__copy">
+              {{ gymName || "Your gym" }} is showing up inside GymMate with a
+              grounded brand system, <strong>{{ memberCount }}</strong> members,
+              and <strong>{{ inviteCount }}</strong> open invitations ready to
+              be shared.
+            </div>
+            <div class="reach-panel__stats">
+              <div class="reach-pill">
+                <span class="reach-pill__label">Primary</span>
+                <span class="reach-pill__value">{{
+                  branding.primaryColor
+                }}</span>
+              </div>
+              <div class="reach-pill">
+                <span class="reach-pill__label">Secondary</span>
+                <span class="reach-pill__value">{{
+                  branding.secondaryColor
+                }}</span>
+              </div>
+              <div class="reach-pill">
+                <span class="reach-pill__label">Services</span>
+                <span class="reach-pill__value">{{ servicesPreview }}</span>
+              </div>
+            </div>
+            <div class="cta-row">
+              <v-btn
+                color="primary"
+                size="large"
+                @click="router.push('/branding')"
+                >Open branding</v-btn
+              >
+              <v-btn
+                size="large"
+                variant="tonal"
+                @click="router.push('/invites')"
+                >Open invites</v-btn
+              >
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div class="reach-panel">
+            <div class="reach-panel__copy">
+              GymMate is holding <strong>{{ gymCount }}</strong> gyms,
+              <strong>{{ ownerCount }}</strong> owners, and
+              <strong>{{ memberCount }}</strong> members inside one operating
+              rhythm.
+            </div>
+            <div class="reach-panel__stats">
+              <div class="reach-pill">
+                <span class="reach-pill__label">Gyms</span>
+                <span class="reach-pill__value">{{ gymCount }}</span>
+              </div>
+              <div class="reach-pill">
+                <span class="reach-pill__label">Owners</span>
+                <span class="reach-pill__value">{{ ownerCount }}</span>
+              </div>
+              <div class="reach-pill">
+                <span class="reach-pill__label">Members</span>
+                <span class="reach-pill__value">{{ memberCount }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </section>
+
+      <section class="admin-surface admin-panel overview-card">
+        <div class="section-header">
+          <div>
+            <div class="table-overline">{{ lowerRightEyebrow }}</div>
+            <h2 class="section-title">{{ lowerRightTitle }}</h2>
+            <p class="section-copy">{{ lowerRightCopy }}</p>
+          </div>
+        </div>
+
+        <template v-if="isOwnerView">
+          <StateBlock
+            v-if="rosterError"
+            title="Could not load your roster"
+            :copy="rosterError"
+            icon="mdi-account-group-outline"
+            tone="error"
+          />
+          <StateBlock
+            v-else-if="rosterLoading"
+            title="Loading your roster"
+            copy="Pulling the latest member and coach names now."
+            icon="mdi-timer-sand"
+          />
+          <StateBlock
+            v-else-if="rosterItems.length === 0"
+            title="No roster yet"
+            copy="As members and coaches join your gym, they will appear here for a quick glance."
+            icon="mdi-account-off-outline"
+          />
+          <div v-else class="partner-list">
+            <div
+              v-for="item in rosterItems"
+              :key="item.id"
+              class="partner-item partner-item--static"
+            >
+              <div>
+                <div class="partner-item__title">{{ item.title }}</div>
+                <div class="partner-item__copy">{{ item.copy }}</div>
+              </div>
+              <div class="partner-item__status">{{ item.status }}</div>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div class="health-list">
+            <div class="health-row">
+              <div class="health-row__head">
+                <span>Gym coverage</span>
+                <strong>{{ gymCount > 0 ? "100%" : "0%" }}</strong>
+              </div>
+              <div class="health-row__bar">
+                <span style="width: 100%"></span>
+              </div>
+            </div>
+            <div class="health-row">
+              <div class="health-row__head">
+                <span>Owner readiness</span>
+                <strong>{{ ownerReadiness }}</strong>
+              </div>
+              <div class="health-row__bar">
+                <span :style="{ width: ownerReadiness }"></span>
+              </div>
+            </div>
+            <div class="health-row">
+              <div class="health-row__head">
+                <span>Member support response</span>
+                <strong>{{ memberSupport }}</strong>
+              </div>
+              <div class="health-row__bar">
+                <span :style="{ width: memberSupport }"></span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </section>
+    </div>
+  </AdminShell>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useTheme } from 'vuetify'
-import Chart from 'chart.js/auto'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+import { useRouter } from "vue-router";
+import AdminShell from "../components/AdminShell.vue";
+import StatCard from "../components/StatCard.vue";
+import StateBlock from "../components/StateBlock.vue";
+import { useAdminTheme } from "../composables/useAdminTheme";
+import { apiFetch, clearAdminSession, getAdminRole } from "../lib/api";
 
-const theme = useTheme()
-const isDark = ref(window.matchMedia('(prefers-color-scheme: dark)').matches)
+const router = useRouter();
+const { isDark, toggleTheme } = useAdminTheme();
+const sessionRole = computed(() => getAdminRole());
+const isOwnerView = computed(() => sessionRole.value === "owner");
 
-const gymCount = ref(0)
-const memberCount = ref(0)
-const serviceCount = ref(0)
+const gymCount = ref(0);
+const ownerCount = ref(0);
+const trainerCount = ref(0);
+const memberCount = ref(0);
+const inviteCount = ref(0);
+const recentGyms = ref([]);
+const recentInvites = ref([]);
+const rosterItems = ref([]);
+const chartSeries = ref([]);
+const gymName = ref("");
+const branding = ref({ primaryColor: "#B59F5B", secondaryColor: "#F8D84B" });
+const services = ref([]);
 
-const recentGyms = ref([])
+const loadingStats = ref(false);
+const loadingSide = ref(false);
+const loadingRoster = ref(false);
+const statsError = ref("");
+const sideError = ref("");
+const rosterError = ref("");
+const usageChartRef = ref(null);
+let usageChart = null;
+let ChartLibrary = null;
 
-const serviceDistribution = ref([])
+const ownerReadiness = computed(() => {
+  if (!gymCount.value) return "0%";
+  return `${Math.min(100, Math.round((ownerCount.value / gymCount.value) * 100))}%`;
+});
 
-const fetchDashboardStats = async () => {
+const memberSupport = computed(() => {
+  if (!memberCount.value) return "0%";
+  const normalized = Math.min(
+    96,
+    Math.max(42, Math.round(72 + memberCount.value / 50)),
+  );
+  return `${normalized}%`;
+});
+
+const servicesPreview = computed(() => {
+  if (!services.value.length) return "Starter";
+  return services.value.slice(0, 2).join(" / ");
+});
+
+const pageTitle = computed(() =>
+  isOwnerView.value ? "Owner Overview" : "Network Overview",
+);
+const pageEyebrow = computed(() =>
+  isOwnerView.value ? "Gym Workspace" : "GymMate Admin",
+);
+const pageDescription = computed(() =>
+  isOwnerView.value
+    ? "Keep your gym brand, member roster, invites, and weekly momentum in one calm workspace."
+    : "A cleaner read on growth, active gyms, and where the network needs attention next.",
+);
+
+const chartEyebrow = computed(() =>
+  isOwnerView.value ? "Weekly Signups" : "Network Growth",
+);
+const chartTitle = computed(() =>
+  isOwnerView.value
+    ? "Member and coach movement across the last seven days."
+    : "Membership expansion across the last seven days.",
+);
+const chartCopy = computed(() =>
+  isOwnerView.value
+    ? "Use this to spot your strongest days, quieter windows, and where the next invite push could help."
+    : "Use this to spot where the network is picking up momentum and when signups start to cool off.",
+);
+const chartErrorTitle = computed(() =>
+  isOwnerView.value ? "Signup view unavailable" : "Growth overview unavailable",
+);
+const chartLoadingTitle = computed(() =>
+  isOwnerView.value ? "Loading signup view" : "Loading growth overview",
+);
+const chartLoadingCopy = computed(() =>
+  isOwnerView.value
+    ? "Pulling your weekly signup rhythm now."
+    : "Pulling the latest network totals now.",
+);
+const chartError = computed(() => statsError.value);
+const chartLoading = computed(() => loadingStats.value);
+
+const sideEyebrow = computed(() =>
+  isOwnerView.value ? "Invites" : "Recent Gyms",
+);
+const sideTitle = computed(() =>
+  isOwnerView.value ? "Open invitations ready to share" : "Newest partner gyms",
+);
+const sideCopy = computed(() =>
+  isOwnerView.value
+    ? "Your most recent invites are collected here so you can share them quickly with members and coaches."
+    : "A live list of the most recent gyms added to GymMate.",
+);
+const sideLoadingTitle = computed(() =>
+  isOwnerView.value ? "Loading invites" : "Loading recent gyms",
+);
+const sideLoadingCopy = computed(() =>
+  isOwnerView.value
+    ? "Pulling your latest invite codes now."
+    : "Pulling the latest registered gyms now.",
+);
+const sideErrorTitle = computed(() =>
+  isOwnerView.value ? "Could not load invites" : "Could not load recent gyms",
+);
+const sideEmptyTitle = computed(() =>
+  isOwnerView.value ? "No open invites yet" : "No gyms registered yet",
+);
+const sideEmptyCopy = computed(() =>
+  isOwnerView.value
+    ? "Generate your first member or coach invite and it will appear here for quick sharing."
+    : "Once the first gyms come in, they will appear here with their contact details and services.",
+);
+const sideItems = computed(() =>
+  isOwnerView.value ? recentInvites.value : recentGyms.value,
+);
+const sideLoading = computed(() => loadingSide.value);
+
+const lowerLeftEyebrow = computed(() =>
+  isOwnerView.value ? "Brand Direction" : "Reach",
+);
+const lowerLeftTitle = computed(() =>
+  isOwnerView.value ? "How your gym is showing up" : "Global reach",
+);
+const lowerLeftCopy = computed(() =>
+  isOwnerView.value
+    ? "Keep your gym name, color direction, and service mix clear before members ever step inside."
+    : "A simple snapshot of how many gyms, owners, and members are moving through the product today.",
+);
+
+const lowerRightEyebrow = computed(() =>
+  isOwnerView.value ? "Member Floor" : "Network Health",
+);
+const lowerRightTitle = computed(() =>
+  isOwnerView.value ? "Who is on the floor right now" : "Operational health",
+);
+const lowerRightCopy = computed(() =>
+  isOwnerView.value
+    ? "A quick look at the current people tied to your gym so follow-ups stay easy."
+    : "A quick signal on coverage, owner readiness, and member support momentum.",
+);
+
+function chartTextColor() {
+  return isDark.value ? "#f8f1e6" : "#201a15";
+}
+
+function chartGridColor() {
+  return isDark.value ? "rgba(248, 241, 230, 0.08)" : "rgba(32, 26, 21, 0.08)";
+}
+
+function destroyChart() {
+  usageChart?.destroy();
+  usageChart = null;
+}
+
+async function ensureChartLibrary() {
+  if (ChartLibrary) {
+    return ChartLibrary;
+  }
+
+  const module = await import("chart.js/auto");
+  ChartLibrary = module.default;
+  return ChartLibrary;
+}
+
+async function renderUsageChart() {
+  if (!usageChartRef.value || chartError.value || chartLoading.value) {
+    return;
+  }
+
+  const Chart = await ensureChartLibrary();
+  destroyChart();
+
+  const labels = chartSeries.value.map((entry) => entry.label);
+  const values = chartSeries.value.map((entry) => entry.value);
+
+  usageChart = new Chart(usageChartRef.value, {
+    type: isOwnerView.value ? "line" : "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: isOwnerView.value ? "Weekly signups" : "GymMate overview",
+          data: values,
+          backgroundColor: isOwnerView.value
+            ? "rgba(224, 186, 115, 0.18)"
+            : [
+                "rgba(181, 139, 77, 0.72)",
+                "rgba(224, 186, 115, 0.86)",
+                "rgba(238, 204, 117, 0.82)",
+                "rgba(125, 200, 191, 0.78)",
+              ],
+          borderColor: isOwnerView.value
+            ? "rgba(224, 186, 115, 0.96)"
+            : "rgba(181, 139, 77, 0.92)",
+          borderRadius: isOwnerView.value ? 18 : 14,
+          borderWidth: 2,
+          fill: isOwnerView.value,
+          tension: 0.38,
+        },
+      ],
+    },
+    options: {
+      maintainAspectRatio: false,
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: { color: chartTextColor() },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: chartGridColor() },
+          ticks: { color: chartTextColor() },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: chartGridColor() },
+          ticks: { color: chartTextColor() },
+        },
+      },
+    },
+  });
+}
+
+async function fetchAdminDashboard() {
+  loadingStats.value = true;
+  loadingSide.value = true;
+  statsError.value = "";
+  sideError.value = "";
+
   try {
-    const res = await fetch('http://localhost:5050/api/dashboard/stats')
-    const data = await res.json()
-    gymCount.value = data.totalGyms
-    memberCount.value = data.totalMembers
-    serviceCount.value = data.totalServices
+    const [statsRes, gymsRes] = await Promise.all([
+      apiFetch("/api/auth/dashboard/stats"),
+      apiFetch("/api/gym/list"),
+    ]);
+
+    const statsData = await statsRes.json();
+    const gymsData = await gymsRes.json();
+
+    if (!statsRes.ok) {
+      throw new Error(
+        statsData.message || "We could not load the overview right now.",
+      );
+    }
+    if (!gymsRes.ok) {
+      throw new Error("The gym list could not be loaded right now.");
+    }
+
+    gymCount.value = statsData.gyms || 0;
+    ownerCount.value = statsData.owners || 0;
+    memberCount.value = statsData.members || 0;
+    inviteCount.value = statsData.invites || 0;
+    chartSeries.value = [
+      { label: "Gyms", value: gymCount.value },
+      { label: "Owners", value: ownerCount.value },
+      { label: "Members", value: memberCount.value },
+      { label: "Invites", value: inviteCount.value },
+    ];
+    recentGyms.value = (Array.isArray(gymsData) ? gymsData : []).map((gym) => ({
+      id: gym.id || gym._id,
+      title: gym.name,
+      copy: gym.address || gym.email,
+      status: Array.isArray(gym.services)
+        ? gym.services.join(", ")
+        : gym.services || "General fitness",
+      route: `/gyms/${gym.id || gym._id}`,
+    }));
   } catch (err) {
-    console.error('Failed to fetch dashboard stats:', err)
+    const message = err?.message || "We could not load the overview right now.";
+    statsError.value = message;
+    sideError.value = message;
+  } finally {
+    loadingStats.value = false;
+    loadingSide.value = false;
   }
 }
 
-const fetchRecentGyms = async () => {
+async function fetchOwnerDashboard() {
+  loadingStats.value = true;
+  loadingSide.value = true;
+  loadingRoster.value = true;
+  statsError.value = "";
+  sideError.value = "";
+  rosterError.value = "";
+
   try {
-    const res = await fetch('http://localhost:5050/api/gym/list')
-    const data = await res.json()
-    recentGyms.value = data.map(gym => ({
-      name: gym.name,
-      email: gym.email,
-      address: gym.address,
-      services: Array.isArray(gym.services) ? gym.services.join(', ') : gym.services
-    }))
+    const [gymRes, statsRes, invitesRes, membersRes] = await Promise.all([
+      apiFetch("/api/gym/self"),
+      apiFetch("/api/user/gym-dashboard-stats"),
+      apiFetch("/api/invite/list"),
+      apiFetch("/api/gym/members"),
+    ]);
+
+    const gymData = await gymRes.json();
+    const statsData = await statsRes.json();
+    const invitesData = await invitesRes.json();
+    const membersData = await membersRes.json();
+
+    if (!gymRes.ok) {
+      throw new Error(
+        gymData.message || "We could not load your gym right now.",
+      );
+    }
+    if (!statsRes.ok) {
+      throw new Error(
+        statsData.message || "We could not load the gym overview right now.",
+      );
+    }
+    if (!invitesRes.ok) {
+      throw new Error(
+        invitesData.message || "We could not load invites right now.",
+      );
+    }
+    if (!membersRes.ok) {
+      throw new Error(
+        membersData.message || "We could not load your roster right now.",
+      );
+    }
+
+    const gym = gymData.gym || gymData.member || {};
+    gymName.value = gym.gymName || gym.name || "Your Gym";
+    branding.value = {
+      primaryColor: gym.branding?.primaryColor || "#B59F5B",
+      secondaryColor: gym.branding?.secondaryColor || "#F8D84B",
+    };
+    services.value = Array.isArray(gym.services) ? gym.services : [];
+
+    memberCount.value = statsData.membersCount || 0;
+    ownerCount.value = 1;
+    trainerCount.value = statsData.trainersCount || 0;
+    gymCount.value = 1;
+    inviteCount.value = (invitesData.codes || []).filter(
+      (code) => !code.used,
+    ).length;
+    chartSeries.value = (statsData.registrations || []).map((entry) => ({
+      label: entry.day,
+      value: Number(entry.count || 0),
+    }));
+
+    recentInvites.value = (invitesData.codes || []).slice(0, 5).map((code) => ({
+      id: code._id || code.code,
+      title: code.code,
+      copy: code.gymName || gymName.value,
+      status: `${String(code.role || "")
+        .replace("gym_", "")
+        .replace("_", " ")} ${code.used ? "claimed" : "open"}`,
+      route: "/invites",
+    }));
+
+    rosterItems.value = (membersData.members || [])
+      .slice(0, 5)
+      .map((member) => ({
+        id: member._id,
+        title: member.name || member.email,
+        copy: member.email || "No email on file",
+        status: String(member.role || "")
+          .replace("gym_", "")
+          .replace("_", " "),
+      }));
   } catch (err) {
-    console.error('Failed to fetch gym list:', err)
+    const message =
+      err?.message || "We could not load the gym overview right now.";
+    statsError.value = message;
+    sideError.value = message;
+    rosterError.value = message;
+  } finally {
+    loadingStats.value = false;
+    loadingSide.value = false;
+    loadingRoster.value = false;
   }
 }
 
-const fetchServiceDistribution = async () => {
-  try {
-    const res = await fetch('http://localhost:5050/api/services/distribution')
-    const data = await res.json()
-    serviceDistribution.value = data
-  } catch (err) {
-    console.error('Failed to fetch service distribution:', err)
+function handleSideItem(item) {
+  if (item.route) {
+    router.push(item.route);
   }
 }
 
-const toggleTheme = () => {
-  isDark.value = !isDark.value
-  theme.global.name.value = isDark.value ? 'dark' : 'light'
+function logout() {
+  clearAdminSession();
+  router.push("/login");
 }
+
+const metrics = computed(() => {
+  if (isOwnerView.value) {
+    return [
+      {
+        label: "Active Members",
+        value: memberCount.value,
+        icon: "mdi-account-group-outline",
+        hint: "People currently training in your gym.",
+      },
+      {
+        label: "Coaches",
+        value: trainerCount.value,
+        icon: "mdi-badge-account-outline",
+        hint: "Your current leadership and coaching coverage.",
+      },
+      {
+        label: "Weekly Signups",
+        value: chartSeries.value.reduce((sum, entry) => sum + entry.value, 0),
+        icon: "mdi-trending-up",
+        hint: "New joiners across the last seven days.",
+      },
+      {
+        label: "Open Invites",
+        value: inviteCount.value,
+        icon: "mdi-ticket-confirmation-outline",
+        hint: "Invites ready to share with members and trainers.",
+      },
+    ];
+  }
+
+  return [
+    {
+      label: "Total Gyms",
+      value: gymCount.value,
+      icon: "mdi-domain",
+      hint: "Registered locations across the network.",
+    },
+    {
+      label: "Active Owners",
+      value: ownerCount.value,
+      icon: "mdi-account-tie-outline",
+      hint: "Owners currently operating inside GymMate.",
+    },
+    {
+      label: "Total Members",
+      value: memberCount.value,
+      icon: "mdi-account-group",
+      hint: "Members being served across every gym.",
+    },
+    {
+      label: "Open Invites",
+      value: inviteCount.value,
+      icon: "mdi-ticket-confirmation-outline",
+      hint: "Member invites still waiting to be claimed.",
+    },
+  ];
+});
+
+watch(isDark, async () => {
+  await nextTick();
+  renderUsageChart();
+});
+
+watch(isOwnerView, async () => {
+  await nextTick();
+  renderUsageChart();
+});
 
 onMounted(async () => {
-  await fetchDashboardStats()
-  theme.global.name.value = isDark.value ? 'dark' : 'light'
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-    isDark.value = e.matches
-    theme.global.name.value = isDark.value ? 'dark' : 'light'
-  })
-
-  const ctx = document.getElementById('usageChart')
-  if (ctx) {
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Gyms', 'Members', 'Services'],
-        datasets: [{
-          label: 'Overview',
-          data: [gymCount.value, memberCount.value, serviceCount.value],
-          backgroundColor: [
-            'rgba(66, 133, 244, 0.6)',
-            'rgba(52, 168, 83, 0.6)',
-            'rgba(251, 188, 5, 0.6)'
-          ],
-          borderColor: [
-            'rgba(66, 133, 244, 1)',
-            'rgba(52, 168, 83, 1)',
-            'rgba(251, 188, 5, 1)'
-          ],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            labels: {
-              color: isDark.value ? '#fff' : '#000'
-            }
-          }
-        },
-        scales: {
-          y: {
-            ticks: {
-              color: isDark.value ? '#fff' : '#000'
-            }
-          },
-          x: {
-            ticks: {
-              color: isDark.value ? '#fff' : '#000'
-            }
-          }
-        }
-      }
-    })
+  if (isOwnerView.value) {
+    await fetchOwnerDashboard();
+  } else {
+    await fetchAdminDashboard();
   }
-  await fetchRecentGyms()
+  await nextTick();
+  await ensureChartLibrary();
+  await renderUsageChart();
+});
 
-  const serviceCtx = document.getElementById('serviceChart');
-  if (serviceCtx) {
-    await fetchServiceDistribution()
-    new Chart(serviceCtx, {
-      type: 'pie',
-      data: {
-        labels: serviceDistribution.value.map(item => item.name),
-        datasets: [{
-          label: 'Service Distribution',
-          data: serviceDistribution.value.map(item => item.count),
-          backgroundColor: [
-            'rgba(255, 99, 132, 0.6)',
-            'rgba(54, 162, 235, 0.6)',
-            'rgba(255, 206, 86, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-            'rgba(153, 102, 255, 0.6)'
-          ],
-          borderColor: '#fff',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            labels: {
-              color: isDark.value ? '#fff' : '#000'
-            }
-          }
-        }
-      }
-    });
-  }
-})
+onBeforeUnmount(() => {
+  destroyChart();
+});
 </script>

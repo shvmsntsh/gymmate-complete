@@ -1,38 +1,101 @@
 import 'package:flutter/material.dart';
 
+import 'package:gymmate_mobile/widgets/editorial_mobile.dart';
+import 'package:gymmate_mobile/widgets/editorial_onboarding.dart';
+
 class WelcomeStep extends StatelessWidget {
-  const WelcomeStep({super.key});
+  final VoidCallback onNext;
+
+  const WelcomeStep({super.key, required this.onNext});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.fitness_center,
-                size: 120,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'Your Personal Fitness Companion',
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Track your progress, join challenges, and achieve your fitness goals with GymMate.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white70,
+    return OnboardingStepLayout(
+      eyebrow: 'Welcome',
+      title: 'Let’s shape a gym flow that feels clear from the start.',
+      subtitle:
+          'These quick choices help GymMate tune your dashboard, your plan, and the pace of your weekly training.',
+      headerTrailing: const SizedBox(
+        width: 88,
+        height: 88,
+        child: Center(child: Icon(Icons.auto_awesome_rounded, size: 34)),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          EditorialBlurImage(
+            height: 210,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const Positioned(
+                  left: 18,
+                  top: 18,
+                  child: EditorialKicker('Your setup'),
                 ),
-                textAlign: TextAlign.center,
+                Positioned(
+                  left: 20,
+                  right: 24,
+                  bottom: 22,
+                  child: Text(
+                    'Personal details, goals, nutrition, and your first challenge all come together here.',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(
+                width: 150,
+                child: OnboardingValueTile(
+                  label: 'Profile',
+                  value: 'Body stats',
+                  icon: Icons.straighten_rounded,
+                ),
+              ),
+              SizedBox(
+                width: 150,
+                child: OnboardingValueTile(
+                  label: 'Goals',
+                  value: 'Training focus',
+                  icon: Icons.track_changes_rounded,
+                ),
+              ),
+              SizedBox(
+                width: 150,
+                child: OnboardingValueTile(
+                  label: 'Habits',
+                  value: 'Weekly rhythm',
+                  icon: Icons.bolt_rounded,
+                ),
               ),
             ],
           ),
-        ),
+        ],
+      ),
+      footer: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          EditorialPrimaryButton(
+            label: 'Start Setup',
+            onPressed: onNext,
+            trailing: const Icon(
+              Icons.arrow_forward_rounded,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'About a minute from here to your first dashboard.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
       ),
     );
   }

@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import 'package:gymmate_mobile/pages/onboarding/onboarding_flow.dart';
 import '../services/onboarding_service.dart';
 import '../providers/onboarding_provider.dart';
+import '../widgets/editorial_mobile.dart';
 
 void logPlanPage(String msg) {
   assert(() {
@@ -24,7 +25,13 @@ class AnimatedFillIcon extends StatelessWidget {
   final double percent;
   final Color color;
   final double size;
-  const AnimatedFillIcon({required this.icon, required this.percent, required this.color, this.size = 40, Key? key}) : super(key: key);
+  const AnimatedFillIcon({
+    required this.icon,
+    required this.percent,
+    required this.color,
+    this.size = 40,
+    Key? key,
+  }) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
@@ -51,14 +58,24 @@ class AnimatedFillIcon extends StatelessWidget {
 }
 
 Widget macroSummary(String label, dynamic val, dynamic goal, Color color) {
-  final double dVal = (val is int) ? val.toDouble() : (val is double ? val : double.tryParse(val.toString()) ?? 0.0);
-  final double dGoal = (goal is int) ? goal.toDouble() : (goal is double ? goal : double.tryParse(goal.toString()) ?? 0.0);
+  final double dVal = (val is int)
+      ? val.toDouble()
+      : (val is double ? val : double.tryParse(val.toString()) ?? 0.0);
+  final double dGoal = (goal is int)
+      ? goal.toDouble()
+      : (goal is double ? goal : double.tryParse(goal.toString()) ?? 0.0);
   final percent = dGoal > 0 ? (dVal / dGoal * 100).clamp(0, 100) : 0;
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text('$label • ${percent.toStringAsFixed(0)}%', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-      Text('${dVal.toStringAsFixed(0)} / ${dGoal.toStringAsFixed(0)} g', style: const TextStyle(fontSize: 13)),
+      Text(
+        '$label • ${percent.toStringAsFixed(0)}%',
+        style: TextStyle(color: color, fontWeight: FontWeight.bold),
+      ),
+      Text(
+        '${dVal.toStringAsFixed(0)} / ${dGoal.toStringAsFixed(0)} g',
+        style: const TextStyle(fontSize: 13),
+      ),
     ],
   );
 }
@@ -67,7 +84,9 @@ Widget macroSummary(String label, dynamic val, dynamic goal, Color color) {
 Map<String, dynamic> parseExercise(dynamic ex) {
   if (ex is Map<String, dynamic>) return ex;
   if (ex is String) {
-    final match = RegExp(r'^(.*)\s*\((\d+)x(\d+)(?:,\s*rest\s*(\d+)s?)?\)?$').firstMatch(ex);
+    final match = RegExp(
+      r'^(.*)\s*\((\d+)x(\d+)(?:,\s*rest\s*(\d+)s?)?\)?$',
+    ).firstMatch(ex);
     if (match != null) {
       return {
         'name': match.group(1)?.trim() ?? ex,
@@ -128,7 +147,8 @@ class _PlanPageState extends State<PlanPage> {
   bool _planError = false;
 
   // Add state for meal logging
-  Map<String, Map<int, double>> _mealItemQuantities = {}; // key: mealType, value: {itemIdx: quantity}
+  Map<String, Map<int, double>> _mealItemQuantities =
+      {}; // key: mealType, value: {itemIdx: quantity}
   double _totalCaloriesLogged = 0;
 
   // Add state for daily macro goals (for demo, use static or calculate from plan if available)
@@ -158,7 +178,9 @@ class _PlanPageState extends State<PlanPage> {
   // Helper to get calories for a meal item (assume per serving if not specified)
   double _getCaloriesForMealItem(Map meal, double quantity) {
     // If meal['cal'] is total for all items, divide equally
-    if (meal['cal'] != null && meal['items'] is List && meal['items'].length > 0) {
+    if (meal['cal'] != null &&
+        meal['items'] is List &&
+        meal['items'].length > 0) {
       return (meal['cal'] / meal['items'].length) * quantity;
     }
     return 0;
@@ -167,9 +189,12 @@ class _PlanPageState extends State<PlanPage> {
   // Helper to get macros for a meal item (divide meal macros equally)
   Map<String, double> _getMacrosForMealItem(Map meal, double quantity) {
     final macros = {'p': 0.0, 'f': 0.0, 'c': 0.0};
-    if (meal['p'] != null && meal['items'] is List && meal['items'].length > 0) macros['p'] = (meal['p'] / meal['items'].length) * quantity;
-    if (meal['f'] != null && meal['items'] is List && meal['items'].length > 0) macros['f'] = (meal['f'] / meal['items'].length) * quantity;
-    if (meal['c'] != null && meal['items'] is List && meal['items'].length > 0) macros['c'] = (meal['c'] / meal['items'].length) * quantity;
+    if (meal['p'] != null && meal['items'] is List && meal['items'].length > 0)
+      macros['p'] = (meal['p'] / meal['items'].length) * quantity;
+    if (meal['f'] != null && meal['items'] is List && meal['items'].length > 0)
+      macros['f'] = (meal['f'] / meal['items'].length) * quantity;
+    if (meal['c'] != null && meal['items'] is List && meal['items'].length > 0)
+      macros['c'] = (meal['c'] / meal['items'].length) * quantity;
     return macros;
   }
 
@@ -177,11 +202,15 @@ class _PlanPageState extends State<PlanPage> {
   Map<String, double> _calculateDailyTotals(Map<String, dynamic> plan) {
     double cal = 0, p = 0, f = 0, c = 0;
     final mealsRaw = plan['meals'];
-    logPlanPage('[PlanPage] _calculateDailyTotals: plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\$mealsRaw');
+    logPlanPage(
+      '[PlanPage] _calculateDailyTotals: plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\$mealsRaw',
+    );
     final meals = mealsRaw is Map ? mealsRaw : <String, dynamic>{};
     for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
       final mealRaw = meals[mealType];
-      logPlanPage('[PlanPage] _calculateDailyTotals: meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\$mealRaw');
+      logPlanPage(
+        '[PlanPage] _calculateDailyTotals: meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\$mealRaw',
+      );
       final meal = mealRaw is Map ? mealRaw : <String, dynamic>{};
       final items = meal['items'] is List ? meal['items'] : [];
       for (int i = 0; i < items.length; i++) {
@@ -203,10 +232,14 @@ class _PlanPageState extends State<PlanPage> {
   void _recalculateTotalCaloriesLogged(Map<String, dynamic> plan) {
     double total = 0;
     // Defensive: ensure meals is a Map
-    final meals = plan['meals'] is Map ? plan['meals'] as Map : <String, dynamic>{};
+    final meals = plan['meals'] is Map
+        ? plan['meals'] as Map
+        : <String, dynamic>{};
     for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
       // Defensive: ensure meal is a Map
-      final meal = meals[mealType] is Map ? meals[mealType] as Map : <String, dynamic>{};
+      final meal = meals[mealType] is Map
+          ? meals[mealType] as Map
+          : <String, dynamic>{};
       final items = meal['items'] is List ? meal['items'] : [];
       for (int i = 0; i < items.length; i++) {
         final key = '${plan['day']}-meal-$mealType-$i';
@@ -234,13 +267,24 @@ class _PlanPageState extends State<PlanPage> {
   // Calculate workout summary
   Map<String, dynamic> _calculateWorkoutSummary(Map<String, dynamic> plan) {
     final workoutRaw = plan['workout'];
-    logPlanPage('[PlanPage] _calculateWorkoutSummary: plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\$workoutRaw');
+    logPlanPage(
+      '[PlanPage] _calculateWorkoutSummary: plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\$workoutRaw',
+    );
     final workout = workoutRaw is Map ? workoutRaw : <String, dynamic>{};
     final exercisesRaw = workout['exercises'];
-    logPlanPage('[PlanPage] _calculateWorkoutSummary: workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw');
-    final exercises = (exercisesRaw is List) ? exercisesRaw.map(parseExercise).toList() : <Map<String, dynamic>>[];
-    final exerciseKeys = List.generate(exercises.length, (i) => '${plan['day']}-workout-ex-$i');
-    int completed = exerciseKeys.where((k) => _exerciseCompleted[k] == true).length;
+    logPlanPage(
+      '[PlanPage] _calculateWorkoutSummary: workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw',
+    );
+    final exercises = (exercisesRaw is List)
+        ? exercisesRaw.map(parseExercise).toList()
+        : <Map<String, dynamic>>[];
+    final exerciseKeys = List.generate(
+      exercises.length,
+      (i) => '${plan['day']}-workout-ex-$i',
+    );
+    int completed = exerciseKeys
+        .where((k) => _exerciseCompleted[k] == true)
+        .length;
     int total = exerciseKeys.isNotEmpty ? exerciseKeys.length : 1;
     final duration = _getWorkoutDuration(workout);
     final calories = _getWorkoutCalories(workout);
@@ -270,7 +314,8 @@ class _PlanPageState extends State<PlanPage> {
       await Future.delayed(const Duration(seconds: 2));
       if (_planLoading) {
         setState(() {
-          _loadingMessageIndex = (_loadingMessageIndex + 1) % _loadingMessages.length;
+          _loadingMessageIndex =
+              (_loadingMessageIndex + 1) % _loadingMessages.length;
         });
       }
       return _planLoading;
@@ -304,8 +349,10 @@ class _PlanPageState extends State<PlanPage> {
     if (userData != null) {
       setState(() {
         _userData = userData;
-        final weight = (userData['profile']?['weight'] as num?)?.toDouble() ?? 0.0;
-        final height = (userData['profile']?['height'] as num?)?.toDouble() ?? 0.0;
+        final weight =
+            (userData['profile']?['weight'] as num?)?.toDouble() ?? 0.0;
+        final height =
+            (userData['profile']?['height'] as num?)?.toDouble() ?? 0.0;
         if (weight > 0 && height > 0) {
           _bmi = weight / ((height / 100) * (height / 100));
         } else {
@@ -334,7 +381,10 @@ class _PlanPageState extends State<PlanPage> {
   Future<void> _saveCheckboxState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('plan_checkbox_state', json.encode(_checkboxState));
-    await prefs.setString('plan_exercise_completed', json.encode(_exerciseCompleted));
+    await prefs.setString(
+      'plan_exercise_completed',
+      json.encode(_exerciseCompleted),
+    );
   }
 
   void _loadPlanIfNeeded() async {
@@ -390,7 +440,11 @@ class _PlanPageState extends State<PlanPage> {
       final token = authProvider.token;
       final userData = authProvider.userData;
       if (token == null || userData == null) {
-        if (mounted) setState(() { _planError = true; _planLoading = false; });
+        if (mounted)
+          setState(() {
+            _planError = true;
+            _planLoading = false;
+          });
         return;
       }
       // Calculate BMI category
@@ -403,24 +457,33 @@ class _PlanPageState extends State<PlanPage> {
         bmi = weight / ((height / 100) * (height / 100));
         if (bmi < 18.5) {
           bmiCategory = 'underweight';
-        } else if (bmi < 25) bmiCategory = 'normal';
-        else if (bmi < 30) bmiCategory = 'overweight';
-        else bmiCategory = 'obese';
+        } else if (bmi < 25)
+          bmiCategory = 'normal';
+        else if (bmi < 30)
+          bmiCategory = 'overweight';
+        else
+          bmiCategory = 'obese';
       }
       // Prepare query params
-      final goal = (userData['fitnessGoals'] as List?)?.isNotEmpty == true ? userData['fitnessGoals'][0] : 'general_fitness';
+      final goal = (userData['fitnessGoals'] as List?)?.isNotEmpty == true
+          ? userData['fitnessGoals'][0]
+          : 'general_fitness';
       final dietType = userData['dietPreferences']?['type'] ?? 'flexible';
       final workoutSplit = userData['workoutHabits']?['split'] ?? 'Full Body';
       final day = DateFormat('EEEE').format(DateTime.now());
       // Fetch meal plan
       final mealRes = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/plans/meal?goal=$goal&dietType=$dietType&bmiCategory=$bmiCategory&day=$day'),
-        headers: { 'Authorization': 'Bearer $token' },
+        Uri.parse(
+          '${ApiConfig.baseUrl}/api/plans/meal?goal=$goal&dietType=$dietType&bmiCategory=$bmiCategory&day=$day',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
       );
       // Fetch workout plan
       final workoutRes = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/plans/workout?goal=$goal&workoutSplit=$workoutSplit&bmiCategory=$bmiCategory&day=$day'),
-        headers: { 'Authorization': 'Bearer $token' },
+        Uri.parse(
+          '${ApiConfig.baseUrl}/api/plans/workout?goal=$goal&workoutSplit=$workoutSplit&bmiCategory=$bmiCategory&day=$day',
+        ),
+        headers: {'Authorization': 'Bearer $token'},
       );
       if (mealRes.statusCode == 200 && workoutRes.statusCode == 200) {
         final mealPlan = json.decode(mealRes.body);
@@ -435,10 +498,17 @@ class _PlanPageState extends State<PlanPage> {
           _planError = false;
         });
       } else {
-        setState(() { _planError = true; _planLoading = false; });
+        setState(() {
+          _planError = true;
+          _planLoading = false;
+        });
       }
     } catch (e) {
-      if (mounted) setState(() { _planError = true; _planLoading = false; });
+      if (mounted)
+        setState(() {
+          _planError = true;
+          _planLoading = false;
+        });
     }
   }
 
@@ -455,6 +525,7 @@ class _PlanPageState extends State<PlanPage> {
     });
     _saveWaterAndSteps();
   }
+
   void _decrementSteps([int by = 1000]) {
     setState(() {
       _steps = math.max(_steps - by, 0);
@@ -463,7 +534,12 @@ class _PlanPageState extends State<PlanPage> {
   }
 
   // Helper for animated progress icon
-  Widget animatedIcon({required IconData icon, required double percent, required Color color, double size = 32}) {
+  Widget animatedIcon({
+    required IconData icon,
+    required double percent,
+    required Color color,
+    double size = 32,
+  }) {
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -492,7 +568,8 @@ class _PlanPageState extends State<PlanPage> {
     final gender = profile['gender'] ?? 'male';
     final weight = (profile['weight'] as num?)?.toDouble() ?? 70;
     final height = (profile['height'] as num?)?.toDouble() ?? 170;
-    final activity = userData['workoutHabits']?['currentActivityLevel'] ?? 'sedentary';
+    final activity =
+        userData['workoutHabits']?['currentActivityLevel'] ?? 'sedentary';
     final goals = userData['fitnessGoals'] ?? [];
     // Mifflin-St Jeor BMR
     double bmr = gender == 'female'
@@ -502,9 +579,12 @@ class _PlanPageState extends State<PlanPage> {
     double activityMult = 1.2;
     if (activity == 'lightly_active') {
       activityMult = 1.375;
-    } else if (activity == 'moderately_active') activityMult = 1.55;
-    else if (activity == 'very_active') activityMult = 1.725;
-    else if (activity == 'extra_active') activityMult = 1.9;
+    } else if (activity == 'moderately_active')
+      activityMult = 1.55;
+    else if (activity == 'very_active')
+      activityMult = 1.725;
+    else if (activity == 'extra_active')
+      activityMult = 1.9;
     double calGoal = bmr * activityMult;
     // Goal adjustment
     if (goals.contains('fat_loss')) calGoal -= 300;
@@ -533,294 +613,588 @@ class _PlanPageState extends State<PlanPage> {
   @override
   Widget build(BuildContext context) {
     final plan = _plan;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     // Defensive: check plan structure
     final hasMeals = plan != null && plan['meals'] is Map;
     final hasWorkout = plan != null && plan['workout'] is Map;
-    final planReady = !_planLoading && !_planError && plan != null && hasMeals && hasWorkout;
+    final planReady =
+        !_planLoading && !_planError && plan != null && hasMeals && hasWorkout;
     double mealPercent = 0;
     double mealCalories = 0;
     double mealGoal = _calorieGoal ?? 1800;
     double mealLeft = 0;
     double workoutPercent = 0;
-    double workoutDuration = 0;
-    double workoutCalories = 0;
-    double mealScale = 1.0;
     if (planReady) {
-      double planTotal = 0;
-      final meals = plan['meals'] as Map;
-      for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
-        final meal = meals[mealType] is Map ? meals[mealType] as Map : <String, dynamic>{};
-        planTotal += (meal['cal'] as num?)?.toDouble() ?? 0.0;
-      }
-      if (planTotal > 0 && planTotal < mealGoal) {
-        mealScale = mealGoal / planTotal;
-      }
       final dailyTotals = _calculateDailyTotals(plan);
       mealCalories = dailyTotals['cal'] ?? 0;
-      mealPercent = mealGoal > 0 ? (mealCalories / mealGoal).clamp(0.0, 1.0) : 0.0;
+      mealPercent = mealGoal > 0
+          ? (mealCalories / mealGoal).clamp(0.0, 1.0)
+          : 0.0;
       mealLeft = (mealGoal - mealCalories).clamp(0, mealGoal);
       final workoutSummary = _calculateWorkoutSummary(plan);
       workoutPercent = workoutSummary['progress'] ?? 0.0;
-      workoutDuration = workoutSummary['duration'] ?? 0.0;
-      workoutCalories = workoutSummary['calories'] ?? 0.0;
     }
     double waterPercent = _waterGoal > 0 ? _waterGlasses / _waterGoal : 0.0;
     double stepsPercent = _stepGoal > 0 ? _steps / _stepGoal : 0.0;
     int waterMl = _waterGlasses * 250;
-    final cardRadius = BorderRadius.circular(18);
+    final meals = hasMeals
+        ? Map<String, dynamic>.from(plan['meals'] as Map)
+        : <String, dynamic>{};
+    final workout = hasWorkout
+        ? Map<String, dynamic>.from(plan['workout'] as Map)
+        : <String, dynamic>{};
+    final workoutItems = _workoutPreviewItems(workout);
+    final goalTitle = (plan?['goal'] ?? _progressData?['fitnessGoals'] ?? [])
+        .toString();
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Plan'),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: colorScheme.surface,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Plan',
-            onPressed: _planLoading ? null : _refreshPlan,
-          ),
-        ],
-      ),
-      body: _planError
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('Failed to load plan. Please try refreshing.'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                    ),
-                    onPressed: _refreshPlan,
-                    child: const Text('Refresh Plan'),
-                  ),
-                ],
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: SingleChildScrollView(
+        child: EditorialBackdrop(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              EditorialSectionHeading(
+                eyebrow: 'Training Plan',
+                title:
+                    'Fuel your next session with a plan that matches your rhythm.',
+                subtitle:
+                    'Meals, workouts, hydration, and daily movement stay together so you always know what to tackle next.',
+                trailing: IconButton(
+                  onPressed: _planLoading ? null : _refreshPlan,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
               ),
-            )
-          : !_planLoading && (!hasMeals || !hasWorkout)
-              ? Center(
+              const SizedBox(height: 18),
+              if (_planError)
+                _buildEditorialState(
+                  title: 'Your plan needs a fresh pull.',
+                  message:
+                      'We hit a snag while loading your meals and workouts. Try one more refresh and we will bring everything back into place.',
+                  buttonLabel: 'Refresh Plan',
+                  onPressed: _refreshPlan,
+                )
+              else if (_planLoading)
+                _buildEditorialLoadingState()
+              else if (!hasMeals || !hasWorkout)
+                _buildEditorialState(
+                  title: 'Your plan is still getting set up.',
+                  message:
+                      'Finish your profile details and we will shape a clear training and meal rhythm around your goals.',
+                  buttonLabel: 'Generate Plan',
+                  onPressed: _refreshPlan,
+                )
+              else ...[
+                EditorialSurface(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('No plan generated yet.'),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                          elevation: 0,
-                          shadowColor: Colors.transparent,
+                      const EditorialKicker('Today at a Glance'),
+                      const SizedBox(height: 18),
+                      Center(
+                        child: EditorialProgressRing(
+                          progress: mealPercent,
+                          value: mealCalories.toStringAsFixed(0),
+                          label: 'Calories',
+                          sublabel: '${mealLeft.toStringAsFixed(0)} kcal left',
                         ),
-                        onPressed: _refreshPlan,
-                        child: const Text('Generate Plan'),
                       ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: EditorialMetricTile(
+                              label: 'Workout',
+                              value: '${(workoutPercent * 100).round()}%',
+                              icon: Icons.fitness_center_rounded,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: EditorialMetricTile(
+                              label: 'Water',
+                              value: '$_waterGlasses/$_waterGoal',
+                              icon: Icons.water_drop_rounded,
+                              iconColor: colorScheme.tertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: EditorialMetricTile(
+                              label: 'Steps',
+                              value: _steps.toString(),
+                              icon: Icons.directions_walk_rounded,
+                              iconColor: colorScheme.secondary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: EditorialMetricTile(
+                              label: 'Focus',
+                              value: _headlineFromGoal(goalTitle),
+                              icon: Icons.flag_rounded,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if ((plan['usedFallback'] == true ||
+                          plan['fallback'] == true)) ...[
+                        const SizedBox(height: 16),
+                        _fallbackBanner(colorScheme),
+                      ],
                     ],
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                ),
+                const SizedBox(height: 18),
+                _buildProgressCard(),
+                const SizedBox(height: 18),
+                EditorialSurface(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildProgressCard(),
-                      if ((plan?['usedFallback'] == true || plan?['fallback'] == true) && planReady)
-                        _fallbackBanner(colorScheme),
-                      // 1. Overall Calorie Card
-                      GestureDetector(
-                        onTap: planReady ? _goToMealDetail : null,
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
-                          ),
-                          color: Theme.of(context).colorScheme.surface,
-                          elevation: 6,
-                          margin: const EdgeInsets.only(bottom: 18),
-                          child: Padding(
-                            padding: const EdgeInsets.all(22.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Calories', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                                      const SizedBox(height: 2),
-                                      Text('${mealCalories.toStringAsFixed(0)} / ${mealGoal.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
-                                      Text('${mealLeft.toStringAsFixed(0)} left', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
-                                      const SizedBox(height: 12),
-                                      LinearProgressIndicator(
-                                        value: mealPercent,
-                                        minHeight: 8,
-                                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 18),
-                                AnimatedFillIcon(icon: Icons.lunch_dining, percent: mealPercent, color: Theme.of(context).colorScheme.primary, size: 44),
-                              ],
-                            ),
-                          ),
-                        ),
+                      const EditorialSectionHeading(
+                        eyebrow: 'Coming Up Next',
+                        title: 'Your next workout is ready when you are.',
                       ),
-                      // 2. Workout Logging Card
-                      GestureDetector(
-                        onTap: planReady ? _goToWorkoutDetail : null,
-                        child: Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
-                          ),
-                          color: Theme.of(context).colorScheme.surface,
-                          elevation: 6,
-                          margin: const EdgeInsets.only(bottom: 18),
-                          child: Padding(
-                            padding: const EdgeInsets.all(22.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Workout', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                                      const SizedBox(height: 2),
-                                      Text('${workoutDuration.toStringAsFixed(0)} min • ${workoutCalories.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
-                                      Text('Tap to log workout', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
-                                      const SizedBox(height: 12),
-                                      LinearProgressIndicator(
-                                        value: workoutPercent,
-                                        minHeight: 8,
-                                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 18),
-                                AnimatedFillIcon(icon: Icons.fitness_center, percent: workoutPercent, color: Theme.of(context).colorScheme.primary, size: 44),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // 3. Water Intake Logging Card
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
-                        ),
-                        color: Theme.of(context).colorScheme.surface,
-                        elevation: 6,
-                        margin: const EdgeInsets.only(bottom: 18),
-                        child: Padding(
-                          padding: const EdgeInsets.all(22.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Water Intake', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                                    const SizedBox(height: 2),
-                                    Text('$_waterGlasses / $_waterGoal glasses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
-                                    Text('$waterMl ml / ${(_waterGoal * 250 / 1000).toStringAsFixed(1)} L', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.secondary)),
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.remove_circle_outline),
-                                          onPressed: _decrementWater,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.add_circle_outline),
-                                          onPressed: _incrementWater,
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ],
-                                    ),
-                                    LinearProgressIndicator(
-                                      value: waterPercent,
-                                      minHeight: 8,
-                                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                      color: Theme.of(context).colorScheme.tertiary,
-                                    ),
+                      const SizedBox(height: 18),
+                      EditorialBlurImage(
+                        height: 220,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    colorScheme.surfaceContainerHighest,
+                                    colorScheme.surface,
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 18),
-                              AnimatedFillIcon(icon: Icons.water_drop, percent: waterPercent, color: Theme.of(context).colorScheme.tertiary, size: 44),
-                            ],
-                          ),
+                            ),
+                            Positioned(
+                              right: 16,
+                              bottom: 0,
+                              child: Image.asset(
+                                'assets/images/member_illustration.png',
+                                height: 170,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            Positioned(
+                              left: 18,
+                              right: 120,
+                              top: 18,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.surface.withValues(
+                                        alpha: 0.9,
+                                      ),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      'NEXT SESSION',
+                                      style: theme.textTheme.labelMedium
+                                          ?.copyWith(
+                                            color: colorScheme.primary,
+                                          ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _workoutHeadline(workout, workoutItems),
+                                    style: theme.textTheme.headlineSmall,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    _workoutSummaryText(workout, workoutItems),
+                                    style: theme.textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      // 4. Step Count Card
-                      Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
-                        ),
-                        color: Theme.of(context).colorScheme.surface,
-                        elevation: 6,
-                        margin: const EdgeInsets.only(bottom: 18),
-                        child: Padding(
-                          padding: const EdgeInsets.all(22.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Steps', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                                    const SizedBox(height: 2),
-                                    Text('$_steps / $_stepGoal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          icon: const Icon(Icons.remove_circle_outline),
-                                          onPressed: () => _decrementSteps(1000),
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.add_circle_outline),
-                                          onPressed: () => _incrementSteps(1000),
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ],
-                                    ),
-                                    LinearProgressIndicator(
-                                      value: stepsPercent,
-                                      minHeight: 8,
-                                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                      color: Theme.of(context).colorScheme.secondary,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 18),
-                              AnimatedFillIcon(icon: Icons.directions_walk, percent: stepsPercent, color: Theme.of(context).colorScheme.secondary, size: 44),
-                            ],
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _buildInfoChip(
+                            icon: Icons.timer_outlined,
+                            label: '${workout['duration'] ?? 0} min',
                           ),
+                          _buildInfoChip(
+                            icon: Icons.local_fire_department_outlined,
+                            label: '${workout['calories'] ?? 0} kcal',
+                          ),
+                          _buildInfoChip(
+                            icon: Icons.playlist_add_check_circle_outlined,
+                            label: '${workoutItems.length} moves',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: EditorialPrimaryButton(
+                          label: 'Open Workout',
+                          trailing: const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Color(0xFF390C00),
+                          ),
+                          onPressed: _goToWorkoutDetail,
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 18),
+                EditorialSurface(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const EditorialSectionHeading(
+                        eyebrow: 'Meals Today',
+                        title: 'A steady food rhythm for the day ahead.',
+                      ),
+                      const SizedBox(height: 18),
+                      ...['breakfast', 'lunch', 'snack', 'dinner'].map(
+                        (mealType) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildMealPreviewCard(
+                            mealType,
+                            meals[mealType],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: EditorialPrimaryButton(
+                          label: 'Open Full Meal Plan',
+                          trailing: const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Color(0xFF390C00),
+                          ),
+                          onPressed: _goToMealDetail,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildTrackableCard(
+                        title: 'Hydration',
+                        value: '$_waterGlasses / $_waterGoal',
+                        subtitle: '$waterMl ml today',
+                        icon: Icons.water_drop_rounded,
+                        progress: waterPercent,
+                        onMinus: _decrementWater,
+                        onPlus: _incrementWater,
+                        progressColor: colorScheme.tertiary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildTrackableCard(
+                        title: 'Steps',
+                        value: '$_steps',
+                        subtitle: 'Goal $_stepGoal',
+                        icon: Icons.directions_walk_rounded,
+                        progress: stepsPercent,
+                        onMinus: () => _decrementSteps(1000),
+                        onPlus: () => _incrementSteps(1000),
+                        progressColor: colorScheme.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditorialLoadingState() {
+    return EditorialSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const EditorialKicker('Loading'),
+          const SizedBox(height: 18),
+          Text(
+            _loadingMessages[_loadingMessageIndex % _loadingMessages.length],
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'We are pulling your meals, workout focus, and daily targets into one clear view.',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 24),
+          const Center(child: CircularProgressIndicator()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEditorialState({
+    required String title,
+    required String message,
+    required String buttonLabel,
+    required VoidCallback onPressed,
+  }) {
+    return EditorialSurface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const EditorialKicker('Plan Status'),
+          const SizedBox(height: 18),
+          Text(title, style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          Text(message, style: Theme.of(context).textTheme.bodyLarge),
+          const SizedBox(height: 22),
+          SizedBox(
+            width: double.infinity,
+            child: EditorialPrimaryButton(
+              label: buttonLabel,
+              trailing: const Icon(
+                Icons.arrow_forward_rounded,
+                color: Color(0xFF390C00),
+              ),
+              onPressed: onPressed,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _workoutPreviewItems(
+    Map<String, dynamic> workout,
+  ) {
+    final exercisesRaw = workout['exercises'];
+    if (exercisesRaw is List) {
+      return exercisesRaw.map(parseExercise).toList();
+    }
+    if (exercisesRaw is Map) {
+      final previewItems = <Map<String, dynamic>>[];
+      for (final entry in exercisesRaw.entries) {
+        final group = entry.value;
+        if (group is Map && group['items'] is List) {
+          previewItems.addAll(
+            List<Map<String, dynamic>>.from(group['items']).map(parseExercise),
+          );
+        }
+      }
+      return previewItems;
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  String _headlineFromGoal(String rawGoal) {
+    if (rawGoal.toLowerCase().contains('gain')) return 'Build';
+    if (rawGoal.toLowerCase().contains('lose')) return 'Lean';
+    if (rawGoal.toLowerCase().contains('strength')) return 'Power';
+    return 'Focus';
+  }
+
+  String _workoutHeadline(
+    Map<String, dynamic> workout,
+    List<Map<String, dynamic>> items,
+  ) {
+    final target = workout['target']?.toString();
+    if (target != null && target.trim().isNotEmpty) {
+      return target;
+    }
+    if (items.isNotEmpty) {
+      return items.first['name']?.toString() ?? 'Your next gym session';
+    }
+    return 'Your next gym session';
+  }
+
+  String _workoutSummaryText(
+    Map<String, dynamic> workout,
+    List<Map<String, dynamic>> items,
+  ) {
+    if (items.isEmpty) {
+      return 'A focused session is being lined up for you now. Open the workout to see the full structure.';
+    }
+    final names = items
+        .take(3)
+        .map((item) => item['name']?.toString() ?? 'Move')
+        .join(', ');
+    return '$names${items.length > 3 ? ' and more' : ''} keep today anchored in the right effort.';
+  }
+
+  Widget _buildInfoChip({required IconData icon, required String label}) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(label, style: theme.textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealPreviewCard(String mealType, dynamic mealRaw) {
+    final theme = Theme.of(context);
+    final meal = mealRaw is Map
+        ? Map<String, dynamic>.from(mealRaw)
+        : <String, dynamic>{};
+    final items = meal['items'] is List
+        ? List<dynamic>.from(meal['items'])
+        : <dynamic>[];
+    final calories = ((meal['cal'] as num?) ?? 0).toDouble();
+    final preview = items.isEmpty
+        ? 'Details will appear here once your meal is ready.'
+        : items.take(2).join(' • ');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              color: theme.colorScheme.surfaceContainerHighest,
+            ),
+            child: Icon(_mealIcon(mealType), color: theme.colorScheme.primary),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_abc(mealType), style: theme.textTheme.titleMedium),
+                const SizedBox(height: 6),
+                Text(
+                  '${calories.toStringAsFixed(0)} kcal • ${items.length} items',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(preview, style: theme.textTheme.bodyMedium),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _mealIcon(String mealType) {
+    switch (mealType) {
+      case 'breakfast':
+        return Icons.free_breakfast_rounded;
+      case 'lunch':
+        return Icons.lunch_dining_rounded;
+      case 'snack':
+        return Icons.cookie_outlined;
+      case 'dinner':
+        return Icons.dinner_dining_rounded;
+      default:
+        return Icons.restaurant_rounded;
+    }
+  }
+
+  Widget _buildTrackableCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required double progress,
+    required VoidCallback onMinus,
+    required VoidCallback onPlus,
+    required Color progressColor,
+  }) {
+    final theme = Theme.of(context);
+
+    return EditorialSurface(
+      padding: const EdgeInsets.all(18),
+      radius: 28,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: progressColor),
+          const SizedBox(height: 14),
+          Text(title, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 6),
+          Text(value, style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 6),
+          Text(subtitle, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 16),
+          LinearProgressIndicator(
+            value: progress.clamp(0.0, 1.0),
+            minHeight: 7,
+            borderRadius: BorderRadius.circular(999),
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onMinus,
+                  child: const Icon(Icons.remove_rounded),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onPlus,
+                  child: const Icon(Icons.add_rounded),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -855,11 +1229,15 @@ class _PlanPageState extends State<PlanPage> {
     if (plan != null) {
       double planTotal = 0;
       final mealsRaw = plan['meals'];
-      logPlanPage('[PlanPage] plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\$mealsRaw');
+      logPlanPage(
+        '[PlanPage] plan["meals"] type: \\${mealsRaw.runtimeType}, value: \\$mealsRaw',
+      );
       final meals = mealsRaw is Map ? mealsRaw : <String, dynamic>{};
       for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
         final mealRaw = meals[mealType];
-        logPlanPage('[PlanPage] meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\$mealRaw');
+        logPlanPage(
+          '[PlanPage] meals[\\"$mealType\\"] type: \\${mealRaw.runtimeType}, value: \\$mealRaw',
+        );
         final meal = mealRaw is Map ? mealRaw : <String, dynamic>{};
         planTotal += (meal['cal'] as num?)?.toDouble() ?? 0.0;
       }
@@ -873,7 +1251,9 @@ class _PlanPageState extends State<PlanPage> {
         builder: (context) => MealDetailPage(
           plan: _plan!,
           checkboxState: Map<String, bool>.from(_checkboxState),
-          mealItemQuantities: Map<String, Map<int, double>>.from(_mealItemQuantities),
+          mealItemQuantities: Map<String, Map<int, double>>.from(
+            _mealItemQuantities,
+          ),
           calorieGoal: _calorieGoal,
           mealScale: mealScale,
         ),
@@ -881,8 +1261,12 @@ class _PlanPageState extends State<PlanPage> {
     );
     if (result is Map) {
       setState(() {
-        _checkboxState = Map<String, bool>.from(result['checkboxState'] ?? _checkboxState);
-        _mealItemQuantities = Map<String, Map<int, double>>.from(result['mealItemQuantities'] ?? _mealItemQuantities);
+        _checkboxState = Map<String, bool>.from(
+          result['checkboxState'] ?? _checkboxState,
+        );
+        _mealItemQuantities = Map<String, Map<int, double>>.from(
+          result['mealItemQuantities'] ?? _mealItemQuantities,
+        );
       });
       _recalculateTotalCaloriesLogged(_plan!);
     }
@@ -897,12 +1281,23 @@ class _PlanPageState extends State<PlanPage> {
     }
     final plan = _plan;
     final workoutRaw = plan?['workout'];
-    logPlanPage('[PlanPage] plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\$workoutRaw');
-    final workout = workoutRaw is Map ? workoutRaw as Map<String, dynamic> : <String, dynamic>{};
+    logPlanPage(
+      '[PlanPage] plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\$workoutRaw',
+    );
+    final workout = workoutRaw is Map
+        ? workoutRaw as Map<String, dynamic>
+        : <String, dynamic>{};
     final exercisesRaw = workout['exercises'];
-    logPlanPage('[PlanPage] workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw');
-    final exercises = (exercisesRaw is List) ? exercisesRaw.map(parseExercise).toList() : <Map<String, dynamic>>[];
-    final exerciseKeys = List.generate(exercises.length, (i) => '${plan?['day']}-workout-ex-$i');
+    logPlanPage(
+      '[PlanPage] workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw',
+    );
+    final exercises = (exercisesRaw is List)
+        ? exercisesRaw.map(parseExercise).toList()
+        : <Map<String, dynamic>>[];
+    final exerciseKeys = List.generate(
+      exercises.length,
+      (i) => '${plan?['day']}-workout-ex-$i',
+    );
     final exerciseChecked = <String, bool>{};
     for (var k in exerciseKeys) {
       exerciseChecked[k] = _exerciseCompleted[k] ?? false;
@@ -910,10 +1305,8 @@ class _PlanPageState extends State<PlanPage> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WorkoutDetailPage(
-          plan: plan!,
-          exerciseChecked: exerciseChecked,
-        ),
+        builder: (context) =>
+            WorkoutDetailPage(plan: plan!, exerciseChecked: exerciseChecked),
       ),
     );
     if (result is Map && result.containsKey('exerciseChecked')) {
@@ -940,7 +1333,10 @@ class _PlanPageState extends State<PlanPage> {
           Expanded(
             child: Text(
               'No exact plan found for your onboarding. Showing the closest match.',
-              style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -950,13 +1346,16 @@ class _PlanPageState extends State<PlanPage> {
 
   void _editOnboarding() async {
     final provider = Provider.of<AuthProvider>(context, listen: false);
-    final onboardingProvider = Provider.of<OnboardingProvider>(context, listen: false);
+    final onboardingProvider = Provider.of<OnboardingProvider>(
+      context,
+      listen: false,
+    );
     if (_progressData != null) {
       onboardingProvider.loadFromProgress(_progressData!);
     }
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const OnboardingFlow()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const OnboardingFlow()));
     await provider.refreshUser();
     await _fetchProgressData();
     await _loadPlanFromBackend(force: true); // <-- Always force plan refresh
@@ -966,44 +1365,43 @@ class _PlanPageState extends State<PlanPage> {
   // Helper to capitalize first letter (Abc format)
   String _abc(String? value) {
     if (value == null || value.isEmpty) return '-';
-    return value[0].toUpperCase() + value.substring(1).toLowerCase().replaceAll('_', ' ');
+    return value[0].toUpperCase() +
+        value.substring(1).toLowerCase().replaceAll('_', ' ');
   }
 
   Widget _buildProgressCard() {
     if (_progressLoading) {
-      return const Card(
-        margin: EdgeInsets.only(bottom: 18),
+      return const EditorialSurface(
         child: Padding(
-          padding: EdgeInsets.all(22.0),
+          padding: EdgeInsets.all(12),
           child: Center(child: CircularProgressIndicator()),
         ),
       );
     }
     if (_progressError != null) {
-      return Card(
-        margin: const EdgeInsets.only(bottom: 18),
-        child: Padding(
-          padding: const EdgeInsets.all(22.0),
-          child: Column(
-            children: [
-              Text('Error loading profile: $_progressError'),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
+      return EditorialSurface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const EditorialSectionHeading(
+              eyebrow: 'Profile Snapshot',
+              title: 'Your stored details need another pull.',
+            ),
+            const SizedBox(height: 10),
+            Text('Error loading profile: $_progressError'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: EditorialPrimaryButton(
+                label: 'Retry',
+                trailing: const Icon(
+                  Icons.refresh_rounded,
+                  color: Color(0xFF390C00),
                 ),
                 onPressed: _fetchProgressData,
-                child: const Text('Retry'),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
@@ -1018,95 +1416,68 @@ class _PlanPageState extends State<PlanPage> {
     final dietPreferences = (data['dietPreferences'] is Map)
         ? Map<String, dynamic>.from(data['dietPreferences'])
         : <String, dynamic>{};
-    final iconColor = Theme.of(context).colorScheme.primary;
-    final textStyle = Theme.of(context).textTheme.bodyMedium;
+    final theme = Theme.of(context);
+    final iconColor = theme.colorScheme.primary;
+    final textStyle = theme.textTheme.bodyMedium;
     final boldStyle = textStyle?.copyWith(fontWeight: FontWeight.bold);
-    final valueStyle = textStyle?.copyWith(fontSize: 16, fontWeight: FontWeight.w500);
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
-      ),
-      color: Theme.of(context).colorScheme.surface,
+    return EditorialSurface(
       child: Padding(
-        padding: const EdgeInsets.all(18.0),
+        padding: const EdgeInsets.all(2),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.account_circle, color: iconColor, size: 28),
-                    const SizedBox(width: 8),
-                    Text('Your Profile', style: Theme.of(context).textTheme.titleMedium),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  tooltip: 'Edit Onboarding',
-                  onPressed: _editOnboarding,
-                ),
-              ],
+            EditorialSectionHeading(
+              eyebrow: 'Profile Snapshot',
+              title: 'The details shaping your current plan.',
+              subtitle:
+                  'These settings keep your meals, movement, and pacing grounded in your real routine.',
+              trailing: IconButton(
+                icon: const Icon(Icons.edit_rounded),
+                tooltip: 'Edit onboarding',
+                onPressed: _editOnboarding,
+              ),
             ),
-            const SizedBox(height: 8),
-            const Divider(height: 24),
-            // Profile fields in a grid for even spacing
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.cake, color: iconColor, size: 18),
-                      const SizedBox(width: 4),
-                      Text('Age:', style: boldStyle),
-                      const SizedBox(width: 4),
-                      Text('${profile['age'] ?? '-'}', style: valueStyle),
-                    ],
+                  child: EditorialMetricTile(
+                    label: 'Age',
+                    value: '${profile['age'] ?? '-'}',
+                    icon: Icons.cake_outlined,
                   ),
                 ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.monitor_weight, color: iconColor, size: 18),
-                      const SizedBox(width: 4),
-                      Text('Weight:', style: boldStyle),
-                      const SizedBox(width: 4),
-                      Text('${profile['weight'] ?? '-'} kg', style: valueStyle),
-                    ],
+                  child: EditorialMetricTile(
+                    label: 'Weight',
+                    value: '${profile['weight'] ?? '-'} kg',
+                    icon: Icons.monitor_weight_outlined,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.male, color: iconColor, size: 18),
-                      const SizedBox(width: 4),
-                      Text('Gender:', style: boldStyle),
-                      const SizedBox(width: 4),
-                      Text(_abc(profile['gender']?.toString()), style: valueStyle),
-                    ],
+                  child: EditorialMetricTile(
+                    label: 'Gender',
+                    value: _abc(profile['gender']?.toString()),
+                    icon: Icons.person_outline_rounded,
                   ),
                 ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.height, color: iconColor, size: 18),
-                      const SizedBox(width: 4),
-                      Text('Height:', style: boldStyle),
-                      const SizedBox(width: 4),
-                      Text('${profile['height'] ?? '-'} cm', style: valueStyle),
-                    ],
+                  child: EditorialMetricTile(
+                    label: 'Height',
+                    value: '${profile['height'] ?? '-'} cm',
+                    icon: Icons.height_rounded,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 18),
             Row(
               children: [
                 Icon(Icons.flag, color: iconColor, size: 20),
@@ -1114,10 +1485,14 @@ class _PlanPageState extends State<PlanPage> {
                 Text('Fitness Goals:', style: boldStyle),
               ],
             ),
-            ...fitnessGoals.map((g) => Padding(
-              padding: const EdgeInsets.only(left: 28, top: 2),
-              child: Row(children: [Icon(Icons.check_circle, color: iconColor, size: 16), const SizedBox(width: 4), Text(_abc(g), style: valueStyle)]),
-            )),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: fitnessGoals.isEmpty
+                  ? [_buildProfileChip('Balanced training')]
+                  : fitnessGoals.map(_buildProfileChip).toList(),
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -1126,22 +1501,43 @@ class _PlanPageState extends State<PlanPage> {
                 Text('Diet Preferences:', style: boldStyle),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 28, top: 2),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Diet Type: ${_abc(dietPreferences['type']?.toString())}', style: valueStyle),
-                  Text('Daily Meals: ${dietPreferences['dailyMeals'] ?? '-'}', style: valueStyle),
-                  Text('Water Intake: ${dietPreferences['waterIntake'] ?? '-'} glasses', style: valueStyle),
-                  Text('Allergies: ${((dietPreferences['allergies'] is List && (dietPreferences['allergies'] as List).isNotEmpty) ? (dietPreferences['allergies'] as List).map((e) => _abc(e.toString())).join(', ') : 'None')}', style: valueStyle),
-                  Text('Restrictions: ${((dietPreferences['restrictions'] is List && (dietPreferences['restrictions'] as List).isNotEmpty) ? (dietPreferences['restrictions'] as List).map((e) => _abc(e.toString())).join(', ') : 'None')}', style: valueStyle),
-                ],
-              ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildProfileChip(
+                  'Diet: ${_abc(dietPreferences['type']?.toString())}',
+                ),
+                _buildProfileChip(
+                  'Meals: ${dietPreferences['dailyMeals'] ?? '-'} daily',
+                ),
+                _buildProfileChip(
+                  'Water: ${dietPreferences['waterIntake'] ?? '-'} glasses',
+                ),
+                _buildProfileChip(
+                  'Allergies: ${((dietPreferences['allergies'] is List && (dietPreferences['allergies'] as List).isNotEmpty) ? (dietPreferences['allergies'] as List).map((e) => _abc(e.toString())).join(', ') : 'None')}',
+                ),
+                _buildProfileChip(
+                  'Restrictions: ${((dietPreferences['restrictions'] is List && (dietPreferences['restrictions'] as List).isNotEmpty) ? (dietPreferences['restrictions'] as List).map((e) => _abc(e.toString())).join(', ') : 'None')}',
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProfileChip(String label) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(label, style: theme.textTheme.bodySmall),
     );
   }
 
@@ -1157,13 +1553,11 @@ class _PlanPageState extends State<PlanPage> {
       final service = OnboardingService();
       service.setToken(token);
       final data = await service.getUserProgress();
-      debugPrint('🔍 [PlanPage] Progress Data: \\${jsonEncode(data)}');
       setState(() {
         _progressData = data;
         _progressLoading = false;
       });
     } catch (e) {
-      debugPrint('❌ [PlanPage] Error fetching progress: \\${e.toString()}');
       setState(() {
         _progressError = e.toString();
         _progressLoading = false;
@@ -1194,7 +1588,14 @@ class MealDetailPage extends StatefulWidget {
   final Map<String, Map<int, double>> mealItemQuantities;
   final double? calorieGoal;
   final double? mealScale;
-  const MealDetailPage({Key? key, required this.plan, required this.checkboxState, required this.mealItemQuantities, this.calorieGoal, this.mealScale}) : super(key: key);
+  const MealDetailPage({
+    Key? key,
+    required this.plan,
+    required this.checkboxState,
+    required this.mealItemQuantities,
+    this.calorieGoal,
+    this.mealScale,
+  }) : super(key: key);
   @override
   State<MealDetailPage> createState() => _MealDetailPageState();
 }
@@ -1208,27 +1609,43 @@ class _MealDetailPageState extends State<MealDetailPage> {
   void initState() {
     super.initState();
     _checkboxState = Map<String, bool>.from(widget.checkboxState);
-    _mealItemQuantities = Map<String, Map<int, double>>.from(widget.mealItemQuantities);
+    _mealItemQuantities = Map<String, Map<int, double>>.from(
+      widget.mealItemQuantities,
+    );
   }
 
   double _getCaloriesForMealItem(Map meal, double quantity) {
-    if (meal['cal'] != null && meal['items'] is List && meal['items'].length > 0) {
+    if (meal['cal'] != null &&
+        meal['items'] is List &&
+        meal['items'].length > 0) {
       return ((meal['cal'] / meal['items'].length) * quantity) * _mealScale;
     }
     return 0;
   }
+
   Map<String, double> _getMacrosForMealItem(Map meal, double quantity) {
     final macros = {'p': 0.0, 'f': 0.0, 'c': 0.0};
-    if (meal['p'] != null && meal['items'] is List && meal['items'].length > 0) macros['p'] = ((meal['p'] / meal['items'].length) * quantity) * _mealScale;
-    if (meal['f'] != null && meal['items'] is List && meal['items'].length > 0) macros['f'] = ((meal['f'] / meal['items'].length) * quantity) * _mealScale;
-    if (meal['c'] != null && meal['items'] is List && meal['items'].length > 0) macros['c'] = ((meal['c'] / meal['items'].length) * quantity) * _mealScale;
+    if (meal['p'] != null && meal['items'] is List && meal['items'].length > 0)
+      macros['p'] =
+          ((meal['p'] / meal['items'].length) * quantity) * _mealScale;
+    if (meal['f'] != null && meal['items'] is List && meal['items'].length > 0)
+      macros['f'] =
+          ((meal['f'] / meal['items'].length) * quantity) * _mealScale;
+    if (meal['c'] != null && meal['items'] is List && meal['items'].length > 0)
+      macros['c'] =
+          ((meal['c'] / meal['items'].length) * quantity) * _mealScale;
     return macros;
   }
+
   Map<String, double> _calculateDailyTotals() {
     double cal = 0, p = 0, f = 0, c = 0;
-    final meals = widget.plan['meals'] is Map ? widget.plan['meals'] as Map : <String, dynamic>{};
+    final meals = widget.plan['meals'] is Map
+        ? widget.plan['meals'] as Map
+        : <String, dynamic>{};
     for (final mealType in ['breakfast', 'lunch', 'snack', 'dinner']) {
-      final meal = meals[mealType] is Map ? meals[mealType] as Map : <String, dynamic>{};
+      final meal = meals[mealType] is Map
+          ? meals[mealType] as Map
+          : <String, dynamic>{};
       final items = meal['items'] is List ? meal['items'] : [];
       for (int i = 0; i < items.length; i++) {
         final key = '${widget.plan['day']}-meal-$mealType-$i';
@@ -1248,7 +1665,9 @@ class _MealDetailPageState extends State<MealDetailPage> {
   @override
   Widget build(BuildContext context) {
     final dailyTotals = _calculateDailyTotals();
-    final meals = widget.plan['meals'] is Map ? widget.plan['meals'] as Map : <String, dynamic>{};
+    final meals = widget.plan['meals'] is Map
+        ? widget.plan['meals'] as Map
+        : <String, dynamic>{};
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
@@ -1273,7 +1692,10 @@ class _MealDetailPageState extends State<MealDetailPage> {
           Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 1.2,
+              ),
             ),
             color: Theme.of(context).colorScheme.surface,
             child: Padding(
@@ -1281,14 +1703,36 @@ class _MealDetailPageState extends State<MealDetailPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Total: ${dailyTotals['cal']!.toStringAsFixed(0)} / ${_calorieGoal.toStringAsFixed(0)} kcal', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                  Text(
+                    'Total: ${dailyTotals['cal']!.toStringAsFixed(0)} / ${_calorieGoal.toStringAsFixed(0)} kcal',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                   Wrap(
                     spacing: 16,
                     runSpacing: 8,
                     children: [
-                      macroSummary('P', dailyTotals['p'] ?? 0.0, 120 * _mealScale, Theme.of(context).colorScheme.tertiary),
-                      macroSummary('F', dailyTotals['f'] ?? 0.0, 60 * _mealScale, Theme.of(context).colorScheme.secondary),
-                      macroSummary('C', dailyTotals['c'] ?? 0.0, 220 * _mealScale, Theme.of(context).colorScheme.primary),
+                      macroSummary(
+                        'P',
+                        dailyTotals['p'] ?? 0.0,
+                        120 * _mealScale,
+                        Theme.of(context).colorScheme.tertiary,
+                      ),
+                      macroSummary(
+                        'F',
+                        dailyTotals['f'] ?? 0.0,
+                        60 * _mealScale,
+                        Theme.of(context).colorScheme.secondary,
+                      ),
+                      macroSummary(
+                        'C',
+                        dailyTotals['c'] ?? 0.0,
+                        220 * _mealScale,
+                        Theme.of(context).colorScheme.primary,
+                      ),
                     ],
                   ),
                 ],
@@ -1297,12 +1741,19 @@ class _MealDetailPageState extends State<MealDetailPage> {
           ),
           const SizedBox(height: 16),
           ...['breakfast', 'lunch', 'snack', 'dinner'].map((mealType) {
-            final m = meals[mealType] is Map ? meals[mealType] : <String, dynamic>{};
-            final items = m['items'] is List ? List<Map<String, dynamic>>.from(m['items']) : <Map<String, dynamic>>[];
+            final m = meals[mealType] is Map
+                ? meals[mealType]
+                : <String, dynamic>{};
+            final items = m['items'] is List
+                ? List<Map<String, dynamic>>.from(m['items'])
+                : <Map<String, dynamic>>[];
             return Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 1.2,
+                ),
               ),
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               margin: const EdgeInsets.symmetric(vertical: 8),
@@ -1312,7 +1763,13 @@ class _MealDetailPageState extends State<MealDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(mealType[0].toUpperCase() + mealType.substring(1), style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                    Text(
+                      mealType[0].toUpperCase() + mealType.substring(1),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
                     ...List.generate(items.length, (i) {
                       final item = items[i];
                       final key = '${widget.plan['day']}-meal-$mealType-$i';
@@ -1329,32 +1786,87 @@ class _MealDetailPageState extends State<MealDetailPage> {
                             },
                             activeColor: Theme.of(context).colorScheme.primary,
                           ),
-                          Expanded(child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item['name'] ?? '', style: checked ? TextStyle(decoration: TextDecoration.lineThrough, color: Theme.of(context).colorScheme.secondary) : TextStyle(color: Theme.of(context).colorScheme.onSurface)),
-                              Text(item['quantity'] ?? '', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
-                              Text('P: ${item['macros']?['protein'] ?? 0}g  C: ${item['macros']?['carbs'] ?? 0}g  F: ${item['macros']?['fats'] ?? 0}g', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.tertiary)),
-                            ],
-                          )),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item['name'] ?? '',
+                                  style: checked
+                                      ? TextStyle(
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.secondary,
+                                        )
+                                      : TextStyle(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                        ),
+                                ),
+                                Text(
+                                  item['quantity'] ?? '',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondary,
+                                  ),
+                                ),
+                                Text(
+                                  'P: ${item['macros']?['protein'] ?? 0}g  C: ${item['macros']?['carbs'] ?? 0}g  F: ${item['macros']?['fats'] ?? 0}g',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.tertiary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           SizedBox(
                             width: 60,
                             child: TextFormField(
                               initialValue: qty.toStringAsFixed(1),
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: InputDecoration(labelText: 'Qty', isDense: true, labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary)),
-                              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: InputDecoration(
+                                labelText: 'Qty',
+                                isDense: true,
+                                labelStyle: TextStyle(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
+                                ),
+                              ),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
                               onChanged: (val) {
                                 final v = double.tryParse(val) ?? 1.0;
                                 setState(() {
-                                  _mealItemQuantities[mealType] = Map<int, double>.from(_mealItemQuantities[mealType] ?? {});
+                                  _mealItemQuantities[mealType] =
+                                      Map<int, double>.from(
+                                        _mealItemQuantities[mealType] ?? {},
+                                      );
                                   _mealItemQuantities[mealType]![i] = v;
                                 });
                               },
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text('x1 serving', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.secondary)),
+                          Text(
+                            'x1 serving',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                          ),
                         ],
                       );
                     }),
@@ -1363,12 +1875,74 @@ class _MealDetailPageState extends State<MealDetailPage> {
                       spacing: 8,
                       runSpacing: 4,
                       children: [
-                        if (m['cal'] != null) Chip(label: Text('Cal: ${((m['cal'] ?? 0) * _mealScale).toStringAsFixed(0)}'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary)),
-                        if (m['p'] != null) Chip(label: Text('P: ${((m['p'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
-                        if (m['c'] != null) Chip(label: Text('C: ${((m['c'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.primary)),
-                        if (m['f'] != null) Chip(label: Text('F: ${((m['f'] ?? 0) * _mealScale).toStringAsFixed(0)}g'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary)),
-                        if (m['iron'] != null) Chip(label: Text('Iron: ${m['iron']}mg'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.secondary)),
-                        if (m['calcium'] != null) Chip(label: Text('Calcium: ${m['calcium']}mg'), backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest, labelStyle: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
+                        if (m['cal'] != null)
+                          Chip(
+                            label: Text(
+                              'Cal: ${((m['cal'] ?? 0) * _mealScale).toStringAsFixed(0)}',
+                            ),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        if (m['p'] != null)
+                          Chip(
+                            label: Text(
+                              'P: ${((m['p'] ?? 0) * _mealScale).toStringAsFixed(0)}g',
+                            ),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.tertiary,
+                            ),
+                          ),
+                        if (m['c'] != null)
+                          Chip(
+                            label: Text(
+                              'C: ${((m['c'] ?? 0) * _mealScale).toStringAsFixed(0)}g',
+                            ),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        if (m['f'] != null)
+                          Chip(
+                            label: Text(
+                              'F: ${((m['f'] ?? 0) * _mealScale).toStringAsFixed(0)}g',
+                            ),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                          ),
+                        if (m['iron'] != null)
+                          Chip(
+                            label: Text('Iron: ${m['iron']}mg'),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                          ),
+                        if (m['calcium'] != null)
+                          Chip(
+                            label: Text('Calcium: ${m['calcium']}mg'),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            labelStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.tertiary,
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -1386,7 +1960,11 @@ class _MealDetailPageState extends State<MealDetailPage> {
 class WorkoutDetailPage extends StatefulWidget {
   final Map<String, dynamic> plan;
   final Map<String, bool> exerciseChecked;
-  const WorkoutDetailPage({Key? key, required this.plan, required this.exerciseChecked}) : super(key: key);
+  const WorkoutDetailPage({
+    Key? key,
+    required this.plan,
+    required this.exerciseChecked,
+  }) : super(key: key);
   @override
   State<WorkoutDetailPage> createState() => _WorkoutDetailPageState();
 }
@@ -1398,10 +1976,13 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
     super.initState();
     _exerciseChecked = Map<String, bool>.from(widget.exerciseChecked);
   }
+
   @override
   Widget build(BuildContext context) {
     final workout = widget.plan['workout'] is Map ? widget.plan['workout'] : {};
-    final exercisesMap = (workout['exercises'] is Map) ? Map<String, dynamic>.from(workout['exercises']) : <String, dynamic>{};
+    final exercisesMap = (workout['exercises'] is Map)
+        ? Map<String, dynamic>.from(workout['exercises'])
+        : <String, dynamic>{};
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
@@ -1423,7 +2004,10 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
           Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.2),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 1.2,
+              ),
             ),
             color: Theme.of(context).colorScheme.surface,
             child: Padding(
@@ -1449,51 +2033,134 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                     runSpacing: 8,
                     children: [
                       Chip(
-                        avatar: Icon(Icons.timer, color: Theme.of(context).colorScheme.secondary, size: 18),
-                        label: Text('Duration: ${workout['duration'] ?? 0} min', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        shape: StadiumBorder(side: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 1)),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                        avatar: Icon(
+                          Icons.timer,
+                          color: Theme.of(context).colorScheme.secondary,
+                          size: 18,
+                        ),
+                        label: Text(
+                          'Duration: ${workout['duration'] ?? 0} min',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                        ),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        shape: StadiumBorder(
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.secondary,
+                            width: 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 2,
+                        ),
                       ),
                       Chip(
-                        avatar: Icon(Icons.local_fire_department, color: Theme.of(context).colorScheme.tertiary, size: 18),
-                        label: Text('Calories: ${workout['calories'] ?? 0} kcal', style: TextStyle(color: Theme.of(context).colorScheme.tertiary)),
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        shape: StadiumBorder(side: BorderSide(color: Theme.of(context).colorScheme.tertiary, width: 1)),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                        avatar: Icon(
+                          Icons.local_fire_department,
+                          color: Theme.of(context).colorScheme.tertiary,
+                          size: 18,
+                        ),
+                        label: Text(
+                          'Calories: ${workout['calories'] ?? 0} kcal',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.tertiary,
+                          ),
+                        ),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        shape: StadiumBorder(
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.tertiary,
+                            width: 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 2,
+                        ),
                       ),
                       Chip(
-                        avatar: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary, size: 18),
-                        label: Text('${_exerciseChecked.values.where((v) => v).length} / ${_exerciseChecked.isNotEmpty ? _exerciseChecked.length : 1} done', style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        shape: StadiumBorder(side: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1)),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                        avatar: Icon(
+                          Icons.check_circle,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 18,
+                        ),
+                        label: Text(
+                          '${_exerciseChecked.values.where((v) => v).length} / ${_exerciseChecked.isNotEmpty ? _exerciseChecked.length : 1} done',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        shape: StadiumBorder(
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 2,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Text('Exercises:', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
+                  Text(
+                    'Exercises:',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   ...exercisesMap.entries.expand((entry) {
                     final group = entry.value;
                     final groupName = group['muscleGroup'] ?? entry.key;
-                    final items = group['items'] is List ? List<Map<String, dynamic>>.from(group['items']) : <Map<String, dynamic>>[];
+                    final items = group['items'] is List
+                        ? List<Map<String, dynamic>>.from(group['items'])
+                        : <Map<String, dynamic>>[];
                     return [
-                      Text(groupName, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary)),
+                      Text(
+                        groupName,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                      ),
                       ...List.generate(items.length, (i) {
                         final ex = items[i];
-                        final key = '${widget.plan['day']}-workout-${entry.key}-$i';
+                        final key =
+                            '${widget.plan['day']}-workout-${entry.key}-$i';
                         final checked = _exerciseChecked[key] ?? false;
                         return Container(
                           margin: const EdgeInsets.symmetric(vertical: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: checked
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.13)
-                                : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.13)
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.outline.withOpacity(0.13),
+                              color: checked
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.outline.withOpacity(0.13),
                               width: checked ? 1.5 : 1,
                             ),
                           ),
@@ -1507,16 +2174,37 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
                                     _exerciseChecked[key] = val ?? false;
                                   });
                                 },
-                                activeColor: Theme.of(context).colorScheme.primary,
+                                activeColor: Theme.of(
+                                  context,
+                                ).colorScheme.primary,
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(ex['name'] ?? '', style: TextStyle(fontWeight: FontWeight.w600, color: checked ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface)),
+                                    Text(
+                                      ex['name'] ?? '',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: checked
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.primary
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
+                                      ),
+                                    ),
                                     const SizedBox(height: 2),
-                                    Text('${ex['sets']}x${ex['reps']}, ${ex['muscleGroup']}', style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+                                    Text(
+                                      '${ex['sets']}x${ex['reps']}, ${ex['muscleGroup']}',
+                                      style: TextStyle(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.secondary,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -1534,4 +2222,4 @@ class _WorkoutDetailPageState extends State<WorkoutDetailPage> {
       ),
     );
   }
-} 
+}

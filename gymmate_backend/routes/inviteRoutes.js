@@ -24,8 +24,9 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Invalid or expired invite code.' });
     }
 
-    // Lookup gymId based on gymName
-    const gym = await Gym.findOne({ gymName: invite.gymName });
+    const gym = invite.gymId
+      ? await Gym.findById(invite.gymId)
+      : await Gym.findOne({ gymName: invite.gymName });
     if (!gym) {
       return res.status(400).json({ error: 'Gym not found for this invite code.' });
     }
@@ -66,16 +67,13 @@ router.post('/register', async (req, res) => {
 // POST /api/invite/validate - Validate an invite code
 router.post('/validate', async (req, res) => {
   let { code } = req.body;
-  console.log('[DEBUG] /api/invite/validate incoming code:', code);
   if (!code) {
     console.error('❌ Invite code is required');
     return res.status(400).json({ error: 'Invite code is required.' });
   }
   code = code.trim().toUpperCase();
-  console.log('[DEBUG] Normalized code:', code);
   try {
     const invite = await InviteCode.findOne({ code });
-    console.log('[DEBUG] Invite lookup result:', invite);
     if (!invite) {
       console.error('❌ Invalid invite code:', code);
       return res.status(400).json({ error: 'Invalid invite code.' });
@@ -103,7 +101,6 @@ router.post('/validate', async (req, res) => {
       console.error('❌ Gym not found for invite code:', code, 'with gymId:', invite.gymId);
       return res.status(400).json({ error: 'Gym not found for this invite code.' });
     }
-    console.log('✅ Invite code validated:', code, 'for gym:', gym.gymName);
     res.status(200).json({
       message: 'Valid invite code.',
       role: invite.role,
@@ -120,16 +117,13 @@ router.post('/validate', async (req, res) => {
 router.post('/verify', async (req, res) => {
   // Call the same logic as /validate
   let { code } = req.body;
-  console.log('[DEBUG] /api/invite/verify incoming code:', code);
   if (!code) {
     console.error('❌ Invite code is required');
     return res.status(400).json({ error: 'Invite code is required.' });
   }
   code = code.trim().toUpperCase();
-  console.log('[DEBUG] Normalized code:', code);
   try {
     const invite = await InviteCode.findOne({ code });
-    console.log('[DEBUG] Invite lookup result:', invite);
     if (!invite) {
       console.error('❌ Invalid invite code:', code);
       return res.status(400).json({ error: 'Invalid invite code.' });
@@ -157,7 +151,6 @@ router.post('/verify', async (req, res) => {
       console.error('❌ Gym not found for invite code:', code, 'with gymId:', invite.gymId);
       return res.status(400).json({ error: 'Gym not found for this invite code.' });
     }
-    console.log('✅ Invite code validated:', code, 'for gym:', gym.gymName);
     res.status(200).json({
       message: 'Valid invite code.',
       role: invite.role,

@@ -1,0 +1,22 @@
+const { chromium } = require('/tmp/gymmate-qa/node_modules/playwright');
+const path = require('path');
+const fs = require('fs');
+const outDir = '/Users/shivamsantosh/gymmate_mvp/deploy/qa/screenshots';
+fs.mkdirSync(outDir, { recursive: true });
+(async () => {
+  const browser = await chromium.launch({ headless: true, executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  const page = await context.newPage();
+  await page.goto('http://127.0.0.1:8090', { waitUntil: 'networkidle' });
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: path.join(outDir, 'mobile-entry-2.png'), fullPage: true });
+  await page.mouse.click(195, 622);
+  await page.waitForTimeout(1800);
+  await page.screenshot({ path: path.join(outDir, 'mobile-role-setup-2.png'), fullPage: true });
+  await page.goBack({ waitUntil: 'networkidle' }).catch(() => {});
+  await page.waitForTimeout(1000);
+  await page.mouse.click(195, 689);
+  await page.waitForTimeout(1800);
+  await page.screenshot({ path: path.join(outDir, 'mobile-quick-join-2.png'), fullPage: true });
+  await browser.close();
+})();

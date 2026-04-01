@@ -8,15 +8,18 @@ import 'package:gymmate_mobile/pages/invite_code_list_page.dart';
 import 'package:gymmate_mobile/pages/profile_page.dart';
 import 'package:gymmate_mobile/pages/gym_owner_dashboard_page.dart';
 import 'package:gymmate_mobile/pages/gym_member_dashboard_page.dart';
+import 'package:gymmate_mobile/pages/splash_screen.dart';
+import 'package:gymmate_mobile/themes/app_colors.dart';
 import 'package:gymmate_mobile/themes/app_theme.dart';
-import 'pages/progress_page.dart';
 import 'pages/plan_page.dart';
+import 'pages/progress_page.dart';
 import 'pages/coach_page.dart';
 import 'pages/gym_trainer_dashboard_page.dart';
-import 'pages/trainees_list_page.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'pages/branding_settings_page.dart';
 import 'pages/gamified_entry_screen.dart';
-import 'package:salomon_bottom_bar/salomon_bottom_bar.dart';
+import 'pages/trainees_list_page.dart';
+import 'package:gymmate_mobile/utils/branding_utils.dart';
+import 'package:gymmate_mobile/utils/role_utils.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -40,16 +43,34 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      title: 'GymMate',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      debugShowCheckedModeBanner: false,
-      home: const AuthGate(),
-      routes: {
-        '/onboarding': (context) => const OnboardingFlow(),
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        final branding = authProvider.branding;
+        final primary = colorFromHex(
+          branding['primaryColor'],
+          fallback: const Color(0xFFB59F5B),
+        );
+        final secondary = colorFromHex(
+          branding['secondaryColor'],
+          fallback: const Color(0xFFF8D84B),
+        );
+
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          title: branding['gymName'] ?? 'GymMate',
+          theme: AppTheme.buildLightTheme(
+            primary: primary,
+            secondary: secondary,
+          ),
+          darkTheme: AppTheme.buildDarkTheme(
+            primary: primary,
+            secondary: secondary,
+          ),
+          themeMode: ThemeMode.system,
+          debugShowCheckedModeBanner: false,
+          home: const AuthGate(),
+          routes: {'/onboarding': (context) => const OnboardingFlow()},
+        );
       },
     );
   }
@@ -63,52 +84,47 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final authProvider = Provider.of<AuthProvider>(context);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleAuthChange(authProvider);
-    });
-  }
+  bool _isReady = false;
+  static const _minimumLoader = Duration(milliseconds: 1900);
 
   @override
-  void didUpdateWidget(covariant AuthGate oldWidget) {
-    super.didUpdateWidget(oldWidget);
+  void initState() {
+    super.initState();
+    _bootstrapAuth();
+  }
+
+  Future<void> _bootstrapAuth() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handleAuthChange(authProvider);
-    });
-  }
-
-  void _handleAuthChange(AuthProvider authProvider) {
-    final isAuth = authProvider.isAuth;
-    final currentRoute = ModalRoute.of(context)?.settings.name;
-    if (isAuth) {
-      // If already on dashboard, do nothing
-      if (currentRoute != '/dashboard') {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => MainNavigationScaffold(key: MainNavigationScaffold.navKey)),
-          (route) => false,
-        );
-      }
-    } else {
-      // If already on login, do nothing
-      if (currentRoute != '/login') {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const GamifiedEntryScreen()),
-          (route) => false,
-        );
-      }
+    final startedAt = DateTime.now();
+    await authProvider.tryAutoLogin();
+    final elapsed = DateTime.now().difference(startedAt);
+    final remaining = _minimumLoader - elapsed;
+    if (remaining > Duration.zero) {
+      await Future.delayed(remaining);
     }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isReady = true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    // Show a splash/loading indicator while deciding
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    if (!_isReady) {
+      return const BrandedLoadingScreen(
+        title: 'GymMate',
+        subtitle: 'Your Fitness HQ',
+        lightweight: true,
+      );
+    }
+
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        if (authProvider.isAuth) {
+          return MainNavigationScaffold(key: MainNavigationScaffold.navKey);
+        }
+        return const GamifiedEntryScreen();
+      },
     );
   }
 }
@@ -118,40 +134,39 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-    }
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+  }
 }
 
 Future<bool> showLogoutConfirmation(BuildContext context) async {
   return await showDialog<bool>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      return AlertDialog(
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to log out?'),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-          ),
-          TextButton(
-            child: const Text('Yes'),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-          ),
-        ],
-      );
-    },
-  ) ?? false;
+        context: context,
+        builder: (BuildContext dialogContext) {
+          return AlertDialog(
+            title: const Text('Confirm Logout'),
+            content: const Text('Are you sure you want to log out?'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+              ),
+              TextButton(
+                child: const Text('Yes'),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+              ),
+            ],
+          );
+        },
+      ) ??
+      false;
 }
 
 class MainNavigationScaffold extends StatefulWidget {
   final int initialTab;
-  static final GlobalKey<_MainNavigationScaffoldState> navKey = GlobalKey<_MainNavigationScaffoldState>();
-  const MainNavigationScaffold({Key? key, this.initialTab = 0}) : super(key: key);
+  static final GlobalKey<MainNavigationScaffoldState> navKey =
+      GlobalKey<MainNavigationScaffoldState>();
+  const MainNavigationScaffold({Key? key, this.initialTab = 0})
+    : super(key: key);
 
   static void switchTab(int index) {
     final state = navKey.currentState;
@@ -161,10 +176,10 @@ class MainNavigationScaffold extends StatefulWidget {
   }
 
   @override
-  State<MainNavigationScaffold> createState() => _MainNavigationScaffoldState();
+  State<MainNavigationScaffold> createState() => MainNavigationScaffoldState();
 }
 
-class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
+class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   late int _selectedIndex;
 
   @override
@@ -178,12 +193,16 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     super.didChangeDependencies();
     // Reset index if out of range (e.g., after logout or role change)
     final authProvider = Provider.of<AuthProvider>(context);
-    final userRole = authProvider.userData?['role'] as String? ?? '';
-    final isGymMember = userRole == 'gym_member';
+    final userRole =
+        normalizeRole(
+          authProvider.userData?['role'] as String? ?? authProvider.userRole,
+        ) ??
+        '';
+    final isGymMember = isMemberRole(userRole);
     int maxIndex = 0;
     if (isGymMember) {
       maxIndex = 4; // Dashboard, Progress, Plan, Coach, Profile
-    } else if (userRole == 'gym_trainer') {
+    } else if (isTrainerRole(userRole)) {
       maxIndex = 2; // Dashboard, Trainees, Profile
     } else {
       maxIndex = 2; // Dashboard, Invites, Profile
@@ -195,42 +214,30 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     }
   }
 
-  String _getPageTitle(int index) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final userRole = authProvider.userData?['role'] as String? ?? '';
-    final isGymMember = userRole == 'gym_member';
-
-    // Calculate the page index based on role and selected index
-    if (index == 0) {
-      return 'Dashboard';
-    } else if (index == 1) {
-      return isGymMember ? 'Progress' : 'Invites';
-    } else if (isGymMember && index == 2) {
-      return 'Plan';
-    } else {
-      return 'Profile';
-    }
-  }
-
   Widget _buildRoleLogoAndSignature(String userRole, BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final branding = authProvider.branding;
+    final logoUrl = branding['logoUrl'] as String?;
+    final logoScale = (branding['logoScale'] as num?)?.toDouble() ?? 1;
+    final logoOffsetX = (branding['logoOffsetX'] as num?)?.toDouble() ?? 0;
+    final logoOffsetY = (branding['logoOffsetY'] as num?)?.toDouble() ?? 0;
+    final brandName =
+        authProvider.gymName ?? branding['gymName']?.toString() ?? 'GymMate';
     String asset = '';
     String label = '';
     switch (userRole) {
-      case 'superadmin':
+      case 'admin':
         asset = 'assets/logos/superadmin_logo.png';
         label = 'Superadmin';
         break;
-      case 'gym_owner':
       case 'owner':
         asset = 'assets/logos/owner_logo.png';
         label = 'Owner';
         break;
-      case 'gym_trainer':
       case 'trainer':
         asset = 'assets/logos/trainer_logo.png';
         label = 'Trainer';
         break;
-      case 'gym_member':
       case 'member':
         asset = 'assets/logos/member_logo_m.png';
         label = 'Member';
@@ -241,57 +248,78 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     }
     if (label.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
-    final textColor = theme.brightness == Brightness.dark ? Colors.white : Colors.black87;
+    final textColor = theme.brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
+    final subtitleColor = theme.brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.82)
+        : Colors.black87.withValues(alpha: 0.72);
     return Padding(
-      padding: const EdgeInsets.only(left: 8, top: 4, bottom: 4),
+      padding: const EdgeInsets.only(left: 8, top: 6, bottom: 6, right: 12),
       child: SizedBox(
-        height: 54,
-        child: Stack(
-          clipBehavior: Clip.none,
+        height: 52,
+        child: Row(
           children: [
-            if (asset.isNotEmpty)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Image.asset(
-                  asset,
-                  height: 44,
-                  fit: BoxFit.contain,
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: theme.brightness == Brightness.dark
+                    ? const Color(0xFF1D1A12)
+                    : Colors.white,
+                border: Border.all(
+                  color: theme.brightness == Brightness.dark
+                      ? const Color(0xFF5B4C26)
+                      : const Color(0xFFE7D6A7),
                 ),
               ),
-            if (label.isNotEmpty)
-              Positioned(
-                left: 6,
-                top: 34,
-                child: (userRole == 'gym_trainer' || userRole == 'trainer' || userRole == 'superadmin' || userRole == 'gym_owner' || userRole == 'owner' || userRole == 'gym_member' || userRole == 'member')
-                  ? Text(
-                      label,
-                      style: GoogleFonts.pacifico(
-                        fontSize: 18,
-                        color: textColor,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: const Offset(1, 1),
-                          ),
-                        ],
-                      ),
+              padding: const EdgeInsets.all(4),
+              child: logoUrl != null && logoUrl.isNotEmpty
+                  ? BrandingLogoFrame(
+                      source: logoUrl,
+                      size: 36,
+                      scale: logoScale,
+                      offsetX: logoOffsetX,
+                      offsetY: logoOffsetY,
+                      borderRadius: BorderRadius.circular(8),
+                      fallback: asset.isNotEmpty
+                          ? Image.asset(asset, fit: BoxFit.contain)
+                          : const SizedBox.shrink(),
                     )
-                  : Text(
-                      label,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: const Offset(1, 1),
-                          ),
-                        ],
-                      ),
+                  : asset.isNotEmpty
+                  ? Image.asset(asset, fit: BoxFit.contain)
+                  : const SizedBox.shrink(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    brandName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w800,
                     ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: subtitleColor,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -307,84 +335,99 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final userRole = authProvider.userData?['role'] as String? ?? '';
-    final isGymMember = userRole == 'gym_member';
-    final isSuperadmin = userRole == 'superadmin';
-    final isGymOwner = userRole == 'gym_owner';
+    final userRole =
+        normalizeRole(
+          authProvider.userData?['role'] as String? ?? authProvider.userRole,
+        ) ??
+        '';
+    final isGymMember = isMemberRole(userRole);
+    final isAdmin = isAdminRole(userRole);
+    final isGymOwner = isOwnerRole(userRole);
+    final brandingReady = isBrandingComplete(authProvider.branding);
 
     // Check for onboarding status for gym members
     if (isGymMember && !authProvider.hasCompletedOnboarding) {
       return const OnboardingFlow();
     }
 
-    List<Widget> pages = [
-      if (userRole == 'gym_member')
-        const GymMemberDashboardPage()
-      else if (userRole == 'gym_owner')
-        const GymOwnerDashboardPage()
-      else if (userRole == 'gym_trainer')
-        const GymTrainerDashboardPage()
-      else
-        const AdminDashboardPage(),
-    ];
+    if (isGymOwner && !brandingReady) {
+      return const BrandingSettingsPage(isRequiredSetup: true);
+    }
 
-    List<SalomonBottomBarItem> items = [
-      SalomonBottomBarItem(
-        icon: const Icon(Icons.dashboard),
-        title: const Text('Dashboard'),
-        selectedColor: Colors.cyanAccent.shade400,
-        unselectedColor: Colors.white70,
+    final destinations = <_NavDestination>[
+      _NavDestination(
+        label: 'Dashboard',
+        icon: Icons.dashboard_rounded,
+        page: isGymMember
+            ? const GymMemberDashboardPage()
+            : isGymOwner
+            ? const GymOwnerDashboardPage()
+            : isTrainerRole(userRole)
+            ? const GymTrainerDashboardPage()
+            : const AdminDashboardPage(),
       ),
     ];
 
     // Add Invites tab for superadmin and gym_owner
-    if (isSuperadmin || isGymOwner) {
-      pages.add(const InviteCodeListPage());
-      items.add(
-        SalomonBottomBarItem(
-          icon: const Icon(Icons.group_add_rounded),
-          title: const Text('Invites'),
-          selectedColor: Colors.amber.shade400,
-          unselectedColor: Colors.white70,
+    if (isAdmin || isGymOwner) {
+      destinations.add(
+        const _NavDestination(
+          label: 'Invites',
+          icon: Icons.group_add_rounded,
+          page: InviteCodeListPage(),
+        ),
+      );
+    }
+
+    if (isTrainerRole(userRole)) {
+      destinations.add(
+        const _NavDestination(
+          label: 'Trainees',
+          icon: Icons.people_alt_outlined,
+          page: TraineesListPage(),
         ),
       );
     }
 
     // Add Plan/Coach for gym members
     if (isGymMember) {
-      pages.add(const PlanPage());
-      items.add(
-        SalomonBottomBarItem(
-          icon: const Icon(Icons.calendar_today),
-          title: const Text('Plan'),
-          selectedColor: Colors.blueAccent.shade200,
-          unselectedColor: Colors.white70,
+      destinations.add(
+        const _NavDestination(
+          label: 'Progress',
+          icon: Icons.insights_outlined,
+          page: ProgressPage(),
         ),
       );
-      pages.add(const CoachPage());
-      items.add(
-        SalomonBottomBarItem(
-          icon: const Icon(Icons.sports_gymnastics),
-          title: const Text('Coach'),
-          selectedColor: Colors.deepOrangeAccent.shade200,
-          unselectedColor: Colors.white70,
+      destinations.add(
+        const _NavDestination(
+          label: 'Plan',
+          icon: Icons.calendar_today_rounded,
+          page: PlanPage(),
+        ),
+      );
+      destinations.add(
+        const _NavDestination(
+          label: 'Coach',
+          icon: Icons.sports_gymnastics,
+          page: CoachPage(),
         ),
       );
     }
 
     // Add Profile page for all roles
-    pages.add(const ProfilePage());
-    items.add(
-      SalomonBottomBarItem(
-        icon: const Icon(Icons.person),
-        title: const Text('Profile'),
-        selectedColor: Colors.tealAccent.shade400,
-        unselectedColor: Colors.white70,
+    destinations.add(
+      const _NavDestination(
+        label: 'Profile',
+        icon: Icons.person_rounded,
+        page: ProfilePage(),
       ),
     );
 
     // Guard: Ensure _selectedIndex is in range
-    final safeIndex = (_selectedIndex < pages.length) ? _selectedIndex : 0;
+    final pages = destinations.map((destination) => destination.page).toList();
+    final safeIndex = (_selectedIndex < destinations.length)
+        ? _selectedIndex
+        : 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -393,33 +436,138 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         title: _buildRoleLogoAndSignature(userRole, context),
       ),
       body: pages[safeIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF282828),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 12,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        child: SalomonBottomBar(
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+        child: _ModernBottomNavigationBar(
+          destinations: destinations,
           currentIndex: safeIndex,
-          onTap: (index) {
-            setTab(index);
-          },
-          items: items,
-          backgroundColor: Colors.transparent,
-          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-          duration: const Duration(milliseconds: 400),
+          onTap: setTab,
         ),
       ),
     );
   }
-} 
+}
+
+class _NavDestination {
+  final String label;
+  final IconData icon;
+  final Widget page;
+
+  const _NavDestination({
+    required this.label,
+    required this.icon,
+    required this.page,
+  });
+}
+
+class _ModernBottomNavigationBar extends StatelessWidget {
+  final List<_NavDestination> destinations;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _ModernBottomNavigationBar({
+    required this.destinations,
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final shellColor = theme.colorScheme.surface.withValues(
+      alpha: isDark ? 0.94 : 0.98,
+    );
+    final shellBorder = theme.colorScheme.outline.withValues(
+      alpha: isDark ? 0.2 : 0.34,
+    );
+    final shadowColor = Colors.black.withValues(alpha: isDark ? 0.24 : 0.08);
+    final selectedGradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [theme.colorScheme.secondary, theme.colorScheme.primary],
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: shellColor,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: shellBorder),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: List.generate(destinations.length, (index) {
+          final destination = destinations[index];
+          final isSelected = index == currentIndex;
+          final foreground = isSelected
+              ? AppColors.textOnAccent
+              : theme.colorScheme.onSurface.withValues(alpha: 0.64);
+
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(22),
+                  onTap: () => onTap(index),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    height: 56,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSelected ? 12 : 10,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: isSelected ? selectedGradient : null,
+                      color: isSelected
+                          ? null
+                          : theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: isDark ? 0.14 : 0.0),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(destination.icon, color: foreground, size: 22),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          switchInCurve: Curves.easeOut,
+                          switchOutCurve: Curves.easeIn,
+                          child: isSelected
+                              ? Padding(
+                                  key: ValueKey(destination.label),
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Text(
+                                    destination.label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      color: foreground,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}

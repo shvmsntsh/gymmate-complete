@@ -384,7 +384,12 @@ const generatePlan = async (req, res) => {
     console.log('--- [Plan] Onboarding data:', onboardingData);
     const onboardingHash = crypto.createHash('sha256').update(JSON.stringify(onboardingData)).digest('hex');
     // Check for cached plan
-    let planDoc = await Plan.findOne({ user: user._id, onboardingHash });
+    const tenantPlanFilter = {
+      user: user._id,
+      gymId: user.gymId || null,
+      onboardingHash
+    };
+    let planDoc = await Plan.findOne(tenantPlanFilter);
     const forceRefresh = req.body && req.body.forceRefresh;
     if (planDoc && !forceRefresh) {
       console.log('--- [Plan] Cache hit for user:', user._id);
@@ -434,8 +439,8 @@ const generatePlan = async (req, res) => {
     }
     // Save to DB
     await Plan.findOneAndUpdate(
-      { user: user._id, onboardingHash },
-      { plan, updatedAt: new Date() },
+      tenantPlanFilter,
+      { gymId: user.gymId || null, plan, updatedAt: new Date() },
       { upsert: true }
     );
     console.log('--- [Plan] Final plan for user:', user._id, plan);

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:gymmate_mobile/api/api_config.dart';
 
 class OnboardingProvider with ChangeNotifier {
   double height = 0;
@@ -63,7 +64,7 @@ class OnboardingProvider with ChangeNotifier {
     age = profile['age'] ?? 0;
     gender = profile['gender'];
     fitnessGoals = List<String>.from(progress['fitnessGoals'] ?? []);
-    
+
     // Handle diet preferences
     if (progress['dietPreferences'] != null) {
       dietPreferences = Map<String, dynamic>.from(progress['dietPreferences']);
@@ -73,7 +74,7 @@ class OnboardingProvider with ChangeNotifier {
         'allergies': [],
         'dailyMeals': 3,
         'waterIntake': 8,
-        'restrictions': []
+        'restrictions': [],
       };
     }
 
@@ -90,7 +91,7 @@ class OnboardingProvider with ChangeNotifier {
         'workoutsPerWeek': 3,
         'sessionDuration': 60,
         'hasInjuries': false,
-        'injuryDetails': null
+        'injuryDetails': null,
       };
     }
 
@@ -105,15 +106,15 @@ class OnboardingProvider with ChangeNotifier {
         'endDate': null,
         'progress': 0,
         'isCompleted': false,
-        'completedAt': null
+        'completedAt': null,
       };
     }
-    
+
     notifyListeners();
   }
 
   Future<bool> completeOnboarding(String token) async {
-    final url = Uri.parse('http://localhost:5050/api/onboarding/complete');
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/onboarding/complete');
     final body = {
       "profile": {
         "height": height,
@@ -127,8 +128,6 @@ class OnboardingProvider with ChangeNotifier {
       "firstChallenge": firstChallenge,
     };
 
-    print('[OnboardingProvider] Sending completion data: ${jsonEncode(body)}');
-
     final response = await http.post(
       url,
       headers: {
@@ -141,7 +140,6 @@ class OnboardingProvider with ChangeNotifier {
     if (response.statusCode == 200) {
       return true;
     } else {
-      print('❌ Backend onboarding failed: ${response.body}');
       return false;
     }
   }
