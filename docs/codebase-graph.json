@@ -1,0 +1,2634 @@
+{
+  "generatedAt": "2026-04-06T09:34:40.504Z",
+  "repo": {
+    "branch": "codex/mvp-figma",
+    "remote": "https://github.com/shvmsntsh/gymmate-complete.git"
+  },
+  "workspaces": [
+    {
+      "key": "backend",
+      "label": "gymmate_backend",
+      "root": "gymmate_backend",
+      "entrypoints": [
+        "gymmate_backend/index.js",
+        "gymmate_backend/app.js"
+      ],
+      "entrypointDependencies": {
+        "gymmate_backend/index.js": [
+          "gymmate_backend/app.js"
+        ],
+        "gymmate_backend/app.js": [
+          "gymmate_backend/routes/authRoutes.js",
+          "gymmate_backend/routes/gymRoutes.js",
+          "gymmate_backend/routes/inviteRoutes.js",
+          "gymmate_backend/routes/memberRoutes.js",
+          "gymmate_backend/routes/messageRoutes.js",
+          "gymmate_backend/routes/onboardingRoutes.js",
+          "gymmate_backend/routes/ownerRoutes.js",
+          "gymmate_backend/routes/planRoutes.js",
+          "gymmate_backend/routes/trainerRoutes.js",
+          "gymmate_backend/routes/userRoutes.js"
+        ]
+      },
+      "fileCount": 51,
+      "nodeSample": [
+        {
+          "path": "gymmate_backend/.eslintrc.js",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/api/index.js",
+          "imports": [
+            "gymmate_backend/app.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/app.js",
+          "imports": [
+            "gymmate_backend/routes/authRoutes.js",
+            "gymmate_backend/routes/gymRoutes.js",
+            "gymmate_backend/routes/inviteRoutes.js",
+            "gymmate_backend/routes/memberRoutes.js",
+            "gymmate_backend/routes/messageRoutes.js",
+            "gymmate_backend/routes/onboardingRoutes.js",
+            "gymmate_backend/routes/ownerRoutes.js",
+            "gymmate_backend/routes/planRoutes.js",
+            "gymmate_backend/routes/trainerRoutes.js",
+            "gymmate_backend/routes/userRoutes.js"
+          ],
+          "externalImports": [
+            "cors",
+            "dotenv",
+            "express",
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/controllers/aiController.js",
+          "imports": [
+            "gymmate_backend/models/PlanCache.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/models/plan.js"
+          ],
+          "externalImports": [
+            "axios",
+            "crypto"
+          ]
+        },
+        {
+          "path": "gymmate_backend/controllers/authController.js",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/controllers/gymController.js",
+          "imports": [
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/InviteCode.js"
+          ],
+          "externalImports": [
+            "bcryptjs",
+            "dotenv",
+            "jsonwebtoken"
+          ]
+        },
+        {
+          "path": "gymmate_backend/controllers/inviteController.js",
+          "imports": [
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/InviteCode.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/utils/roles.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/controllers/messageController.js",
+          "imports": [
+            "gymmate_backend/models/Conversation.js",
+            "gymmate_backend/models/Message.js",
+            "gymmate_backend/models/TrainerAssignment.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/services/coachingService.js",
+            "gymmate_backend/utils/roles.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/controllers/onboardingController.js",
+          "imports": [
+            "gymmate_backend/models/DailyPlanLog.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/services/coachingService.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/controllers/ownerController.js",
+          "imports": [
+            "gymmate_backend/models/Conversation.js",
+            "gymmate_backend/models/TrainerAssignment.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/services/coachingService.js",
+            "gymmate_backend/utils/roles.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/controllers/planController.js",
+          "imports": [
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/models/mealPlan.js",
+            "gymmate_backend/models/workoutPlan.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/controllers/planLogController.js",
+          "imports": [
+            "gymmate_backend/models/DailyPlanLog.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/services/coachingService.js",
+            "gymmate_backend/utils/roles.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/controllers/trainerController.js",
+          "imports": [
+            "gymmate_backend/controllers/planController.js",
+            "gymmate_backend/models/Conversation.js",
+            "gymmate_backend/models/TrainerAssignment.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/services/coachingService.js",
+            "gymmate_backend/utils/roles.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/controllers/userController.js",
+          "imports": [
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/InviteCode.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/utils/roles.js"
+          ],
+          "externalImports": [
+            "bcryptjs",
+            "jsonwebtoken"
+          ]
+        },
+        {
+          "path": "gymmate_backend/firebase.json",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/gyms.json",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/index.js",
+          "imports": [
+            "gymmate_backend/app.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/middleware/authMiddleware.js",
+          "imports": [
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/utils/roles.js"
+          ],
+          "externalImports": [
+            "jsonwebtoken"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/Conversation.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/DailyPlanLog.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/Gym.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/InviteCode.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/Message.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/PlanCache.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/TrainerAssignment.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/User.js",
+          "imports": [],
+          "externalImports": [
+            "bcryptjs",
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/mealPlan.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/plan.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/models/workoutPlan.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/package-lock.json",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/package.json",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/routes/aiRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/aiController.js",
+            "gymmate_backend/middleware/authMiddleware.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/authRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/userController.js",
+            "gymmate_backend/middleware/authMiddleware.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/gymRoutes.js",
+          "imports": [
+            "gymmate_backend/middleware/authMiddleware.js",
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/InviteCode.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/utils/roles.js"
+          ],
+          "externalImports": [
+            "bcryptjs",
+            "express",
+            "jsonwebtoken"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/inviteRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/gymController.js",
+            "gymmate_backend/controllers/inviteController.js",
+            "gymmate_backend/middleware/authMiddleware.js",
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/InviteCode.js",
+            "gymmate_backend/models/User.js"
+          ],
+          "externalImports": [
+            "bcrypt",
+            "express",
+            "jsonwebtoken"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/memberRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/planLogController.js",
+            "gymmate_backend/controllers/userController.js",
+            "gymmate_backend/middleware/authMiddleware.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/messageRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/messageController.js",
+            "gymmate_backend/middleware/authMiddleware.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/onboardingRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/onboardingController.js",
+            "gymmate_backend/middleware/authMiddleware.js",
+            "gymmate_backend/models/User.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/ownerRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/ownerController.js",
+            "gymmate_backend/middleware/authMiddleware.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/planRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/planController.js",
+            "gymmate_backend/middleware/authMiddleware.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/trainerRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/trainerController.js",
+            "gymmate_backend/middleware/authMiddleware.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/routes/userRoutes.js",
+          "imports": [
+            "gymmate_backend/controllers/userController.js",
+            "gymmate_backend/middleware/authMiddleware.js",
+            "gymmate_backend/models/User.js"
+          ],
+          "externalImports": [
+            "express"
+          ]
+        },
+        {
+          "path": "gymmate_backend/scripts/migrate-default-gym.js",
+          "imports": [
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/InviteCode.js",
+            "gymmate_backend/models/PlanCache.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/models/plan.js"
+          ],
+          "externalImports": [
+            "dotenv",
+            "mongoose"
+          ]
+        },
+        {
+          "path": "gymmate_backend/scripts/seed-demo-data.js",
+          "imports": [
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/InviteCode.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/models/mealPlan.js",
+            "gymmate_backend/models/workoutPlan.js"
+          ],
+          "externalImports": [
+            "bcryptjs",
+            "dotenv",
+            "mongoose",
+            "path"
+          ]
+        },
+        {
+          "path": "gymmate_backend/scripts/seed-qa-data.js",
+          "imports": [
+            "gymmate_backend/models/Gym.js",
+            "gymmate_backend/models/InviteCode.js",
+            "gymmate_backend/models/User.js",
+            "gymmate_backend/models/mealPlan.js",
+            "gymmate_backend/models/workoutPlan.js"
+          ],
+          "externalImports": [
+            "bcryptjs",
+            "dotenv",
+            "mongoose",
+            "path"
+          ]
+        },
+        {
+          "path": "gymmate_backend/seed/seedPlans.js",
+          "imports": [],
+          "externalImports": [
+            "mongoose",
+            "path"
+          ]
+        },
+        {
+          "path": "gymmate_backend/seed/seed_mealPlans.json",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/seed/seed_workoutPlans.json",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/services/coachingService.js",
+          "imports": [
+            "gymmate_backend/models/Conversation.js",
+            "gymmate_backend/models/DailyPlanLog.js",
+            "gymmate_backend/models/Message.js",
+            "gymmate_backend/models/TrainerAssignment.js",
+            "gymmate_backend/models/User.js"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/utils/roles.js",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_backend/vercel.json",
+          "imports": [],
+          "externalImports": []
+        }
+      ],
+      "edgeCount": 107,
+      "externalModules": [
+        "axios",
+        "bcrypt",
+        "bcryptjs",
+        "cors",
+        "crypto",
+        "dotenv",
+        "express",
+        "jsonwebtoken",
+        "mongoose",
+        "path"
+      ],
+      "tree": [
+        "gymmate_backend",
+        "├── api",
+        "│   └── index.js",
+        "├── app.js",
+        "├── controllers",
+        "│   ├── aiController.js",
+        "│   ├── authController.js",
+        "│   ├── gymController.js",
+        "│   ├── inviteController.js",
+        "│   ├── messageController.js",
+        "│   ├── onboardingController.js",
+        "│   ├── ownerController.js",
+        "│   ├── planController.js",
+        "│   ├── planLogController.js",
+        "│   ├── trainerController.js",
+        "│   └── userController.js",
+        "├── firebase.json",
+        "├── gymmate_admin",
+        "├── gyms.json",
+        "├── index.js",
+        "├── middleware",
+        "│   └── authMiddleware.js",
+        "├── models",
+        "│   ├── Conversation.js",
+        "│   ├── DailyPlanLog.js",
+        "│   ├── Gym.js",
+        "│   ├── InviteCode.js",
+        "│   ├── mealPlan.js",
+        "│   ├── Message.js",
+        "│   ├── plan.js",
+        "│   ├── PlanCache.js",
+        "│   ├── TrainerAssignment.js",
+        "│   ├── User.js",
+        "│   └── workoutPlan.js",
+        "├── package-lock.json",
+        "├── package.json",
+        "├── public",
+        "│   └── index.html",
+        "├── routes",
+        "│   ├── aiRoutes.js",
+        "│   ├── authRoutes.js",
+        "│   ├── gymRoutes.js",
+        "│   ├── inviteRoutes.js",
+        "│   ├── memberRoutes.js",
+        "│   ├── messageRoutes.js",
+        "│   ├── onboardingRoutes.js",
+        "│   ├── ownerRoutes.js",
+        "│   ├── planRoutes.js",
+        "│   ├── trainerRoutes.js",
+        "│   └── userRoutes.js",
+        "├── scripts",
+        "│   ├── migrate-default-gym.js",
+        "│   ├── seed-demo-data.js",
+        "│   └── seed-qa-data.js",
+        "├── seed",
+        "│   ├── seed_mealPlans.json",
+        "│   ├── seed_workoutPlans.json",
+        "│   └── seedPlans.js",
+        "├── services",
+        "│   └── coachingService.js",
+        "├── utils",
+        "│   └── roles.js",
+        "└── vercel.json"
+      ]
+    },
+    {
+      "key": "admin",
+      "label": "gymmate_admin_vite",
+      "root": "gymmate_admin_vite/src",
+      "entrypoints": [
+        "gymmate_admin_vite/src/main.js",
+        "gymmate_admin_vite/src/router/index.js"
+      ],
+      "entrypointDependencies": {
+        "gymmate_admin_vite/src/main.js": [
+          "gymmate_admin_vite/src/App.vue",
+          "gymmate_admin_vite/src/assets/main.css",
+          "gymmate_admin_vite/src/plugins/vuetify.js",
+          "gymmate_admin_vite/src/router"
+        ],
+        "gymmate_admin_vite/src/router/index.js": [
+          "gymmate_admin_vite/src/lib/api.js"
+        ]
+      },
+      "fileCount": 22,
+      "nodeSample": [
+        {
+          "path": "gymmate_admin_vite/src/App.vue",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_admin_vite/src/assets/main.css",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_admin_vite/src/components/AdminBrand.vue",
+          "imports": [],
+          "externalImports": [
+            "vue"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/components/AdminShell.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/AdminBrand.vue",
+            "gymmate_admin_vite/src/components/AdminThemeToggle.vue",
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue",
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/components/AdminThemeToggle.vue",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_admin_vite/src/components/PublicAuthShell.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/AdminBrand.vue",
+            "gymmate_admin_vite/src/components/AdminThemeToggle.vue"
+          ],
+          "externalImports": [
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/components/StatCard.vue",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_admin_vite/src/components/StateBlock.vue",
+          "imports": [],
+          "externalImports": [
+            "vue"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/composables/useAdminTheme.js",
+          "imports": [],
+          "externalImports": [
+            "vue",
+            "vuetify"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/lib/api.js",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_admin_vite/src/main.js",
+          "imports": [
+            "gymmate_admin_vite/src/App.vue",
+            "gymmate_admin_vite/src/assets/main.css",
+            "gymmate_admin_vite/src/plugins/vuetify.js",
+            "gymmate_admin_vite/src/router"
+          ],
+          "externalImports": [
+            "vue"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/plugins/vuetify.js",
+          "imports": [],
+          "externalImports": [
+            "vuetify",
+            "vuetify/iconsets/mdi",
+            "vuetify/styles"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/router/index.js",
+          "imports": [
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/AdminDashboard.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/AdminShell.vue",
+            "gymmate_admin_vite/src/components/StatCard.vue",
+            "gymmate_admin_vite/src/components/StateBlock.vue",
+            "gymmate_admin_vite/src/composables/useAdminTheme.js",
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue",
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/BrandingStudio.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/AdminShell.vue",
+            "gymmate_admin_vite/src/components/StateBlock.vue",
+            "gymmate_admin_vite/src/composables/useAdminTheme.js",
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue",
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/GymDetails.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/AdminShell.vue",
+            "gymmate_admin_vite/src/components/StateBlock.vue",
+            "gymmate_admin_vite/src/composables/useAdminTheme.js",
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue",
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/HomePage.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/PublicAuthShell.vue",
+            "gymmate_admin_vite/src/composables/useAdminTheme.js"
+          ],
+          "externalImports": [
+            "vue"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/InvitesView.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/AdminShell.vue",
+            "gymmate_admin_vite/src/components/StateBlock.vue",
+            "gymmate_admin_vite/src/composables/useAdminTheme.js",
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue",
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/Login.vue",
+          "imports": [
+            "gymmate_admin_vite/src/views/LoginPage.vue"
+          ],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/LoginPage.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/PublicAuthShell.vue",
+            "gymmate_admin_vite/src/composables/useAdminTheme.js",
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue",
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/ManageMembers.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/AdminShell.vue",
+            "gymmate_admin_vite/src/components/StateBlock.vue",
+            "gymmate_admin_vite/src/composables/useAdminTheme.js",
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue",
+            "vue-router"
+          ]
+        },
+        {
+          "path": "gymmate_admin_vite/src/views/RegisterGym.vue",
+          "imports": [
+            "gymmate_admin_vite/src/components/PublicAuthShell.vue",
+            "gymmate_admin_vite/src/composables/useAdminTheme.js",
+            "gymmate_admin_vite/src/lib/api.js"
+          ],
+          "externalImports": [
+            "vue",
+            "vue-router"
+          ]
+        }
+      ],
+      "edgeCount": 40,
+      "externalModules": [
+        "vue",
+        "vue-router",
+        "vuetify",
+        "vuetify/iconsets/mdi",
+        "vuetify/styles"
+      ],
+      "tree": [
+        "gymmate_admin_vite/src",
+        "├── App.vue",
+        "├── assets",
+        "│   └── main.css",
+        "├── components",
+        "│   ├── AdminBrand.vue",
+        "│   ├── AdminShell.vue",
+        "│   ├── AdminThemeToggle.vue",
+        "│   ├── PublicAuthShell.vue",
+        "│   ├── StatCard.vue",
+        "│   └── StateBlock.vue",
+        "├── composables",
+        "│   └── useAdminTheme.js",
+        "├── lib",
+        "│   └── api.js",
+        "├── main.js",
+        "├── plugins",
+        "│   └── vuetify.js",
+        "├── router",
+        "│   └── index.js",
+        "├── styles",
+        "└── views",
+        "    ├── AdminDashboard.vue",
+        "    ├── BrandingStudio.vue",
+        "    ├── GymDetails.vue",
+        "    ├── HomePage.vue",
+        "    ├── InvitesView.vue",
+        "    ├── Login.vue",
+        "    ├── LoginPage.vue",
+        "    ├── ManageMembers.vue",
+        "    └── RegisterGym.vue"
+      ]
+    },
+    {
+      "key": "mobile",
+      "label": "gymmate_mobile",
+      "root": "gymmate_mobile/lib",
+      "entrypoints": [
+        "gymmate_mobile/lib/main.dart"
+      ],
+      "entrypointDependencies": {
+        "gymmate_mobile/lib/main.dart": [
+          "gymmate_mobile/lib/pages/admin_dashboard_page.dart",
+          "gymmate_mobile/lib/pages/gym_member_dashboard_page.dart",
+          "gymmate_mobile/lib/pages/gym_owner_dashboard_page.dart",
+          "gymmate_mobile/lib/pages/invite_code_list_page.dart",
+          "gymmate_mobile/lib/pages/onboarding/onboarding_flow.dart",
+          "gymmate_mobile/lib/pages/profile_page.dart",
+          "gymmate_mobile/lib/pages/splash_screen.dart",
+          "gymmate_mobile/lib/providers/auth_provider.dart",
+          "gymmate_mobile/lib/providers/onboarding_provider.dart",
+          "gymmate_mobile/lib/themes/app_colors.dart",
+          "gymmate_mobile/lib/themes/app_theme.dart",
+          "gymmate_mobile/lib/utils/branding_utils.dart",
+          "gymmate_mobile/lib/utils/role_utils.dart"
+        ]
+      },
+      "fileCount": 65,
+      "nodeSample": [
+        {
+          "path": "gymmate_mobile/lib/api/api_config.dart",
+          "imports": [],
+          "externalImports": [
+            "package:flutter/foundation.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/api/api_constants.dart",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_mobile/lib/main.dart",
+          "imports": [
+            "gymmate_mobile/lib/pages/admin_dashboard_page.dart",
+            "gymmate_mobile/lib/pages/gym_member_dashboard_page.dart",
+            "gymmate_mobile/lib/pages/gym_owner_dashboard_page.dart",
+            "gymmate_mobile/lib/pages/invite_code_list_page.dart",
+            "gymmate_mobile/lib/pages/onboarding/onboarding_flow.dart",
+            "gymmate_mobile/lib/pages/profile_page.dart",
+            "gymmate_mobile/lib/pages/splash_screen.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/providers/onboarding_provider.dart",
+            "gymmate_mobile/lib/themes/app_colors.dart",
+            "gymmate_mobile/lib/themes/app_theme.dart",
+            "gymmate_mobile/lib/utils/branding_utils.dart",
+            "gymmate_mobile/lib/utils/role_utils.dart"
+          ],
+          "externalImports": [
+            "package:flutter/foundation.dart",
+            "package:flutter/material.dart",
+            "package:provider/provider.dart",
+            "pages/branding_settings_page.dart",
+            "pages/coach_page.dart",
+            "pages/gamified_entry_screen.dart",
+            "pages/gym_trainer_dashboard_page.dart",
+            "pages/plan_page.dart",
+            "pages/trainer_clients_page.dart",
+            "pages/trainer_messages_page.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/models/dashboard_models.dart",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_mobile/lib/models/invite_code_model.dart",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_mobile/lib/models/user_progress_model.dart",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/admin_dashboard_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/api_dashboard_service.dart",
+            "gymmate_mobile/lib/widgets/dashboard_charts.dart",
+            "gymmate_mobile/lib/widgets/editorial_dashboard_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/branding_settings_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/utils/branding_utils.dart",
+            "gymmate_mobile/lib/utils/logo_picker.dart"
+          ],
+          "externalImports": [
+            "dart:convert",
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/coach_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/messaging_service.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/conversation_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/messaging_service.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/gamified_entry_screen.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart",
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/widgets/animated_form_field.dart",
+            "gymmate_mobile/lib/widgets/confetti_success.dart",
+            "gymmate_mobile/lib/widgets/phase_one_shell.dart",
+            "gymmate_mobile/lib/widgets/role_card.dart"
+          ],
+          "externalImports": [
+            "dart:async",
+            "dart:convert",
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart",
+            "package:google_fonts/google_fonts.dart",
+            "package:provider/provider.dart",
+            "quick_join_screen.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/gym_member_dashboard_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/api_dashboard_service.dart",
+            "gymmate_mobile/lib/services/onboarding_service.dart",
+            "gymmate_mobile/lib/widgets/editorial_dashboard_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/gym_owner_dashboard_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart",
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/coaching_service.dart",
+            "gymmate_mobile/lib/widgets/editorial_dashboard_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "branding_settings_page.dart",
+            "dart:convert",
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/gym_trainer_dashboard_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/coaching_service.dart",
+            "gymmate_mobile/lib/widgets/editorial_dashboard_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/home_page.dart",
+          "imports": [],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/invite_code_list_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/models/invite_code_model.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/invite_service.dart",
+            "gymmate_mobile/lib/utils/role_utils.dart",
+            "gymmate_mobile/lib/widgets/editorial_dashboard_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:flutter/services.dart",
+            "package:intl/intl.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/login_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/pages/gamified_entry_screen.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/diet_step.dart",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/onboarding_flow.dart",
+          "imports": [
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "steps/challenge_step.dart",
+            "steps/completion_step.dart",
+            "steps/diet_step.dart",
+            "steps/goals_step.dart",
+            "steps/profile_step.dart",
+            "steps/welcome_step.dart",
+            "steps/workout_step.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/steps/challenge_step.dart",
+          "imports": [
+            "gymmate_mobile/lib/providers/onboarding_provider.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_onboarding.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/steps/completion_step.dart",
+          "imports": [
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/providers/onboarding_provider.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_onboarding.dart"
+          ],
+          "externalImports": [
+            "package:confetti/confetti.dart",
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/steps/diet_step.dart",
+          "imports": [
+            "gymmate_mobile/lib/providers/onboarding_provider.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_onboarding.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/steps/goals_step.dart",
+          "imports": [
+            "gymmate_mobile/lib/providers/onboarding_provider.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_onboarding.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/steps/profile_step.dart",
+          "imports": [
+            "gymmate_mobile/lib/providers/onboarding_provider.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_onboarding.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/steps/welcome_step.dart",
+          "imports": [
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_onboarding.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/onboarding/steps/workout_step.dart",
+          "imports": [
+            "gymmate_mobile/lib/providers/onboarding_provider.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_onboarding.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/plan_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart",
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/onboarding_service.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "dart:convert",
+            "package:flutter/material.dart",
+            "package:intl/intl.dart",
+            "package:provider/provider.dart",
+            "package:shared_preferences/shared_preferences.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/profile_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/auth_service.dart",
+            "gymmate_mobile/lib/services/onboarding_service.dart",
+            "gymmate_mobile/lib/utils/role_utils.dart",
+            "gymmate_mobile/lib/widgets/confetti_success.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "dart:convert",
+            "gamified_entry_screen.dart",
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/quick_join_screen.dart",
+          "imports": [
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/widgets/animated_form_field.dart",
+            "gymmate_mobile/lib/widgets/phase_one_shell.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/register_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/main.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart"
+          ],
+          "externalImports": [
+            "dart:async",
+            "login_page.dart",
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/splash_entry_page.dart",
+          "imports": [],
+          "externalImports": [
+            "login_page.dart",
+            "package:flutter/material.dart",
+            "register_page.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/splash_screen.dart",
+          "imports": [
+            "gymmate_mobile/lib/widgets/animated_background.dart",
+            "gymmate_mobile/lib/widgets/brand_loader.dart"
+          ],
+          "externalImports": [
+            "dart:async",
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart",
+            "package:google_fonts/google_fonts.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/trainer_clients_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart",
+            "gymmate_mobile/lib/pages/conversation_page.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/coaching_service.dart",
+            "gymmate_mobile/lib/services/messaging_service.dart",
+            "gymmate_mobile/lib/widgets/editorial_dashboard_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "dart:convert",
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/pages/trainer_messages_page.dart",
+          "imports": [
+            "gymmate_mobile/lib/pages/conversation_page.dart",
+            "gymmate_mobile/lib/providers/auth_provider.dart",
+            "gymmate_mobile/lib/services/messaging_service.dart",
+            "gymmate_mobile/lib/widgets/editorial_dashboard_mobile.dart",
+            "gymmate_mobile/lib/widgets/editorial_mobile.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:provider/provider.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/providers/auth_provider.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart",
+            "gymmate_mobile/lib/utils/branding_utils.dart",
+            "gymmate_mobile/lib/utils/role_utils.dart"
+          ],
+          "externalImports": [
+            "dart:convert",
+            "package:flutter/material.dart",
+            "package:flutter_secure_storage/flutter_secure_storage.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/providers/onboarding_provider.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart"
+          ],
+          "externalImports": [
+            "dart:convert",
+            "package:flutter/material.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/services/ai_service.dart",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_mobile/lib/services/api_dashboard_service.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart"
+          ],
+          "externalImports": [
+            "dart:convert"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/services/auth_service.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart"
+          ],
+          "externalImports": [
+            "dart:convert",
+            "package:flutter_secure_storage/flutter_secure_storage.dart",
+            "package:shared_preferences/shared_preferences.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/services/coaching_service.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart"
+          ],
+          "externalImports": [
+            "dart:convert"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/services/invite_service.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart",
+            "gymmate_mobile/lib/models/invite_code_model.dart"
+          ],
+          "externalImports": [
+            "dart:convert"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/services/messaging_service.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart"
+          ],
+          "externalImports": [
+            "dart:convert"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/services/onboarding_service.dart",
+          "imports": [
+            "gymmate_mobile/lib/api/api_config.dart"
+          ],
+          "externalImports": [
+            "dart:convert",
+            "package:shared_preferences/shared_preferences.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/theme.dart",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_mobile/lib/themes/app_colors.dart",
+          "imports": [],
+          "externalImports": [
+            "package:flutter/material.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/themes/app_theme.dart",
+          "imports": [
+            "gymmate_mobile/lib/themes/app_colors.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:google_fonts/google_fonts.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/utils/branding_utils.dart",
+          "imports": [],
+          "externalImports": [
+            "dart:convert",
+            "dart:typed_data",
+            "package:flutter/material.dart",
+            "package:flutter_svg/flutter_svg.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/utils/logo_picker.dart",
+          "imports": [],
+          "externalImports": [
+            "logo_picker_stub.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/utils/logo_picker_io.dart",
+          "imports": [],
+          "externalImports": [
+            "logo_picker_stub.dart",
+            "package:file_picker/file_picker.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/utils/logo_picker_stub.dart",
+          "imports": [],
+          "externalImports": [
+            "dart:typed_data"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/utils/logo_picker_web.dart",
+          "imports": [],
+          "externalImports": [
+            "dart:async",
+            "dart:typed_data",
+            "logo_picker_stub.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/utils/role_utils.dart",
+          "imports": [],
+          "externalImports": []
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/animated_background.dart",
+          "imports": [
+            "gymmate_mobile/lib/themes/app_colors.dart",
+            "gymmate_mobile/lib/themes/app_theme.dart"
+          ],
+          "externalImports": [
+            "package:flutter/foundation.dart",
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/animated_form_field.dart",
+          "imports": [],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/brand_loader.dart",
+          "imports": [
+            "gymmate_mobile/lib/themes/app_colors.dart",
+            "gymmate_mobile/lib/widgets/brand_logo.dart"
+          ],
+          "externalImports": [
+            "package:flutter/foundation.dart",
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/brand_logo.dart",
+          "imports": [],
+          "externalImports": [
+            "package:flutter/material.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/confetti_success.dart",
+          "imports": [],
+          "externalImports": [
+            "package:confetti/confetti.dart",
+            "package:flutter/material.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/dashboard_charts.dart",
+          "imports": [],
+          "externalImports": [
+            "package:flutter/material.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/editorial_dashboard_mobile.dart",
+          "imports": [],
+          "externalImports": [
+            "editorial_mobile.dart",
+            "package:flutter/material.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/editorial_mobile.dart",
+          "imports": [
+            "gymmate_mobile/lib/themes/app_colors.dart"
+          ],
+          "externalImports": [
+            "dart:ui",
+            "package:flutter/material.dart",
+            "package:google_fonts/google_fonts.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/editorial_onboarding.dart",
+          "imports": [],
+          "externalImports": [
+            "editorial_mobile.dart",
+            "package:flutter/material.dart",
+            "package:google_fonts/google_fonts.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/entry_carousel.dart",
+          "imports": [],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/phase_one_shell.dart",
+          "imports": [
+            "gymmate_mobile/lib/themes/app_colors.dart",
+            "gymmate_mobile/lib/themes/app_theme.dart",
+            "gymmate_mobile/lib/widgets/animated_background.dart",
+            "gymmate_mobile/lib/widgets/brand_logo.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart",
+            "package:google_fonts/google_fonts.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/progress_bar.dart",
+          "imports": [],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart"
+          ]
+        },
+        {
+          "path": "gymmate_mobile/lib/widgets/role_card.dart",
+          "imports": [
+            "gymmate_mobile/lib/themes/app_colors.dart"
+          ],
+          "externalImports": [
+            "package:flutter/material.dart",
+            "package:flutter_animate/flutter_animate.dart",
+            "package:google_fonts/google_fonts.dart"
+          ]
+        }
+      ],
+      "edgeCount": 136,
+      "externalModules": [
+        "branding_settings_page.dart",
+        "dart:async",
+        "dart:convert",
+        "dart:typed_data",
+        "dart:ui",
+        "editorial_mobile.dart",
+        "gamified_entry_screen.dart",
+        "login_page.dart",
+        "logo_picker_stub.dart",
+        "package:confetti/confetti.dart",
+        "package:file_picker/file_picker.dart",
+        "package:flutter/foundation.dart",
+        "package:flutter/material.dart",
+        "package:flutter/services.dart",
+        "package:flutter_animate/flutter_animate.dart",
+        "package:flutter_secure_storage/flutter_secure_storage.dart",
+        "package:flutter_svg/flutter_svg.dart",
+        "package:google_fonts/google_fonts.dart",
+        "package:intl/intl.dart",
+        "package:provider/provider.dart",
+        "package:shared_preferences/shared_preferences.dart",
+        "pages/branding_settings_page.dart",
+        "pages/coach_page.dart",
+        "pages/gamified_entry_screen.dart",
+        "pages/gym_trainer_dashboard_page.dart",
+        "pages/plan_page.dart",
+        "pages/trainer_clients_page.dart",
+        "pages/trainer_messages_page.dart",
+        "quick_join_screen.dart",
+        "register_page.dart",
+        "steps/challenge_step.dart",
+        "steps/completion_step.dart",
+        "steps/diet_step.dart",
+        "steps/goals_step.dart",
+        "steps/profile_step.dart",
+        "steps/welcome_step.dart",
+        "steps/workout_step.dart"
+      ],
+      "tree": [
+        "gymmate_mobile/lib",
+        "├── api",
+        "│   ├── api_config.dart",
+        "│   └── api_constants.dart",
+        "├── forks",
+        "│   └── charts_flutter",
+        "├── main.dart",
+        "├── models",
+        "│   ├── dashboard_models.dart",
+        "│   ├── invite_code_model.dart",
+        "│   └── user_progress_model.dart",
+        "├── pages",
+        "│   ├── admin_dashboard_page.dart",
+        "│   ├── branding_settings_page.dart",
+        "│   ├── coach_page.dart",
+        "│   ├── conversation_page.dart",
+        "│   ├── gamified_entry_screen.dart",
+        "│   ├── gym_member_dashboard_page.dart",
+        "│   ├── gym_owner_dashboard_page.dart",
+        "│   ├── gym_trainer_dashboard_page.dart",
+        "│   ├── home_page.dart",
+        "│   ├── invite_code_list_page.dart",
+        "│   ├── login_page.dart",
+        "│   ├── onboarding",
+        "│   ├── plan_page.dart",
+        "│   ├── profile_page.dart",
+        "│   ├── quick_join_screen.dart",
+        "│   ├── register_page.dart",
+        "│   ├── splash_entry_page.dart",
+        "│   ├── splash_screen.dart",
+        "│   ├── trainer_clients_page.dart",
+        "│   └── trainer_messages_page.dart",
+        "├── providers",
+        "│   ├── auth_provider.dart",
+        "│   └── onboarding_provider.dart",
+        "├── services",
+        "│   ├── ai_service.dart",
+        "│   ├── api_dashboard_service.dart",
+        "│   ├── auth_service.dart",
+        "│   ├── coaching_service.dart",
+        "│   ├── invite_service.dart",
+        "│   ├── messaging_service.dart",
+        "│   └── onboarding_service.dart",
+        "├── theme.dart",
+        "├── themes",
+        "│   ├── app_colors.dart",
+        "│   └── app_theme.dart",
+        "├── utils",
+        "│   ├── branding_utils.dart",
+        "│   ├── logo_picker_io.dart",
+        "│   ├── logo_picker_stub.dart",
+        "│   ├── logo_picker_web.dart",
+        "│   ├── logo_picker.dart",
+        "│   └── role_utils.dart",
+        "└── widgets",
+        "    ├── animated_background.dart",
+        "    ├── animated_form_field.dart",
+        "    ├── brand_loader.dart",
+        "    ├── brand_logo.dart",
+        "    ├── confetti_success.dart",
+        "    ├── dashboard_charts.dart",
+        "    ├── editorial_dashboard_mobile.dart",
+        "    ├── editorial_mobile.dart",
+        "    ├── editorial_onboarding.dart",
+        "    ├── entry_carousel.dart",
+        "    ├── phase_one_shell.dart",
+        "    ├── progress_bar.dart",
+        "    └── role_card.dart"
+      ]
+    }
+  ],
+  "backendRoutes": [
+    {
+      "mountPath": "/api/auth",
+      "routeFile": "gymmate_backend/routes/authRoutes.js",
+      "handlers": [
+        {
+          "method": "POST",
+          "path": "/register",
+          "rawHandler": "userController.register",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "register",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/login",
+          "rawHandler": "userController.login",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "login",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/quick-login",
+          "rawHandler": "userController.quickLogin",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "quickLogin",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/me",
+          "rawHandler": "userController.getUserProfile",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "getUserProfile",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/user-details-for-plan",
+          "rawHandler": "userController.getUserDetailsForPlan",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "getUserDetailsForPlan",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/complete-onboarding",
+          "rawHandler": "userController.updateOnboardingStatus",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "updateOnboardingStatus",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/dashboard/stats",
+          "rawHandler": "userController.getDashboardStats",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "getDashboardStats",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/members/categorized",
+          "rawHandler": "userController.getCategorizedMembers",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "getCategorizedMembers",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/gym",
+      "routeFile": "gymmate_backend/routes/gymRoutes.js",
+      "handlers": [
+        {
+          "method": "POST",
+          "path": "/register",
+          "rawHandler": "async (req, res) => { try { const { gymName: rawGymName, name, email, password, address, contactNumber, phone, services, } = req.body; const gymName = rawGymName || name; const normalizedEmail = String(email || '').trim().toLowerCase(",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/list",
+          "rawHandler": "authenticateToken, async (req, res) => { try { if (!hasRole(req.user, ['admin'])) { return res.status(403).json({ message: 'Forbidden' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/login",
+          "rawHandler": "async (req, res) => { try { const email = String(req.body.email || '').trim().toLowerCase(",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/services",
+          "rawHandler": "async (req, res) => { try { const gyms = await Gym.find({}, 'services'",
+          "referencedControllers": [
+            {
+              "controllerAlias": "Gym",
+              "action": "find",
+              "file": "gymmate_backend/models/Gym.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/services/distribution",
+          "rawHandler": "authenticateToken, async (req, res) => { try { if (!hasRole(req.user, ['admin'])) { return res.status(403).json({ message: 'Forbidden' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/branding/:gymId",
+          "rawHandler": "async (req, res) => { try { const gym = await Gym.findById(req.params.gymId).select( 'gymName branding.logoUrl branding.primaryColor branding.secondaryColor branding.logoScale branding.logoOffsetX branding.logoOffsetY'",
+          "referencedControllers": [
+            {
+              "controllerAlias": "Gym",
+              "action": "findById",
+              "file": "gymmate_backend/models/Gym.js"
+            },
+            {
+              "controllerAlias": "req",
+              "action": "params",
+              "file": null
+            },
+            {
+              "controllerAlias": "branding",
+              "action": "logoUrl",
+              "file": null
+            },
+            {
+              "controllerAlias": "branding",
+              "action": "primaryColor",
+              "file": null
+            },
+            {
+              "controllerAlias": "branding",
+              "action": "secondaryColor",
+              "file": null
+            },
+            {
+              "controllerAlias": "branding",
+              "action": "logoScale",
+              "file": null
+            },
+            {
+              "controllerAlias": "branding",
+              "action": "logoOffsetX",
+              "file": null
+            },
+            {
+              "controllerAlias": "branding",
+              "action": "logoOffsetY",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/branding",
+          "rawHandler": "authenticateToken, async (req, res) => { try { if (!hasRole(req.user, ['owner', 'admin'])) { return res.status(403).json({ message: 'Forbidden' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/members",
+          "rawHandler": "authenticateToken, async (req, res) => { try { let members; if (hasRole(req.user, ['admin'])) { members = await User.find({ role: { $in: ['gym_owner', 'gym_trainer', 'gym_member'] } }) .select('name email role gymId createdAt'",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "User",
+              "action": "find",
+              "file": "gymmate_backend/models/User.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/all-members",
+          "rawHandler": "authenticateToken, async (req, res) => { if (!hasRole(req.user, ['admin'])) { return res.status(403).json({ message: 'Forbidden' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/self",
+          "rawHandler": "authenticateToken, async (req, res) => { try { const gymId = req.user.gymId || req.user._id; if (!gymId) { return res.status(404).json({ message: 'Gym not associated with current user' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/login-stats",
+          "rawHandler": "authenticateToken, async (req, res) => { try { if (!hasRole(req.user, ['member'])) { return res.status(403).json({ message: 'Forbidden: gym_member only' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/generate-invite",
+          "rawHandler": "authenticateToken, async (req, res) => { const { role } = req.body; const generator = req.user; if ( (generator.role === 'superadmin' && role === 'gym_owner') || (generator.role === 'gym_owner' && role === 'gym_member') ) { const code = Math.random().toString(36).substr(2, 8).toUpperCase(",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            },
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "generator",
+              "action": "role",
+              "file": null
+            },
+            {
+              "controllerAlias": "generator",
+              "action": "role",
+              "file": null
+            },
+            {
+              "controllerAlias": "Math",
+              "action": "random",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/validate-invite",
+          "rawHandler": "async (req, res) => { let { code } = req.body; code = code.trim().toUpperCase(",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            },
+            {
+              "controllerAlias": "code",
+              "action": "trim",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/:id",
+          "rawHandler": "async (req, res) => { try { const gym = await Gym.findById(req.params.id",
+          "referencedControllers": [
+            {
+              "controllerAlias": "Gym",
+              "action": "findById",
+              "file": "gymmate_backend/models/Gym.js"
+            },
+            {
+              "controllerAlias": "req",
+              "action": "params",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/onboarding",
+          "rawHandler": "authenticateToken, async (req, res) => { try { if (!hasRole(req.user, ['member'])) { return res.status(403).json({ message: 'Only gym_members can update onboarding data' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/check-name",
+          "rawHandler": "async (req, res) => { const { gymName } = req.body; if (!gymName) { return res.status(400).json({ exists: false, message: 'Gym name is required' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/invite",
+      "routeFile": "gymmate_backend/routes/inviteRoutes.js",
+      "handlers": [
+        {
+          "method": "POST",
+          "path": "/register",
+          "rawHandler": "async (req, res) => { try { const { username, password, inviteCode } = req.body; if (!username || !password || !inviteCode) { return res.status(400).json({ error: 'Username, password, and invite code are required.' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/validate",
+          "rawHandler": "async (req, res) => { let { code } = req.body; if (!code) { console.error('❌ Invite code is required'",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            },
+            {
+              "controllerAlias": "console",
+              "action": "error",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/verify",
+          "rawHandler": "async (req, res) => { // Call the same logic as /validate let { code } = req.body; if (!code) { console.error('❌ Invite code is required'",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            },
+            {
+              "controllerAlias": "console",
+              "action": "error",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/generate",
+          "rawHandler": "authenticateToken, inviteControllerGenerate",
+          "referencedControllers": []
+        },
+        {
+          "method": "GET",
+          "path": "/list",
+          "rawHandler": "authenticateToken, listInviteCodes",
+          "referencedControllers": []
+        },
+        {
+          "method": "POST",
+          "path": "/superadmin-create",
+          "rawHandler": "authenticateToken, async (req, res, next) => { if (!req.user || req.user.role !== 'superadmin') { console.error('❌ Only superadmin can access this endpoint'",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "req",
+              "action": "user",
+              "file": null
+            },
+            {
+              "controllerAlias": "console",
+              "action": "error",
+              "file": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/onboarding",
+      "routeFile": "gymmate_backend/routes/onboardingRoutes.js",
+      "handlers": [
+        {
+          "method": "GET",
+          "path": "/status",
+          "rawHandler": "getOnboardingStatus",
+          "referencedControllers": []
+        },
+        {
+          "method": "POST",
+          "path": "/start",
+          "rawHandler": "startOnboarding",
+          "referencedControllers": []
+        },
+        {
+          "method": "POST",
+          "path": "/step",
+          "rawHandler": "saveStepProgress",
+          "referencedControllers": []
+        },
+        {
+          "method": "POST",
+          "path": "/complete",
+          "rawHandler": "completeOnboarding",
+          "referencedControllers": []
+        },
+        {
+          "method": "GET",
+          "path": "/badges",
+          "rawHandler": "getUserBadges",
+          "referencedControllers": []
+        },
+        {
+          "method": "GET",
+          "path": "/progress",
+          "rawHandler": "getUserProgress",
+          "referencedControllers": []
+        },
+        {
+          "method": "POST",
+          "path": "/reset",
+          "rawHandler": "resetOnboarding",
+          "referencedControllers": []
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/user",
+      "routeFile": "gymmate_backend/routes/userRoutes.js",
+      "handlers": [
+        {
+          "method": "POST",
+          "path": "/register-member",
+          "rawHandler": "async (req, res) => { const { name, email, password, gymId } = req.body; if (!name || !email || !password || !gymId) { return res.status(400).json({ message: 'All fields are required.' }",
+          "referencedControllers": [
+            {
+              "controllerAlias": "req",
+              "action": "body",
+              "file": null
+            },
+            {
+              "controllerAlias": "res",
+              "action": "status",
+              "file": null
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/profile",
+          "rawHandler": "authenticateToken, updateProfile",
+          "referencedControllers": []
+        },
+        {
+          "method": "GET",
+          "path": "/me",
+          "rawHandler": "authenticateToken, getMe",
+          "referencedControllers": []
+        },
+        {
+          "method": "GET",
+          "path": "/gym-members",
+          "rawHandler": "authenticateToken, getGymMembers",
+          "referencedControllers": []
+        },
+        {
+          "method": "GET",
+          "path": "/count",
+          "rawHandler": "async (req, res) => { try { const count = await User.countDocuments(",
+          "referencedControllers": [
+            {
+              "controllerAlias": "User",
+              "action": "countDocuments",
+              "file": "gymmate_backend/models/User.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/gym-dashboard-stats",
+          "rawHandler": "authenticateToken, getGymDashboardStats",
+          "referencedControllers": []
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/plans",
+      "routeFile": "gymmate_backend/routes/planRoutes.js",
+      "handlers": [
+        {
+          "method": "GET",
+          "path": "/meal",
+          "rawHandler": "protect, planController.getMealPlanForUser",
+          "referencedControllers": [
+            {
+              "controllerAlias": "planController",
+              "action": "getMealPlanForUser",
+              "file": "gymmate_backend/controllers/planController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/workout",
+          "rawHandler": "protect, planController.getWorkoutPlanForUser",
+          "referencedControllers": [
+            {
+              "controllerAlias": "planController",
+              "action": "getWorkoutPlanForUser",
+              "file": "gymmate_backend/controllers/planController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/:memberId/:type",
+          "rawHandler": "protect, requireRole(['trainer', 'owner']), planController.trainerUpdatePlan",
+          "referencedControllers": [
+            {
+              "controllerAlias": "planController",
+              "action": "trainerUpdatePlan",
+              "file": "gymmate_backend/controllers/planController.js"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/member",
+      "routeFile": "gymmate_backend/routes/memberRoutes.js",
+      "handlers": [
+        {
+          "method": "GET",
+          "path": "/progress-participation",
+          "rawHandler": "userController.getMemberProgressParticipation,",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "getMemberProgressParticipation",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/plan-log",
+          "rawHandler": "planLogController.getMemberPlanLog",
+          "referencedControllers": [
+            {
+              "controllerAlias": "planLogController",
+              "action": "getMemberPlanLog",
+              "file": "gymmate_backend/controllers/planLogController.js"
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/plan-log",
+          "rawHandler": "planLogController.upsertMemberPlanLog",
+          "referencedControllers": [
+            {
+              "controllerAlias": "planLogController",
+              "action": "upsertMemberPlanLog",
+              "file": "gymmate_backend/controllers/planLogController.js"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/trainer",
+      "routeFile": "gymmate_backend/routes/trainerRoutes.js",
+      "handlers": [
+        {
+          "method": "GET",
+          "path": "/attendance-progress",
+          "rawHandler": "trainerController.getTrainerAttendanceProgress,",
+          "referencedControllers": [
+            {
+              "controllerAlias": "trainerController",
+              "action": "getTrainerAttendanceProgress",
+              "file": "gymmate_backend/controllers/trainerController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/dashboard",
+          "rawHandler": "trainerController.getTrainerDashboard",
+          "referencedControllers": [
+            {
+              "controllerAlias": "trainerController",
+              "action": "getTrainerDashboard",
+              "file": "gymmate_backend/controllers/trainerController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/clients",
+          "rawHandler": "trainerController.getTrainerClients",
+          "referencedControllers": [
+            {
+              "controllerAlias": "trainerController",
+              "action": "getTrainerClients",
+              "file": "gymmate_backend/controllers/trainerController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/clients/:memberId/summary",
+          "rawHandler": "trainerController.getTrainerClientSummary",
+          "referencedControllers": [
+            {
+              "controllerAlias": "trainerController",
+              "action": "getTrainerClientSummary",
+              "file": "gymmate_backend/controllers/trainerController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/clients/:memberId/activity",
+          "rawHandler": "trainerController.getTrainerClientActivity",
+          "referencedControllers": [
+            {
+              "controllerAlias": "trainerController",
+              "action": "getTrainerClientActivity",
+              "file": "gymmate_backend/controllers/trainerController.js"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/owner",
+      "routeFile": "gymmate_backend/routes/ownerRoutes.js",
+      "handlers": [
+        {
+          "method": "GET",
+          "path": "/trainers",
+          "rawHandler": "ownerController.getOwnerTrainers",
+          "referencedControllers": [
+            {
+              "controllerAlias": "ownerController",
+              "action": "getOwnerTrainers",
+              "file": "gymmate_backend/controllers/ownerController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/assignments",
+          "rawHandler": "ownerController.getOwnerAssignments",
+          "referencedControllers": [
+            {
+              "controllerAlias": "ownerController",
+              "action": "getOwnerAssignments",
+              "file": "gymmate_backend/controllers/ownerController.js"
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/members/:memberId/assignment",
+          "rawHandler": "ownerController.assignMemberToTrainer",
+          "referencedControllers": [
+            {
+              "controllerAlias": "ownerController",
+              "action": "assignMemberToTrainer",
+              "file": "gymmate_backend/controllers/ownerController.js"
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/members/:memberId/assignment",
+          "rawHandler": "ownerController.unassignMember",
+          "referencedControllers": [
+            {
+              "controllerAlias": "ownerController",
+              "action": "unassignMember",
+              "file": "gymmate_backend/controllers/ownerController.js"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mountPath": "/api/messages",
+      "routeFile": "gymmate_backend/routes/messageRoutes.js",
+      "handlers": [
+        {
+          "method": "GET",
+          "path": "/conversations",
+          "rawHandler": "messageController.getConversations",
+          "referencedControllers": [
+            {
+              "controllerAlias": "messageController",
+              "action": "getConversations",
+              "file": "gymmate_backend/controllers/messageController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/conversations",
+          "rawHandler": "messageController.createConversation",
+          "referencedControllers": [
+            {
+              "controllerAlias": "messageController",
+              "action": "createConversation",
+              "file": "gymmate_backend/controllers/messageController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/conversations/:id/messages",
+          "rawHandler": "messageController.getConversationMessages",
+          "referencedControllers": [
+            {
+              "controllerAlias": "messageController",
+              "action": "getConversationMessages",
+              "file": "gymmate_backend/controllers/messageController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/conversations/:id/messages",
+          "rawHandler": "messageController.postMessage",
+          "referencedControllers": [
+            {
+              "controllerAlias": "messageController",
+              "action": "postMessage",
+              "file": "gymmate_backend/controllers/messageController.js"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "adminRoutes": [
+    {
+      "path": "/",
+      "name": "Home",
+      "component": "gymmate_admin_vite/src/views/HomePage.vue"
+    },
+    {
+      "path": "/login",
+      "name": "Login",
+      "component": "gymmate_admin_vite/src/views/LoginPage.vue"
+    },
+    {
+      "path": "/register-gym",
+      "name": "RegisterGym",
+      "component": "gymmate_admin_vite/src/views/RegisterGym.vue"
+    },
+    {
+      "path": "/dashboard",
+      "name": "AdminDashboard",
+      "component": "gymmate_admin_vite/src/views/AdminDashboard.vue"
+    },
+    {
+      "path": "/manage-members",
+      "name": "ManageMembers",
+      "component": "gymmate_admin_vite/src/views/ManageMembers.vue"
+    },
+    {
+      "path": "/invites",
+      "name": "Invites",
+      "component": "gymmate_admin_vite/src/views/InvitesView.vue"
+    },
+    {
+      "path": "/branding",
+      "name": "BrandingStudio",
+      "component": "gymmate_admin_vite/src/views/BrandingStudio.vue"
+    },
+    {
+      "path": "/gyms/:id",
+      "name": "GymDetails",
+      "component": "gymmate_admin_vite/src/views/GymDetails.vue"
+    }
+  ],
+  "mobileRoutes": {
+    "namedRoutes": [
+      {
+        "route": "/onboarding",
+        "widget": "OnboardingFlow"
+      }
+    ],
+    "authGateTargets": [
+      "BrandedLoadingScreen",
+      "GamifiedEntryScreen",
+      "MainNavigationScaffold"
+    ]
+  },
+  "mermaid": "graph TD\n  Repo[\"gymmate-complete / codex-mvp-figma\"]\n  Repo --> Backend[\"Backend API\"]\n  Repo --> Admin[\"Admin Web\"]\n  Repo --> Mobile[\"Mobile App\"]\n  Backend --> backend__api_auth[\"/api/auth\"]\n  Backend --> backend__api_gym[\"/api/gym\"]\n  Backend --> backend__api_invite[\"/api/invite\"]\n  Backend --> backend__api_onboarding[\"/api/onboarding\"]\n  Backend --> backend__api_user[\"/api/user\"]\n  Backend --> backend__api_plans[\"/api/plans\"]\n  Backend --> backend__api_member[\"/api/member\"]\n  Backend --> backend__api_trainer[\"/api/trainer\"]\n  Backend --> backend__api_owner[\"/api/owner\"]\n  Backend --> backend__api_messages[\"/api/messages\"]\n  Admin --> admin_Home[\"Home: /\"]\n  Admin --> admin_Login[\"Login: /login\"]\n  Admin --> admin_RegisterGym[\"RegisterGym: /register-gym\"]\n  Admin --> admin_AdminDashboard[\"AdminDashboard: /dashboard\"]\n  Admin --> admin_ManageMembers[\"ManageMembers: /manage-members\"]\n  Admin --> admin_Invites[\"Invites: /invites\"]\n  Admin --> admin_BrandingStudio[\"BrandingStudio: /branding\"]\n  Admin --> admin_GymDetails[\"GymDetails: /gyms/:id\"]\n  Mobile --> mobile_BrandedLoadingScreen[\"BrandedLoadingScreen\"]\n  Mobile --> mobile_GamifiedEntryScreen[\"GamifiedEntryScreen\"]\n  Mobile --> mobile_MainNavigationScaffold[\"MainNavigationScaffold\"]\n  Admin --> Backend\n  Mobile --> Backend"
+}
