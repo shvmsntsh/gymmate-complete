@@ -32,14 +32,30 @@ const userSchema = new mongoose.Schema({
   // 'gym_trainer' = trainer (can edit/view plans for members in their gym)
   role: {
     type: String,
-    enum: ['superadmin', 'admin', 'gym_owner', 'gym_member', 'gym_trainer'],
+    enum: ['superadmin', 'admin', 'gym_owner', 'gym_staff', 'gym_member', 'gym_trainer'],
     default: 'gym_owner',
   },
   // Reference to associated Gym (for gym_owner, gym_member, gym_trainer)
   gymId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Gym',
-    required: function() { return this.role === 'gym_member' || this.role === 'gym_trainer'; }
+    required: function() {
+      return this.role === 'gym_member' || this.role === 'gym_trainer' || this.role === 'gym_staff';
+    }
+  },
+  staffCapabilities: {
+    'workspace.access': { type: Boolean, default: false },
+    'members.manage': { type: Boolean, default: false },
+    'announcements.manage': { type: Boolean, default: false },
+    'membership.requests.manage': { type: Boolean, default: false },
+    'payments.manage': { type: Boolean, default: false },
+    'membership.plans.manage': { type: Boolean, default: false },
+    'biometric.manage': { type: Boolean, default: false },
+  },
+  telegramProfile: {
+    chatId: { type: String, default: null },
+    handle: { type: String, default: null },
+    linkedAt: { type: Date, default: null },
   },
   invited: {
     type: Boolean,
@@ -164,7 +180,7 @@ const userSchema = new mongoose.Schema({
     isAccepted: { type: Boolean, default: false },
     type: { 
       type: String,
-      enum: ['7_day_checkin', 'first_workout', 'profile_photo', 'goal_setting', null],
+      enum: ['7_day_checkin', 'first_workout', 'meal_rhythm', 'profile_photo', 'goal_setting', null],
       default: null
     },
     startDate: { type: Date, default: null },

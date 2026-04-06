@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:gymmate_mobile/services/member_hub_service.dart';
 
 import '../main.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_dashboard_service.dart';
+import '../services/onboarding_service.dart';
 import '../widgets/editorial_dashboard_mobile.dart';
 import '../widgets/editorial_mobile.dart';
 
@@ -16,6 +20,9 @@ class GymMemberDashboardPage extends StatefulWidget {
 
 class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
   List<Map<String, dynamic>> progressParticipation = [];
+  Map<String, dynamic>? challengeSummary;
+  List<Map<String, dynamic>> announcements = const [];
+  bool announcementsLoading = true;
 
   @override
   void initState() {
@@ -30,9 +37,48 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
     final data = await ApiDashboardService.fetchMemberProgressParticipation(
       token,
     );
+    List<Map<String, dynamic>> nextAnnouncements = const [];
+    Map<String, dynamic>? nextChallenge;
+    try {
+      final onboardingService = OnboardingService()..setToken(token);
+      final progress = await onboardingService.getUserProgress();
+      final challenge = Map<String, dynamic>.from(
+        progress['challenge'] ?? progress['firstChallenge'] ?? const {},
+      );
+      if (challenge.isNotEmpty) {
+        nextChallenge = challenge;
+      }
+    } catch (_) {
+      nextChallenge = null;
+    }
+    try {
+      nextAnnouncements = await MemberHubService.fetchAnnouncements(token, limit: 3);
+      if (nextAnnouncements.isNotEmpty) {
+        nextAnnouncements = await Future.wait(
+          nextAnnouncements.map((delivery) async {
+            final announcement = Map<String, dynamic>.from(
+              delivery['announcement'] ?? const {},
+            );
+            final imageBytes = await MemberHubService.fetchAssetBytes(
+              token,
+              announcement['mediaUrl']?.toString(),
+            );
+            return {
+              ...delivery,
+              'announcementImageBytes': imageBytes,
+            };
+          }),
+        );
+      }
+    } catch (_) {
+      nextAnnouncements = const [];
+    }
     if (!mounted) return;
     setState(() {
       progressParticipation = data;
+      challengeSummary = nextChallenge;
+      announcements = nextAnnouncements;
+      announcementsLoading = false;
     });
   }
 
@@ -86,12 +132,12 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
                 ),
                 const SizedBox(height: 16),
                 DashboardHeroCard(
-                  eyebrow: 'Today\'s Plan',
-                  title: 'Your next session is ready whenever you are.',
+                  eyebrow: 'Plan',
+                  title: 'Your plan is ready.',
                   subtitle:
-                      'Follow your workout, stay consistent, and keep your rhythm with $gymName all in one place.',
-                  metaLeft: '$activeClassesCount active classes',
-                  metaRight: '$totalLogs weekly logs',
+                      'Open today’s workout, meals, and check-ins in one place with $gymName.',
+                  metaLeft: '$activeClassesCount classes',
+                  metaRight: '$totalLogs logs',
                   actionColor: theme.colorScheme.primary,
                   onTap: () => MainNavigationScaffold.switchTab(1),
                   buttonLabel: 'Open plan',
@@ -100,6 +146,45 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
                     height: 176,
                     fit: BoxFit.contain,
                   ),
+                ),
+                if (challengeSummary != null &&
+                    challengeSummary!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _ChallengeStrip(challenge: challengeSummary!),
+                ],
+                const SizedBox(height: 18),
+                DashboardSectionCard(
+                  eyebrow: 'Announcements',
+                  title: announcements.isEmpty
+                      ? 'No fresh updates right now.'
+                      : 'Latest from your gym.',
+                  subtitle: announcementsLoading
+                      ? 'Loading latest notices.'
+                      : 'Offers, holiday notes, and service updates land here.',
+                  child: announcementsLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : announcements.isEmpty
+                          ? Text(
+                              'When your gym sends announcements, they will appear here.',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            )
+                          : Column(
+                              children: List.generate(announcements.length, (index) {
+                                final delivery = announcements[index];
+                                final announcement = Map<String, dynamic>.from(
+                                  delivery['announcement'] ?? {},
+                                );
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: index == announcements.length - 1 ? 0 : 12,
+                                  ),
+                                  child: _AnnouncementCard(
+                                    delivery: delivery,
+                                    announcement: announcement,
+                                  ),
+                                );
+                              }),
+                            ),
                 ),
                 const SizedBox(height: 18),
                 Column(
@@ -118,7 +203,7 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
                           child: DashboardStatPanel(
                             label: 'Attendance',
                             value: '$attendanceCount',
-                            caption: 'gym consistency',
+                            caption: 'sessions kept',
                             icon: Icons.local_fire_department_outlined,
                           ),
                         ),
@@ -127,7 +212,7 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
                           child: DashboardStatPanel(
                             label: 'Momentum',
                             value: '$progressCount',
-                            caption: 'current rhythm',
+                            caption: 'current streak',
                             icon: Icons.schedule_rounded,
                           ),
                         ),
@@ -138,9 +223,8 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
                 const SizedBox(height: 18),
                 DashboardSectionCard(
                   eyebrow: 'Weekly Rhythm',
-                  title: 'Your movement across the week.',
-                  subtitle:
-                      'A simple read on how consistently you showed up and trained.',
+                  title: 'Your week at a glance.',
+                  subtitle: 'See where your rhythm is building.',
                   trailing: Text(
                     'LAST 7 DAYS',
                     style: theme.textTheme.labelMedium?.copyWith(
@@ -163,7 +247,7 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
                 const SizedBox(height: 18),
                 DashboardSectionCard(
                   eyebrow: 'Upcoming Focus',
-                  title: 'The next checkpoints to keep moving.',
+                  title: 'Next checkpoints.',
                   trailing: TextButton(
                     onPressed: () => MainNavigationScaffold.switchTab(1),
                     child: const Text('View all'),
@@ -179,13 +263,12 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
   }
 
   List<Widget> _buildCheckpointCards(BuildContext context) {
-    final entries = progressParticipation.take(3).toList();
+    final entries = progressParticipation.take(2).toList();
     if (entries.isEmpty) {
       return [
         DashboardListTileCard(
-          title: 'Your first training checkpoint is waiting',
-          subtitle:
-              'Complete today\'s plan to start building a steady weekly rhythm.',
+          title: 'Your first checkpoint is waiting',
+          subtitle: 'Complete today’s plan to start the streak.',
           trailingTop: 'Today',
           trailingBottom: 'Start strong',
           leading: _avatarBadge(context, Icons.fitness_center_rounded),
@@ -202,7 +285,7 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
         padding: EdgeInsets.only(bottom: index == entries.length - 1 ? 0 : 12),
         child: DashboardListTileCard(
           title: _memberCheckpointTitle(index),
-          subtitle: '$day focus • Keep your pace smooth and consistent.',
+          subtitle: '$day focus • Keep your pace steady.',
           trailingTop: '$count logs',
           trailingBottom: day.toUpperCase(),
           leading: _avatarBadge(context, Icons.calendar_today_rounded),
@@ -246,6 +329,149 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
   }
 }
 
+class _AnnouncementCard extends StatelessWidget {
+  final Map<String, dynamic> delivery;
+  final Map<String, dynamic> announcement;
+
+  const _AnnouncementCard({
+    required this.delivery,
+    required this.announcement,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = delivery['announcementImageBytes'];
+    final imageBytes = bytes is Uint8List ? bytes : null;
+    final theme = Theme.of(context);
+
+    return DashboardListTileCard(
+      title: (announcement['title'] ?? 'Announcement').toString(),
+      subtitle: (announcement['body'] ?? '').toString(),
+      trailingTop: (announcement['type'] ?? 'general').toString().toUpperCase(),
+      trailingBottom: delivery['inAppStatus'] == 'read' ? 'READ' : 'NEW',
+      leading: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Icon(
+          Icons.campaign_outlined,
+          color: theme.colorScheme.primary,
+        ),
+      ),
+      details: imageBytes == null
+          ? null
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.memory(
+                imageBytes,
+                height: 148,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+    );
+  }
+}
+
+class _ChallengeStrip extends StatelessWidget {
+  final Map<String, dynamic> challenge;
+
+  const _ChallengeStrip({required this.challenge});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final progress = ((challenge['progress'] as num?)?.toInt() ?? 0).clamp(
+      0,
+      100,
+    );
+    final summary = (challenge['summary'] ?? '').toString().trim();
+    final nextStep = (challenge['nextStep'] ?? '').toString().trim();
+    final current = challenge['current'];
+    final target = challenge['target'];
+    final metric = current != null && target != null
+        ? '$current/$target'
+        : null;
+
+    return EditorialSurface(
+      padding: const EdgeInsets.all(14),
+      radius: 24,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.flag_rounded,
+              color: theme.colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _challengeLabel(challenge['type']),
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  summary.isNotEmpty ? summary : 'Keep the challenge moving.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
+                if (nextStep.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    nextStep,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('$progress%', style: theme.textTheme.titleMedium),
+              if (metric != null)
+                Text(metric, style: theme.textTheme.labelMedium),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _challengeLabel(dynamic type) {
+    switch ((type ?? '').toString()) {
+      case 'first_workout':
+        return 'First Workout';
+      case 'meal_rhythm':
+        return 'Meal Rhythm';
+      case '7_day_checkin':
+      default:
+        return '7-Day Check-in';
+    }
+  }
+}
+
 class _ConsistencyPanel extends StatelessWidget {
   final double progress;
   final String value;
@@ -263,28 +489,32 @@ class _ConsistencyPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return EditorialSurface(
-      padding: const EdgeInsets.all(18),
-      radius: 28,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(16),
+      radius: 24,
+      child: Row(
         children: [
-          Text(
-            'Show up today and the week gets easier.',
-            style: theme.textTheme.titleLarge,
+          EditorialProgressRing(
+            progress: progress,
+            value: value,
+            label: label,
+            sublabel: caption,
+            size: 104,
           ),
-          const SizedBox(height: 10),
-          Text(
-            'Keep your streak moving with one session at a time. Your consistency builds every time you log a workout.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 18),
-          Center(
-            child: EditorialProgressRing(
-              progress: progress,
-              value: value,
-              label: label,
-              sublabel: caption,
-              size: 148,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Show up today and the week gets easier.',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'One session keeps the streak moving.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
             ),
           ),
         ],

@@ -87,7 +87,7 @@ class EditorialSurface extends StatelessWidget {
   const EditorialSurface({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(22),
+    this.padding = const EdgeInsets.all(16),
     this.radius = 30,
     this.color,
     this.border,
@@ -135,7 +135,7 @@ class EditorialKicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient(),
         borderRadius: BorderRadius.circular(999),
@@ -143,9 +143,9 @@ class EditorialKicker extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w800,
-          letterSpacing: 1.4,
+          letterSpacing: 1.2,
           color: AppColors.textOnAccent,
         ),
       ),
@@ -269,8 +269,8 @@ class EditorialPrimaryButton extends StatelessWidget {
           backgroundColor: Colors.transparent,
           disabledBackgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          minimumSize: const Size.fromHeight(78),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+          minimumSize: const Size.fromHeight(58),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
           ),
@@ -299,7 +299,7 @@ class EditorialPrimaryButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textOnAccent,
                       fontWeight: FontWeight.w800,
                     ),
@@ -348,9 +348,48 @@ class EditorialSecondaryButton extends StatelessWidget {
         backgroundColor: theme.colorScheme.surfaceContainerHigh.withValues(
           alpha: 0.5,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+        minimumSize: const Size.fromHeight(50),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       ),
       child: Text(label),
+    );
+  }
+}
+
+class EditorialGhostButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+
+  const EditorialGhostButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.28),
+        ),
+        foregroundColor: theme.colorScheme.primary,
+        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.06),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: theme.colorScheme.primary,
+        ),
+      ),
     );
   }
 }
@@ -458,11 +497,16 @@ class EditorialSectionHeading extends StatelessWidget {
                   color: theme.colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(title, style: theme.textTheme.headlineMedium),
+              const SizedBox(height: 8),
+              Text(title, style: theme.textTheme.headlineSmall),
               if (subtitle != null) ...[
-                const SizedBox(height: 10),
-                Text(subtitle!, style: theme.textTheme.bodyLarge),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
               ],
             ],
           ),

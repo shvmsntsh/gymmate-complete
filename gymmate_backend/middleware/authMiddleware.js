@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Gym = require('../models/Gym');
-const { normalizeRole, hasRole } = require('../utils/roles');
+const { normalizeRole, hasRole, hasPermission } = require('../utils/roles');
 
 const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -59,4 +59,19 @@ const requireRole = (roles) => (req, res, next) => {
   next();
 };
 
-module.exports = { authenticateToken, protect, requireRole, normalizeRole, hasRole };
+const requirePermission = (permission) => (req, res, next) => {
+  if (!req.user || !hasPermission(req.user, permission)) {
+    return res.status(403).json({ message: 'Forbidden: insufficient permission' });
+  }
+  next();
+};
+
+module.exports = {
+  authenticateToken,
+  protect,
+  requireRole,
+  requirePermission,
+  normalizeRole,
+  hasRole,
+  hasPermission,
+};

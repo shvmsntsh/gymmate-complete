@@ -34,6 +34,24 @@ const routes = [
     meta: { protected: true },
   },
   {
+    path: "/announcements",
+    name: "Announcements",
+    component: () => import("../views/AnnouncementsView.vue"),
+    meta: { protected: true },
+  },
+  {
+    path: "/membership",
+    name: "MembershipOps",
+    component: () => import("../views/MembershipOpsView.vue"),
+    meta: { protected: true },
+  },
+  {
+    path: "/biometric",
+    name: "BiometricOps",
+    component: () => import("../views/BiometricOpsView.vue"),
+    meta: { protected: true, ownerOnly: true },
+  },
+  {
     path: "/invites",
     name: "Invites",
     component: () => import("../views/InvitesView.vue"),
@@ -62,7 +80,11 @@ router.beforeEach((to, _from, next) => {
   const authenticated = isAdminAuthenticated();
   const role = getAdminRole();
 
-  if (to.name === "Login" && authenticated && hasWorkspaceAccess()) {
+  if (
+    (to.name === "Home" || to.name === "Login") &&
+    authenticated &&
+    hasWorkspaceAccess()
+  ) {
     next({ name: "AdminDashboard" });
     return;
   }

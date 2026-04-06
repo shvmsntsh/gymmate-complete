@@ -6,6 +6,9 @@ String? normalizeRole(String? role) {
     case 'gym_owner':
     case 'owner':
       return 'owner';
+    case 'gym_staff':
+    case 'staff':
+      return 'staff';
     case 'gym_trainer':
     case 'trainer':
       return 'trainer';
@@ -19,5 +22,6 @@ String? normalizeRole(String? role) {
 
 bool isAdminRole(String? role) => normalizeRole(role) == 'admin';
 bool isOwnerRole(String? role) => normalizeRole(role) == 'owner';
+bool isStaffRole(String? role) => normalizeRole(role) == 'staff';
 bool isTrainerRole(String? role) => normalizeRole(role) == 'trainer';
 bool isMemberRole(String? role) => normalizeRole(role) == 'member';

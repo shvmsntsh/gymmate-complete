@@ -44,105 +44,109 @@ class DashboardHeroCard extends StatelessWidget {
       radius: 30,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 380;
-          final showBottomAction = hasAction;
-          final heroHeight = compact ? 320.0 : 240.0;
-          final illustrationWidth = compact ? 108.0 : 140.0;
+          final hasIllustration = illustration != null;
+          final compact = constraints.maxWidth < 420;
+          final stackedLayout =
+              !hasIllustration || constraints.maxWidth < 760;
+          final heroHeight = compact ? 252.0 : 240.0;
+          final illustrationWidth = compact ? 96.0 : 128.0;
           final illustrationBottom = compact ? 6.0 : 0.0;
-          final textRight = compact ? 118.0 : 150.0;
+          final textRight = hasIllustration ? 138.0 : 18.0;
           final titleStyle = compact
               ? theme.textTheme.headlineSmall
-              : theme.textTheme.headlineMedium;
+              : theme.textTheme.headlineSmall;
           final subtitleStyle = compact
               ? theme.textTheme.bodySmall
               : theme.textTheme.bodyMedium;
 
-          if (compact) {
+          if (stackedLayout) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                EditorialBlurImage(
-                  height: heroHeight,
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          theme.colorScheme.surfaceContainerHighest,
-                          theme.colorScheme.surface,
-                        ],
-                      ),
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        theme.colorScheme.surfaceContainerHighest,
+                        theme.colorScheme.surface,
+                      ],
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface.withValues(
+                              alpha: 0.9,
                             ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surface.withValues(
-                                alpha: 0.9,
-                              ),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              eyebrow.toUpperCase(),
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: tone,
-                              ),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            eyebrow.toUpperCase(),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: tone,
                             ),
                           ),
-                          const SizedBox(height: 18),
-                          Text(title, style: titleStyle),
-                          const SizedBox(height: 12),
-                          Text(
-                            subtitle,
-                            style: subtitleStyle?.copyWith(height: 1.5),
-                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(title, style: titleStyle),
+                        const SizedBox(height: 8),
+                        Text(
+                          subtitle,
+                          maxLines: compact ? 2 : 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: subtitleStyle?.copyWith(height: 1.4),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          children: [
+                            _HeroMetaItem(
+                              icon: Icons.access_time_rounded,
+                              label: metaLeft,
+                              tone: tone,
+                            ),
+                            _HeroMetaItem(
+                              icon: Icons.local_fire_department_outlined,
+                              label: metaRight,
+                              tone: tone,
+                            ),
+                          ],
+                        ),
+                        if (hasIllustration) ...[
                           const SizedBox(height: 14),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 8,
-                            children: [
-                              _HeroMetaItem(
-                                icon: Icons.access_time_rounded,
-                                label: metaLeft,
-                                tone: tone,
-                              ),
-                              _HeroMetaItem(
-                                icon: Icons.local_fire_department_outlined,
-                                label: metaRight,
-                                tone: tone,
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          if (illustration != null)
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: SizedBox(
-                                width: illustrationWidth + 16,
-                                height: 92,
-                                child: FittedBox(
-                                  fit: BoxFit.contain,
-                                  alignment: Alignment.bottomRight,
-                                  child: illustration!,
-                                ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: SizedBox(
+                              width: illustrationWidth + 16,
+                              height: compact ? 88 : 96,
+                              child: FittedBox(
+                                fit: BoxFit.contain,
+                                alignment: Alignment.centerRight,
+                                child: illustration!,
                               ),
                             ),
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ),
                 if (hasAction) ...[
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   EditorialPrimaryButton(
                     label: buttonLabel!,
                     onPressed: onTap!,
@@ -195,9 +199,9 @@ class DashboardHeroCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (illustration != null)
+                    if (hasIllustration)
                       Positioned(
-                        right: compact ? 8 : 10,
+                        right: 10,
                         bottom: illustrationBottom,
                         child: IgnorePointer(
                           child: SizedBox(
@@ -214,8 +218,8 @@ class DashboardHeroCard extends StatelessWidget {
                     Positioned(
                       left: 20,
                       right: textRight,
-                      top: compact ? 78 : 84,
-                      bottom: 22,
+                      top: 72,
+                      bottom: 18,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -223,16 +227,17 @@ class DashboardHeroCard extends StatelessWidget {
                           Text(
                             title,
                             style: titleStyle,
-                            maxLines: compact ? 3 : 5,
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 8),
                           Text(
                             subtitle,
                             style: subtitleStyle,
-                            maxLines: compact ? 2 : 3,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 10),
                           Wrap(
                             spacing: 12,
                             runSpacing: 8,
@@ -255,8 +260,8 @@ class DashboardHeroCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (hasAction && showBottomAction) ...[
-                const SizedBox(height: 14),
+              if (hasAction) ...[
+                const SizedBox(height: 12),
                 EditorialPrimaryButton(
                   label: buttonLabel!,
                   onPressed: onTap!,
@@ -568,8 +573,8 @@ class DashboardStatPanel extends StatelessWidget {
     final tone = accent ?? theme.colorScheme.primary;
 
     return Container(
-      constraints: BoxConstraints(minHeight: minHeight ?? 124),
-      padding: const EdgeInsets.all(18),
+      constraints: BoxConstraints(minHeight: minHeight ?? 108),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(26),
@@ -579,15 +584,21 @@ class DashboardStatPanel extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: tone, size: 18),
-          const Spacer(),
-          Text(value, style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 18),
+          Text(value, style: theme.textTheme.titleLarge),
           const SizedBox(height: 6),
           Text(label.toUpperCase(), style: theme.textTheme.labelMedium),
           if (caption != null) ...[
-            const SizedBox(height: 6),
-            Text(caption!, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Text(
+              caption!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall,
+            ),
           ],
         ],
       ),
@@ -623,7 +634,7 @@ class DashboardSectionCard extends StatelessWidget {
             subtitle: subtitle,
             trailing: trailing,
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           child,
         ],
       ),
@@ -637,6 +648,7 @@ class DashboardListTileCard extends StatelessWidget {
   final String trailingTop;
   final String? trailingBottom;
   final Widget? leading;
+  final Widget? details;
   final VoidCallback? onTap;
 
   const DashboardListTileCard({
@@ -646,6 +658,7 @@ class DashboardListTileCard extends StatelessWidget {
     required this.trailingTop,
     this.trailingBottom,
     this.leading,
+    this.details,
     this.onTap,
   });
 
@@ -654,7 +667,7 @@ class DashboardListTileCard extends StatelessWidget {
     final theme = Theme.of(context);
     final tile = Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.54),
         borderRadius: BorderRadius.circular(22),
@@ -670,8 +683,17 @@ class DashboardListTileCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: theme.textTheme.titleMedium),
-                const SizedBox(height: 4),
-                Text(subtitle, style: theme.textTheme.bodySmall),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
+                if (details != null) ...[
+                  const SizedBox(height: 10),
+                  details!,
+                ],
               ],
             ),
           ),
@@ -686,16 +708,23 @@ class DashboardListTileCard extends StatelessWidget {
                 ),
               ),
               if (trailingBottom != null) ...[
-                const SizedBox(height: 4),
-                Text(trailingBottom!, style: theme.textTheme.bodySmall),
+                const SizedBox(height: 3),
+                Text(
+                  trailingBottom!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
             ],
           ),
-          const SizedBox(width: 10),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
-          ),
+          if (onTap != null) ...[
+            const SizedBox(width: 10),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
+            ),
+          ],
         ],
       ),
     );

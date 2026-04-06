@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import '../services/onboarding_service.dart';
+import '../services/member_hub_service.dart';
 import '../widgets/editorial_mobile.dart';
 
 void logPlanPage(String msg) {
@@ -254,11 +255,17 @@ class _PlanPageState extends State<PlanPage> {
   Map<String, bool> _exerciseCompleted = {}; // key: exerciseKey, value: checked
 
   double? _calorieGoal;
+  bool _planLogLoaded = false;
 
   // Progress data state (like ProgressPage)
   Map<String, dynamic>? _progressData;
   bool _progressLoading = true;
   String? _progressError;
+  Map<String, dynamic>? _membershipSummary;
+  List<Map<String, dynamic>> _membershipRequests = const [];
+  List<Map<String, dynamic>> _availablePlans = const [];
+  bool _membershipLoading = true;
+  String? _membershipError;
 
   double _itemCalories(Map<String, dynamic> item) {
     final directCal =
@@ -640,6 +647,7 @@ class _PlanPageState extends State<PlanPage> {
     _loadWaterAndSteps(); // <-- Load water/steps from storage
     _loadPlanIfNeeded();
     _updateCalorieGoal();
+    _loadMembershipHub();
     // Animated loading message
     Future.doWhile(() async {
       if (!_planLoading) return false;
@@ -691,6 +699,67 @@ class _PlanPageState extends State<PlanPage> {
           _bmi = null;
         }
       });
+    }
+  }
+
+  Future<void> _loadMembershipHub() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
+    if (token == null) return;
+    try {
+      final payload = await MemberHubService.fetchMembershipSummary(token);
+      if (!mounted) return;
+      setState(() {
+        _membershipSummary = Map<String, dynamic>.from(
+          payload['membership'] ?? const {},
+        );
+        _membershipRequests =
+            (payload['requests'] as List<dynamic>? ?? const [])
+                .map((entry) => Map<String, dynamic>.from(entry as Map))
+                .toList();
+        _availablePlans =
+            (payload['availablePlans'] as List<dynamic>? ?? const [])
+                .map((entry) => Map<String, dynamic>.from(entry as Map))
+                .toList();
+        _membershipLoading = false;
+        _membershipError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _membershipLoading = false;
+        _membershipError = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  Future<void> _submitMembershipRequest(
+    String requestType, {
+    String? targetPlanId,
+  }) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
+    if (token == null) return;
+    try {
+      await MemberHubService.createMembershipRequest(
+        token,
+        requestType: requestType,
+        targetPlanId: targetPlanId,
+      );
+      await _loadMembershipHub();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request sent to your gym team.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error.toString().replaceFirst('Exception: ', ''),
+          ),
+        ),
+      );
     }
   }
 
@@ -753,6 +822,160 @@ class _PlanPageState extends State<PlanPage> {
       'plan_meal_item_quantities',
       json.encode(serializableQuantities),
     );
+    _syncPlanLogToServer();
+  }
+
+  String _currentPlanDateKey() =>
+      DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+  String _currentPlanDayPrefix() {
+    if (_plan == null) return '';
+    return '${_plan!['day']}-';
+  }
+
+  Map<String, dynamic> _buildPlanLogPayload() {
+    final plan = _plan;
+    final loggedMealItems = <String, double>{};
+    final loggedWorkoutItems = <String, bool>{};
+    final dayPrefix = _currentPlanDayPrefix();
+
+    _checkboxState.forEach((key, value) {
+      if (value != true || !key.startsWith('${dayPrefix}meal-')) return;
+      final parts = key.split('-');
+      final mealType = parts.length >= 3 ? parts[2] : '';
+      final index = parts.isNotEmpty ? int.tryParse(parts.last) ?? 0 : 0;
+      loggedMealItems[key] = _mealItemQuantities[mealType]?[index] ?? 1.0;
+    });
+
+    _exerciseCompleted.forEach((key, value) {
+      if (value == true && key.startsWith('${dayPrefix}workout-')) {
+        loggedWorkoutItems[key] = true;
+      }
+    });
+
+    final dailyTotals = plan == null
+        ? {'cal': 0.0, 'p': 0.0, 'c': 0.0, 'f': 0.0}
+        : _calculateDailyTotals(plan);
+    final workoutSummary = plan == null
+        ? {'progress': 0.0}
+        : _calculateWorkoutSummary(plan);
+    final mealGoal = plan == null
+        ? (_calorieGoal ?? 1800)
+        : (_dailyTargetsForPlan(plan)['calories'] ?? (_calorieGoal ?? 1800));
+    final calorieProgress = mealGoal > 0
+        ? ((dailyTotals['cal'] ?? 0) / mealGoal).clamp(0.0, 1.0)
+        : 0.0;
+    final workoutProgress = ((workoutSummary['progress'] ?? 0.0) as num)
+        .toDouble()
+        .clamp(0.0, 1.0);
+
+    return {
+      'date': _currentPlanDateKey(),
+      'loggedMealItems': loggedMealItems,
+      'loggedWorkoutItems': loggedWorkoutItems,
+      'water': _waterGlasses,
+      'steps': _steps,
+      'caloriesLogged': dailyTotals['cal'] ?? 0,
+      'proteinLogged': dailyTotals['p'] ?? 0,
+      'carbsLogged': dailyTotals['c'] ?? 0,
+      'fatLogged': dailyTotals['f'] ?? 0,
+      'completionScore': ((calorieProgress + workoutProgress) / 2).clamp(
+        0.0,
+        1.0,
+      ),
+    };
+  }
+
+  Future<void> _hydratePlanLogForCurrentPlan() async {
+    if (_plan == null || _planLoading || _planLogLoaded) return;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
+    if (token == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse(
+          '${ApiConfig.baseUrl}/api/member/plan-log?date=${_currentPlanDateKey()}',
+        ),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+      if (response.statusCode != 200) return;
+      final payload = json.decode(response.body);
+      final log = payload['log'];
+      if (log is! Map) return;
+
+      final dayPrefix = _currentPlanDayPrefix();
+      final nextCheckboxState = Map<String, bool>.from(_checkboxState)
+        ..removeWhere(
+          (key, _) =>
+              key.startsWith('${dayPrefix}meal-') ||
+              key.startsWith('${dayPrefix}workout-'),
+        );
+      final nextExerciseCompleted = Map<String, bool>.from(_exerciseCompleted)
+        ..removeWhere((key, _) => key.startsWith('${dayPrefix}workout-'));
+      final nextMealQuantities = _mealItemQuantities
+          .map<String, Map<int, double>>(
+            (mealType, items) =>
+                MapEntry(mealType, Map<int, double>.from(items)),
+          );
+
+      final loggedMeals = Map<String, dynamic>.from(
+        log['loggedMealItems'] ?? {},
+      );
+      loggedMeals.forEach((key, value) {
+        final normalizedKey = key.toString();
+        nextCheckboxState[normalizedKey] = true;
+        final parts = normalizedKey.split('-');
+        if (parts.length >= 4) {
+          final mealType = parts[2];
+          final index = int.tryParse(parts.last) ?? 0;
+          nextMealQuantities[mealType] = Map<int, double>.from(
+            nextMealQuantities[mealType] ?? <int, double>{},
+          );
+          nextMealQuantities[mealType]![index] =
+              (value as num?)?.toDouble() ?? 1.0;
+        }
+      });
+
+      final loggedWorkout = Map<String, dynamic>.from(
+        log['loggedWorkoutItems'] ?? {},
+      );
+      loggedWorkout.forEach((key, value) {
+        nextExerciseCompleted[key.toString()] = value == true;
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _checkboxState = nextCheckboxState;
+        _exerciseCompleted = nextExerciseCompleted;
+        _mealItemQuantities = nextMealQuantities;
+        _waterGlasses = (log['water'] as num?)?.toInt() ?? _waterGlasses;
+        _steps = (log['steps'] as num?)?.toInt() ?? _steps;
+        _planLogLoaded = true;
+      });
+      _recalculateTotalCaloriesLogged(_plan!);
+    } catch (_) {}
+  }
+
+  Future<void> _syncPlanLogToServer() async {
+    if (_plan == null || _planLoading) return;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
+    if (token == null) return;
+
+    try {
+      await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/api/member/plan-log'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(_buildPlanLogPayload()),
+      );
+    } catch (_) {}
   }
 
   void _loadPlanIfNeeded() async {
@@ -782,6 +1005,7 @@ class _PlanPageState extends State<PlanPage> {
             _planLoading = false;
             _planError = false;
           });
+          await _hydratePlanLogForCurrentPlan();
           return;
         } else {
           // Corrupted cache, clear and fetch fresh
@@ -817,8 +1041,12 @@ class _PlanPageState extends State<PlanPage> {
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
+      final memberId =
+          authProvider.userId ??
+          authProvider.userData?['id']?.toString() ??
+          authProvider.userData?['_id']?.toString();
       final userData = authProvider.userData;
-      if (token == null || userData == null) {
+      if (token == null || userData == null || memberId == null) {
         if (mounted)
           setState(() {
             _planError = true;
@@ -850,18 +1078,33 @@ class _PlanPageState extends State<PlanPage> {
       final dietType = userData['dietPreferences']?['type'] ?? 'flexible';
       final workoutSplit = userData['workoutHabits']?['split'] ?? 'Full Body';
       final day = DateFormat('EEEE').format(DateTime.now());
+      final mealUri = Uri.parse('${ApiConfig.baseUrl}/api/plans/meal').replace(
+        queryParameters: {
+          'goal': goal.toString(),
+          'dietType': dietType.toString(),
+          'bmiCategory': bmiCategory,
+          'day': day,
+          'memberId': memberId,
+        },
+      );
+      final workoutUri = Uri.parse('${ApiConfig.baseUrl}/api/plans/workout')
+          .replace(
+            queryParameters: {
+              'goal': goal.toString(),
+              'workoutSplit': workoutSplit.toString(),
+              'bmiCategory': bmiCategory,
+              'day': day,
+              'memberId': memberId,
+            },
+          );
       // Fetch meal plan
       final mealRes = await http.get(
-        Uri.parse(
-          '${ApiConfig.baseUrl}/api/plans/meal?goal=$goal&dietType=$dietType&bmiCategory=$bmiCategory&day=$day',
-        ),
+        mealUri,
         headers: {'Authorization': 'Bearer $token'},
       );
       // Fetch workout plan
       final workoutRes = await http.get(
-        Uri.parse(
-          '${ApiConfig.baseUrl}/api/plans/workout?goal=$goal&workoutSplit=$workoutSplit&bmiCategory=$bmiCategory&day=$day',
-        ),
+        workoutUri,
         headers: {'Authorization': 'Bearer $token'},
       );
       if (mealRes.statusCode == 200 && workoutRes.statusCode == 200) {
@@ -883,6 +1126,7 @@ class _PlanPageState extends State<PlanPage> {
           _planLoading = false;
           _planError = false;
         });
+        await _hydratePlanLogForCurrentPlan();
       } else {
         setState(() {
           _planError = true;
@@ -966,6 +1210,7 @@ class _PlanPageState extends State<PlanPage> {
     setState(() {
       _planLoading = true;
       _planError = false;
+      _planLogLoaded = false;
     });
     await _loadPlanFromBackend();
   }
@@ -1021,9 +1266,9 @@ class _PlanPageState extends State<PlanPage> {
             children: [
               EditorialSectionHeading(
                 eyebrow: 'Today\'s Plan',
-                title: 'What you should do and eat today is ready.',
+                title: 'Your plan is ready.',
                 subtitle:
-                    'Your workout, meals, hydration, and daily targets stay in one clear view so the next move is always obvious.',
+                    'Workout, meals, water, and steps stay in one clear view.',
                 trailing: IconButton(
                   onPressed: _planLoading ? null : _refreshPlan,
                   icon: const Icon(Icons.refresh_rounded),
@@ -1053,19 +1298,120 @@ class _PlanPageState extends State<PlanPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Today at a glance',
-                        style: theme.textTheme.titleLarge,
+                      const EditorialSectionHeading(
+                        eyebrow: 'Membership',
+                        title: 'Your current gym plan.',
+                        subtitle: 'Renewals, upgrades, and add-ons stay visible here.',
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Start with the essentials: your food target, workout completion, water, steps, and daily focus.',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
+                      if (_membershipLoading)
+                        const Center(child: CircularProgressIndicator())
+                      else if (_membershipError != null)
+                        Text(_membershipError!, style: theme.textTheme.bodyMedium)
+                      else ...[
+                        Text(
+                          (_membershipSummary?['planName'] ?? 'No active plan').toString(),
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Status: ${(_membershipSummary?['status'] ?? 'inactive').toString().replaceAll('_', ' ')}',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        if (_membershipSummary?['renewalDueDate'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Renewal due: ${DateFormat.yMMMd().format(DateTime.parse(_membershipSummary!['renewalDueDate'].toString()))}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            EditorialGhostButton(
+                              label: 'Request renewal',
+                              onPressed: () => _submitMembershipRequest('renewal'),
+                            ),
+                            EditorialGhostButton(
+                              label: 'Request training',
+                              onPressed: () => _submitMembershipRequest('training'),
+                            ),
+                            EditorialGhostButton(
+                              label: 'Request diet plan',
+                              onPressed: () => _submitMembershipRequest('diet'),
+                            ),
+                          ],
+                        ),
+                        if (_availablePlans.isNotEmpty) ...[
+                          const SizedBox(height: 18),
+                          Text('Available upgrades', style: theme.textTheme.titleMedium),
+                          const SizedBox(height: 10),
+                          ..._availablePlans.take(2).map(
+                            (planOption) => Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.38),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      (planOption['name'] ?? 'Plan').toString(),
+                                      style: theme.textTheme.titleMedium,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${planOption['durationDays'] ?? 0} days',
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                    const SizedBox(height: 10),
+                                    EditorialGhostButton(
+                                      label: 'Request upgrade',
+                                      onPressed: () => _submitMembershipRequest(
+                                        'upgrade',
+                                        targetPlanId: planOption['id']?.toString(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (_membershipRequests.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text('Recent requests', style: theme.textTheme.titleMedium),
+                          const SizedBox(height: 10),
+                          ..._membershipRequests.take(3).map(
+                            (request) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                '${request['requestType']} • ${request['status']}',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                EditorialSurface(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Today', style: theme.textTheme.titleLarge),
+                      const SizedBox(height: 14),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(18),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: colorScheme.surfaceContainerHigh.withValues(
                             alpha: 0.46,
@@ -1177,13 +1523,12 @@ class _PlanPageState extends State<PlanPage> {
                     children: [
                       const EditorialSectionHeading(
                         eyebrow: 'Coming Up Next',
-                        title: 'Your next workout is ready when you are.',
-                        subtitle:
-                            'A focused session summary keeps the next block of training easy to scan before you open the full workout.',
+                        title: 'Your next workout is ready.',
+                        subtitle: 'Scan it fast, then jump in.',
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
                       EditorialBlurImage(
-                        height: 210,
+                        height: 174,
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -1204,14 +1549,14 @@ class _PlanPageState extends State<PlanPage> {
                               bottom: 0,
                               child: Image.asset(
                                 'assets/images/member_illustration.png',
-                                height: 152,
+                                height: 126,
                                 fit: BoxFit.contain,
                               ),
                             ),
                             Positioned(
                               left: 18,
-                              right: 128,
-                              top: 18,
+                              right: 112,
+                              top: 16,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -1234,12 +1579,12 @@ class _PlanPageState extends State<PlanPage> {
                                           ),
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 12),
                                   Text(
                                     _workoutHeadline(workout, workoutItems),
-                                    style: theme.textTheme.headlineSmall,
+                                    style: theme.textTheme.titleLarge,
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 8),
                                   Text(
                                     _workoutSummaryText(workout, workoutItems),
                                     style: theme.textTheme.bodyMedium,
@@ -1274,11 +1619,11 @@ class _PlanPageState extends State<PlanPage> {
                         Text('Quick log', style: theme.textTheme.titleMedium),
                         const SizedBox(height: 10),
                         ...List.generate(
-                          math.min(workoutItems.length, 3),
+                          math.min(workoutItems.length, 2),
                           (index) => Padding(
                             padding: EdgeInsets.only(
                               bottom:
-                                  index == math.min(workoutItems.length, 3) - 1
+                                  index == math.min(workoutItems.length, 2) - 1
                                   ? 0
                                   : 10,
                             ),
@@ -1308,9 +1653,8 @@ class _PlanPageState extends State<PlanPage> {
                     children: [
                       const EditorialSectionHeading(
                         eyebrow: 'Meals Today',
-                        title: 'A steady food rhythm for the day ahead.',
-                        subtitle:
-                            'Each meal is shaped from your current goal and diet settings, with the key information kept easy to scan.',
+                        title: 'Meals for today.',
+                        subtitle: 'Key meal info stays easy to scan.',
                       ),
                       const SizedBox(height: 18),
                       ..._orderedMealKeysFromRaw(
@@ -1389,8 +1733,8 @@ class _PlanPageState extends State<PlanPage> {
           ),
           const SizedBox(height: 14),
           Text(
-            'We are pulling your meals, workout focus, and daily targets into one clear view.',
-            style: Theme.of(context).textTheme.bodyLarge,
+            'We are pulling your meals, workout focus, and daily targets now.',
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 24),
           const Center(child: CircularProgressIndicator()),
@@ -1413,7 +1757,7 @@ class _PlanPageState extends State<PlanPage> {
           const SizedBox(height: 18),
           Text(title, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 12),
-          Text(message, style: Theme.of(context).textTheme.bodyLarge),
+          Text(message, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 22),
           SizedBox(
             width: double.infinity,
@@ -1479,13 +1823,13 @@ class _PlanPageState extends State<PlanPage> {
     List<Map<String, dynamic>> items,
   ) {
     if (items.isEmpty) {
-      return 'A focused session is being lined up for you now. Open the workout to see the full structure.';
+      return 'Open the workout to see today’s full session.';
     }
     final names = items
-        .take(3)
+        .take(2)
         .map((item) => item['name']?.toString() ?? 'Move')
         .join(', ');
-    return '$names${items.length > 3 ? ' and more' : ''} keep today anchored in the right effort.';
+    return '$names${items.length > 2 ? ' and more' : ''} keep today moving.';
   }
 
   Widget _buildInfoChip({required IconData icon, required String label}) {
@@ -1523,7 +1867,7 @@ class _PlanPageState extends State<PlanPage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.58),
         borderRadius: BorderRadius.circular(24),
@@ -1535,8 +1879,8 @@ class _PlanPageState extends State<PlanPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               color: theme.colorScheme.surfaceContainerHighest,
@@ -1579,11 +1923,9 @@ class _PlanPageState extends State<PlanPage> {
                   )
                 else
                   ...List.generate(
-                    math.min(items.length, 2),
+                    1,
                     (index) => Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == math.min(items.length, 2) - 1 ? 0 : 10,
-                      ),
+                      padding: EdgeInsets.zero,
                       child: _buildMealQuickLogRow(
                         mealType,
                         index,
@@ -1594,7 +1936,7 @@ class _PlanPageState extends State<PlanPage> {
                 if (items.length > 2) ...[
                   const SizedBox(height: 10),
                   Text(
-                    '+${items.length - 2} more item${items.length - 2 == 1 ? '' : 's'} in the full meal plan',
+                    '+${items.length - 1} more item${items.length - 1 == 1 ? '' : 's'} in the full meal plan',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(
                         alpha: 0.68,
@@ -1623,7 +1965,7 @@ class _PlanPageState extends State<PlanPage> {
     const quickOptions = [1.0, 1.5];
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: logged
             ? theme.colorScheme.primary.withValues(alpha: 0.14)
@@ -1645,8 +1987,8 @@ class _PlanPageState extends State<PlanPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
                     color: logged
                         ? theme.colorScheme.primary
@@ -1661,7 +2003,7 @@ class _PlanPageState extends State<PlanPage> {
                         : theme.colorScheme.primary,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1669,6 +2011,8 @@ class _PlanPageState extends State<PlanPage> {
                       Text(
                         _mealPrimaryTitle(item),
                         style: theme.textTheme.titleSmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -1693,13 +2037,14 @@ class _PlanPageState extends State<PlanPage> {
               ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: quickOptions.map((option) {
               final selected = (quantity - option).abs() < 0.01;
               return ChoiceChip(
+                visualDensity: VisualDensity.compact,
                 label: Text(option == 1.0 ? '1x' : '1.5x'),
                 selected: selected,
                 onSelected: (_) => _updateMealQuantity(mealType, index, option),
@@ -1818,19 +2163,19 @@ class _PlanPageState extends State<PlanPage> {
     final theme = Theme.of(context);
 
     return EditorialSurface(
-      padding: const EdgeInsets.all(18),
-      radius: 28,
+      padding: const EdgeInsets.all(16),
+      radius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: progressColor),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(title, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 6),
-          Text(value, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
+          Text(value, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
           Text(subtitle, style: theme.textTheme.bodySmall),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           LinearProgressIndicator(
             value: progress.clamp(0.0, 1.0),
             minHeight: 7,
@@ -1838,7 +2183,7 @@ class _PlanPageState extends State<PlanPage> {
             backgroundColor: theme.colorScheme.surfaceContainerHighest,
             valueColor: AlwaysStoppedAnimation<Color>(progressColor),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Row(
             children: [
               _TrackerControlButton(
@@ -1848,7 +2193,7 @@ class _PlanPageState extends State<PlanPage> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  progress >= 1 ? 'Goal reached' : 'Keep it moving',
+                  progress >= 1 ? 'Done' : 'Keep going',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodySmall,
                 ),
@@ -2032,9 +2377,9 @@ class _PlanPageState extends State<PlanPage> {
             const EditorialSectionHeading(
               eyebrow: 'Profile Snapshot',
               title: 'We could not load the details shaping your plan.',
+              subtitle: 'Try again to bring your snapshot back in view.',
             ),
             const SizedBox(height: 10),
-            Text('Error loading profile: $_progressError'),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -2336,13 +2681,21 @@ class _PlanPageState extends State<PlanPage> {
   String _mealMacroSummary(Map<String, dynamic> item) {
     final macros = item['macros'];
     if (macros is! Map) return '';
+    String formatMacro(dynamic raw) {
+      final value = (raw as num?)?.toDouble() ?? 0.0;
+      if ((value - value.roundToDouble()).abs() < 0.05) {
+        return value.round().toString();
+      }
+      return value.toStringAsFixed(1);
+    }
+
     final protein = macros['protein'] ?? macros['p'];
     final carbs = macros['carbs'] ?? macros['c'];
     final fats = macros['fats'] ?? macros['f'];
     final parts = <String>[];
-    if (protein != null) parts.add('P ${protein}g');
-    if (carbs != null) parts.add('C ${carbs}g');
-    if (fats != null) parts.add('F ${fats}g');
+    if (protein != null) parts.add('P ${formatMacro(protein)}g');
+    if (carbs != null) parts.add('C ${formatMacro(carbs)}g');
+    if (fats != null) parts.add('F ${formatMacro(fats)}g');
     return parts.join(' • ');
   }
 
@@ -2364,7 +2717,13 @@ class _PlanPageState extends State<PlanPage> {
       });
     } catch (e) {
       setState(() {
-        _progressError = e.toString();
+        final message = e.toString().toLowerCase();
+        _progressError =
+            message.contains('403') ||
+                message.contains('expired token') ||
+                message.contains('session')
+            ? 'Your session expired. Please log in again.'
+            : 'We could not load your profile details right now.';
         _progressLoading = false;
       });
     }
@@ -2375,6 +2734,7 @@ class _PlanPageState extends State<PlanPage> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('plan_water_glasses', _waterGlasses);
     await prefs.setInt('plan_steps', _steps);
+    _syncPlanLogToServer();
   }
 
   Future<void> _loadWaterAndSteps() async {

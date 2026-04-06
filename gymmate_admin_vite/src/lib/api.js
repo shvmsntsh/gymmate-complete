@@ -2,6 +2,11 @@ const normalizeBase = (value) => (value || "").replace(/\/$/, "");
 
 const inferDefaultBase = () => {
   if (typeof window !== "undefined") {
+    const { hostname, protocol } = window.location;
+    const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+    if (isLocalHost) {
+      return `${protocol}//127.0.0.1:5050`;
+    }
     return "";
   }
   return "https://gymmate-backend.vercel.app";
@@ -14,6 +19,7 @@ const normalizeRole = (role) => {
 
   if (value === "superadmin" || value === "admin") return "admin";
   if (value === "gym_owner" || value === "owner") return "owner";
+  if (value === "gym_staff" || value === "staff") return "staff";
   if (value === "gym_trainer" || value === "trainer") return "trainer";
   if (value === "gym_member" || value === "member") return "member";
 
@@ -54,7 +60,7 @@ export function isOwnerSession() {
 
 export function hasWorkspaceAccess() {
   const role = getAdminRole();
-  return role === "admin" || role === "owner";
+  return role === "admin" || role === "owner" || role === "staff";
 }
 
 export function setAdminSession(payload) {

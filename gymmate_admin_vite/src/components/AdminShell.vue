@@ -95,7 +95,11 @@ const router = useRouter();
 const sessionRole = computed(() => getAdminRole());
 
 const workspaceLabel = computed(() =>
-  sessionRole.value === "owner" ? "Owner Workspace" : "Management Suite",
+  sessionRole.value === "owner"
+    ? "Owner Workspace"
+    : sessionRole.value === "staff"
+      ? "Staff Workspace"
+      : "Management Suite",
 );
 
 const sidebarTitle = computed(() =>
@@ -126,6 +130,24 @@ const navItems = computed(() => {
         to: "/manage-members",
       },
       {
+        active: currentPath === "/announcements",
+        icon: "mdi-bullhorn-outline",
+        label: "Announcements",
+        to: "/announcements",
+      },
+      {
+        active: currentPath === "/membership",
+        icon: "mdi-card-account-details-outline",
+        label: "Membership",
+        to: "/membership",
+      },
+      {
+        active: currentPath === "/biometric",
+        icon: "mdi-fingerprint",
+        label: "Biometric",
+        to: "/biometric",
+      },
+      {
         active: currentPath === "/invites",
         icon: "mdi-ticket-confirmation-outline",
         label: "Invites",
@@ -152,6 +174,18 @@ const navItems = computed(() => {
       icon: "mdi-account-group-outline",
       label: "Members",
       to: "/manage-members",
+    },
+    {
+      active: currentPath === "/announcements",
+      icon: "mdi-bullhorn-outline",
+      label: "Announcements",
+      to: "/announcements",
+    },
+    {
+      active: currentPath === "/membership",
+      icon: "mdi-card-account-details-outline",
+      label: "Membership",
+      to: "/membership",
     },
     {
       active: currentPath === "/register-gym",

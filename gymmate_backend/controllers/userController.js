@@ -23,6 +23,8 @@ function buildUserPayload(user, gymName = null) {
     gymId: user.gymId,
     gymName,
     phone_number: user.phone_number || null,
+    staffCapabilities: user.staffCapabilities || {},
+    telegramProfile: user.telegramProfile || {},
     hasCompletedOnboarding: Boolean(user.hasCompletedOnboarding || isCompleted),
     profile: user.profile || {},
     fitnessGoals: user.fitnessGoals || [],
@@ -334,8 +336,11 @@ exports.generateInviteCode = async (req, res) => {
     }
   }
 
-  // Gym owners can create gym_members (must have gymId)
-  if (generator.role === 'gym_owner' && roleToGenerate === 'gym_member') {
+  // Gym owners can create gym_members, gym_trainers, and gym_staff (must have gymId)
+  if (
+    generator.role === 'gym_owner' &&
+    ['gym_member', 'gym_trainer', 'gym_staff'].includes(roleToGenerate)
+  ) {
     if (!generator.gymId) {
       console.error(`❌ Logic Error: Gym Owner ${generator.email} has no gymId.`);
       return res.status(500).json({ message: 'Could not generate code: Gym Owner has no associated Gym ID.' });
@@ -343,12 +348,12 @@ exports.generateInviteCode = async (req, res) => {
     try {
       const code = new InviteCode({
         code: Math.random().toString(36).substring(2, 10).toUpperCase(),
-        role: 'gym_member',
+        role: roleToGenerate,
         gymId: generator.gymId,
         generatedBy: generator.id,
       });
       await code.save();
-      return res.status(201).json({ message: 'Gym member invite code generated.', inviteCode: code.code });
+      return res.status(201).json({ message: `${roleToGenerate} invite code generated.`, inviteCode: code.code });
     } catch (err) {
       console.error('💥 Error saving invite code:', err);
       return res.status(500).json({ message: 'Failed to generate invite code due to a database error.' });
@@ -667,16 +672,28 @@ exports.updateProfile = async (req, res) => {
     user.name = name.trim();
     user.email = email;
     await user.save();
-    return res.json({
-      message: 'Profile updated successfully.',
-      user: {
+    let gymName = null;
+    if (user.gymId) {
+      const gym = await Gym.findById(user.gymId);
+      if (gym) {
+        gymName = gym.gymName;
+      }
+    }
+    const token = jwt.sign(
+      {
         id: user._id,
-        name: user.name,
         email: user.email,
         role: user.role,
-        normalizedRole: normalizeRole(user.role),
         gymId: user.gymId,
+        gymName,
       },
+      JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+    return res.json({
+      message: 'Profile updated successfully.',
+      token,
+      user: buildUserPayload(user, gymName),
     });
   } catch (err) {
     console.error('Profile update error:', err);

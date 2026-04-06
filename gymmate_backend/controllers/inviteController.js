@@ -108,10 +108,10 @@ exports.generateInviteCode = async (req, res) => {
       return res.status(403).json({ message: 'Superadmin can only generate codes for gym_owner' });
     }
 
-    // Gym owner can only create gym_member or gym_trainer codes
+    // Gym owner can only create gym_member, gym_trainer, or gym_staff codes
     const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : '';
-    if (hasRole(currentUser, ['owner']) && !['gym_member', 'gym_trainer'].includes(normalizedRole)) {
-      return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member or gym_trainer' });
+    if (hasRole(currentUser, ['owner']) && !['gym_member', 'gym_trainer', 'gym_staff'].includes(normalizedRole)) {
+      return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member, gym_trainer, or gym_staff' });
     }
     
     // For a gym_owner creating an invite, we need their gymId
