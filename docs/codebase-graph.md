@@ -1,6 +1,6 @@
 # Codebase Graph
 
-Generated: 2026-04-06T09:34:40.504Z
+Generated: 2026-04-06T09:41:37.848Z
 
 Branch: `codex/mvp-figma`
 
@@ -8,19 +8,24 @@ Remote: `https://github.com/shvmsntsh/gymmate-complete.git`
 
 ## Purpose
 
-This snapshot is a reusable architecture map for future change requests. It is intentionally compact so an agent can orient on the repo without re-reading every source file.
+Persistent repo knowledge graph for low-token code navigation. Use it to identify the smallest relevant context before opening source files.
 
 ## Workspace Summary
 
-- `gymmate_backend`: 51 scanned files, 107 internal dependency edges
-- `gymmate_admin_vite`: 22 scanned files, 40 internal dependency edges
-- `gymmate_mobile`: 65 scanned files, 136 internal dependency edges
+- `gymmate_backend`: 51 files, 107 import edges
+- `gymmate_admin_vite`: 22 files, 40 import edges
+- `gymmate_mobile`: 65 files, 136 import edges
+
+## Incremental Status
+
+- Reparsed files this run: 0
+- Reused unchanged files: 138
 
 ## System Graph
 
 ```mermaid
 graph TD
-  Repo["gymmate-complete / codex-mvp-figma"]
+  Repo["gymmate-complete / knowledge graph"]
   Repo --> Backend["Backend API"]
   Repo --> Admin["Admin Web"]
   Repo --> Mobile["Mobile App"]
@@ -343,48 +348,3 @@ gymmate_mobile/lib
     ├── progress_bar.dart
     └── role_card.dart
 ```
-
-## Entrypoint Dependencies
-
-### gymmate_backend
-
-- `gymmate_backend/index.js`
-  - `gymmate_backend/app.js`
-- `gymmate_backend/app.js`
-  - `gymmate_backend/routes/authRoutes.js`
-  - `gymmate_backend/routes/gymRoutes.js`
-  - `gymmate_backend/routes/inviteRoutes.js`
-  - `gymmate_backend/routes/memberRoutes.js`
-  - `gymmate_backend/routes/messageRoutes.js`
-  - `gymmate_backend/routes/onboardingRoutes.js`
-  - `gymmate_backend/routes/ownerRoutes.js`
-  - `gymmate_backend/routes/planRoutes.js`
-  - `gymmate_backend/routes/trainerRoutes.js`
-  - `gymmate_backend/routes/userRoutes.js`
-
-### gymmate_admin_vite
-
-- `gymmate_admin_vite/src/main.js`
-  - `gymmate_admin_vite/src/App.vue`
-  - `gymmate_admin_vite/src/assets/main.css`
-  - `gymmate_admin_vite/src/plugins/vuetify.js`
-  - `gymmate_admin_vite/src/router`
-- `gymmate_admin_vite/src/router/index.js`
-  - `gymmate_admin_vite/src/lib/api.js`
-
-### gymmate_mobile
-
-- `gymmate_mobile/lib/main.dart`
-  - `gymmate_mobile/lib/pages/admin_dashboard_page.dart`
-  - `gymmate_mobile/lib/pages/gym_member_dashboard_page.dart`
-  - `gymmate_mobile/lib/pages/gym_owner_dashboard_page.dart`
-  - `gymmate_mobile/lib/pages/invite_code_list_page.dart`
-  - `gymmate_mobile/lib/pages/onboarding/onboarding_flow.dart`
-  - `gymmate_mobile/lib/pages/profile_page.dart`
-  - `gymmate_mobile/lib/pages/splash_screen.dart`
-  - `gymmate_mobile/lib/providers/auth_provider.dart`
-  - `gymmate_mobile/lib/providers/onboarding_provider.dart`
-  - `gymmate_mobile/lib/themes/app_colors.dart`
-  - `gymmate_mobile/lib/themes/app_theme.dart`
-  - `gymmate_mobile/lib/utils/branding_utils.dart`
-  - `gymmate_mobile/lib/utils/role_utils.dart`
