@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import {
+  canAccessAdminRoute,
   getAdminRole,
   hasWorkspaceAccess,
   isAdminAuthenticated,
@@ -25,49 +26,55 @@ const routes = [
     path: "/dashboard",
     name: "AdminDashboard",
     component: () => import("../views/AdminDashboard.vue"),
-    meta: { protected: true },
+    meta: { protected: true, routeAccess: "AdminDashboard" },
   },
   {
     path: "/manage-members",
     name: "ManageMembers",
     component: () => import("../views/ManageMembers.vue"),
-    meta: { protected: true },
+    meta: { protected: true, routeAccess: "ManageMembers" },
   },
   {
     path: "/announcements",
     name: "Announcements",
     component: () => import("../views/AnnouncementsView.vue"),
-    meta: { protected: true },
+    meta: { protected: true, routeAccess: "Announcements" },
   },
   {
     path: "/membership",
     name: "MembershipOps",
-    component: () => import("../views/MembershipOpsView.vue"),
-    meta: { protected: true },
+    component: () => import("../views/MembershipView.vue"),
+    meta: { protected: true, routeAccess: "MembershipOps" },
+  },
+  {
+    path: "/membership-new",
+    name: "Membership",
+    component: () => import("../views/MembershipView.vue"),
+    meta: { protected: true, routeAccess: "Membership" },
   },
   {
     path: "/biometric",
     name: "BiometricOps",
     component: () => import("../views/BiometricOpsView.vue"),
-    meta: { protected: true, ownerOnly: true },
+    meta: { protected: true, routeAccess: "BiometricOps" },
   },
   {
     path: "/invites",
     name: "Invites",
     component: () => import("../views/InvitesView.vue"),
-    meta: { protected: true },
+    meta: { protected: true, routeAccess: "Invites" },
   },
   {
     path: "/branding",
     name: "BrandingStudio",
     component: () => import("../views/BrandingStudio.vue"),
-    meta: { protected: true, ownerOnly: true },
+    meta: { protected: true, routeAccess: "BrandingStudio" },
   },
   {
     path: "/gyms/:id",
     name: "GymDetails",
     component: () => import("../views/GymDetails.vue"),
-    meta: { protected: true, adminOnly: true },
+    meta: { protected: true, routeAccess: "GymDetails" },
   },
 ];
 
@@ -94,17 +101,7 @@ router.beforeEach((to, _from, next) => {
     return;
   }
 
-  if (to.meta?.adminOnly && role !== "admin") {
-    next({ name: "AdminDashboard" });
-    return;
-  }
-
-  if (to.meta?.ownerOnly && role !== "owner") {
-    next({ name: "AdminDashboard" });
-    return;
-  }
-
-  if (to.name === "RegisterGym" && authenticated && role !== "admin") {
+  if (to.meta?.routeAccess && !canAccessAdminRoute(to.meta.routeAccess, role)) {
     next({ name: "AdminDashboard" });
     return;
   }

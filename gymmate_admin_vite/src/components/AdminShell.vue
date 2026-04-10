@@ -2,7 +2,11 @@
   <v-app :theme="isDark ? 'dark' : 'light'">
     <div class="admin-shell">
       <aside class="admin-shell__sidebar admin-surface">
-        <AdminBrand compact />
+        <AdminBrand
+          compact
+          :brand-name="sidebarDisplayName"
+          :logo-url="sidebarLogoUrl"
+        />
         <div class="admin-shell__eyebrow">{{ workspaceLabel }}</div>
 
         <nav class="admin-shell__nav">
@@ -63,11 +67,11 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminBrand from "./AdminBrand.vue";
 import AdminThemeToggle from "./AdminThemeToggle.vue";
-import { getAdminRole } from "../lib/api";
+import { apiFetch, getAdminNavItems, getAdminRole, getAdminSession } from "../lib/api";
 
 defineProps({
   description: {
@@ -93,9 +97,17 @@ defineEmits(["toggle-theme", "logout"]);
 const route = useRoute();
 const router = useRouter();
 const sessionRole = computed(() => getAdminRole());
+const session = computed(() => getAdminSession());
+const sidebarBrandName = ref("");
+const sidebarLogoUrl = ref("");
+const sidebarDisplayName = computed(() =>
+  sidebarLogoUrl.value ? sidebarBrandName.value : "",
+);
 
 const workspaceLabel = computed(() =>
-  sessionRole.value === "owner"
+  sessionRole.value === "admin"
+    ? "Admin Workspace"
+    : sessionRole.value === "owner"
     ? "Owner Workspace"
     : sessionRole.value === "staff"
       ? "Staff Workspace"
@@ -103,96 +115,53 @@ const workspaceLabel = computed(() =>
 );
 
 const sidebarTitle = computed(() =>
-  sessionRole.value === "owner" ? "Gym Studio" : "Your Fitness HQ",
+  sessionRole.value === "admin"
+    ? "Network Control"
+    : sessionRole.value === "owner"
+      ? "Gym Studio"
+      : "Your Fitness HQ",
 );
 
 const sidebarCopy = computed(() =>
-  sessionRole.value === "owner"
+  sessionRole.value === "admin"
+    ? "Manage gyms, owner access, invites, and shared operations from one clear control room."
+    : sessionRole.value === "owner"
     ? "Keep your brand, invites, members, and daily gym rhythm in one focused workspace."
     : "Keep your gyms, members, invites, and day-to-day operations in one calm control room.",
 );
 
 const navItems = computed(() => {
-  const currentPath = route.path;
+  return getAdminNavItems(route.path, sessionRole.value);
+});
 
-  if (sessionRole.value === "owner") {
-    return [
-      {
-        active: currentPath === "/dashboard",
-        icon: "mdi-view-dashboard-outline",
-        label: "Dashboard",
-        to: "/dashboard",
-      },
-      {
-        active: currentPath === "/manage-members",
-        icon: "mdi-account-group-outline",
-        label: "Members",
-        to: "/manage-members",
-      },
-      {
-        active: currentPath === "/announcements",
-        icon: "mdi-bullhorn-outline",
-        label: "Announcements",
-        to: "/announcements",
-      },
-      {
-        active: currentPath === "/membership",
-        icon: "mdi-card-account-details-outline",
-        label: "Membership",
-        to: "/membership",
-      },
-      {
-        active: currentPath === "/biometric",
-        icon: "mdi-fingerprint",
-        label: "Biometric",
-        to: "/biometric",
-      },
-      {
-        active: currentPath === "/invites",
-        icon: "mdi-ticket-confirmation-outline",
-        label: "Invites",
-        to: "/invites",
-      },
-      {
-        active: currentPath === "/branding",
-        icon: "mdi-palette-outline",
-        label: "Branding",
-        to: "/branding",
-      },
-    ];
+async function loadGymBranding() {
+  const role = sessionRole.value;
+  const gymId = session.value?.user?.gymId;
+
+  if (!gymId || (role !== "owner" && role !== "staff")) {
+    sidebarBrandName.value = "";
+    sidebarLogoUrl.value = "";
+    return;
   }
 
-  return [
-    {
-      active: currentPath === "/dashboard",
-      icon: "mdi-view-dashboard-outline",
-      label: "Dashboard",
-      to: "/dashboard",
-    },
-    {
-      active: currentPath === "/manage-members",
-      icon: "mdi-account-group-outline",
-      label: "Members",
-      to: "/manage-members",
-    },
-    {
-      active: currentPath === "/announcements",
-      icon: "mdi-bullhorn-outline",
-      label: "Announcements",
-      to: "/announcements",
-    },
-    {
-      active: currentPath === "/membership",
-      icon: "mdi-card-account-details-outline",
-      label: "Membership",
-      to: "/membership",
-    },
-    {
-      active: currentPath === "/register-gym",
-      icon: "mdi-domain-plus",
-      label: "Register Gym",
-      to: "/register-gym",
-    },
-  ];
+  try {
+    const res = await apiFetch("/api/gym/self");
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to load gym branding");
+    }
+
+    const gym = data.gym || data.member || {};
+    sidebarBrandName.value = gym.gymName || gym.name || "";
+    sidebarLogoUrl.value = gym.branding?.logoUrl || "";
+  } catch {
+    sidebarBrandName.value = "";
+    sidebarLogoUrl.value = "";
+  }
+}
+
+onMounted(() => {
+  loadGymBranding();
 });
 </script>

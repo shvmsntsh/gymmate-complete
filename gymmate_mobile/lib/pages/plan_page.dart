@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import '../services/onboarding_service.dart';
 import '../services/member_hub_service.dart';
+import '../utils/date_format.dart';
 import '../widgets/editorial_mobile.dart';
 
 void logPlanPage(String msg) {
@@ -262,8 +263,6 @@ class _PlanPageState extends State<PlanPage> {
   bool _progressLoading = true;
   String? _progressError;
   Map<String, dynamic>? _membershipSummary;
-  List<Map<String, dynamic>> _membershipRequests = const [];
-  List<Map<String, dynamic>> _availablePlans = const [];
   bool _membershipLoading = true;
   String? _membershipError;
 
@@ -713,14 +712,6 @@ class _PlanPageState extends State<PlanPage> {
         _membershipSummary = Map<String, dynamic>.from(
           payload['membership'] ?? const {},
         );
-        _membershipRequests =
-            (payload['requests'] as List<dynamic>? ?? const [])
-                .map((entry) => Map<String, dynamic>.from(entry as Map))
-                .toList();
-        _availablePlans =
-            (payload['availablePlans'] as List<dynamic>? ?? const [])
-                .map((entry) => Map<String, dynamic>.from(entry as Map))
-                .toList();
         _membershipLoading = false;
         _membershipError = null;
       });
@@ -730,36 +721,6 @@ class _PlanPageState extends State<PlanPage> {
         _membershipLoading = false;
         _membershipError = error.toString().replaceFirst('Exception: ', '');
       });
-    }
-  }
-
-  Future<void> _submitMembershipRequest(
-    String requestType, {
-    String? targetPlanId,
-  }) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
-    if (token == null) return;
-    try {
-      await MemberHubService.createMembershipRequest(
-        token,
-        requestType: requestType,
-        targetPlanId: targetPlanId,
-      );
-      await _loadMembershipHub();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request sent to your gym team.')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error.toString().replaceFirst('Exception: ', ''),
-          ),
-        ),
-      );
     }
   }
 
@@ -1301,7 +1262,7 @@ class _PlanPageState extends State<PlanPage> {
                       const EditorialSectionHeading(
                         eyebrow: 'Membership',
                         title: 'Your current gym plan.',
-                        subtitle: 'Renewals, upgrades, and add-ons stay visible here.',
+                        subtitle: 'View your current plan. Your gym team handles renewals, changes, and payments.',
                       ),
                       const SizedBox(height: 14),
                       if (_membershipLoading)
@@ -1321,83 +1282,23 @@ class _PlanPageState extends State<PlanPage> {
                         if (_membershipSummary?['renewalDueDate'] != null) ...[
                           const SizedBox(height: 4),
                           Text(
-                            'Renewal due: ${DateFormat.yMMMd().format(DateTime.parse(_membershipSummary!['renewalDueDate'].toString()))}',
+                            'Renewal due: ${formatDateUs(_membershipSummary!['renewalDueDate'])}',
                             style: theme.textTheme.bodySmall,
                           ),
                         ],
                         const SizedBox(height: 14),
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            EditorialGhostButton(
-                              label: 'Request renewal',
-                              onPressed: () => _submitMembershipRequest('renewal'),
-                            ),
-                            EditorialGhostButton(
-                              label: 'Request training',
-                              onPressed: () => _submitMembershipRequest('training'),
-                            ),
-                            EditorialGhostButton(
-                              label: 'Request diet plan',
-                              onPressed: () => _submitMembershipRequest('diet'),
-                            ),
-                          ],
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.38),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Need renewal, upgrade, add-ons, or payment help? Visit your gym front desk. They update your membership in the web admin.',
+                            style: theme.textTheme.bodyMedium,
+                          ),
                         ),
-                        if (_availablePlans.isNotEmpty) ...[
-                          const SizedBox(height: 18),
-                          Text('Available upgrades', style: theme.textTheme.titleMedium),
-                          const SizedBox(height: 10),
-                          ..._availablePlans.take(2).map(
-                            (planOption) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.38),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      (planOption['name'] ?? 'Plan').toString(),
-                                      style: theme.textTheme.titleMedium,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${planOption['durationDays'] ?? 0} days',
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    EditorialGhostButton(
-                                      label: 'Request upgrade',
-                                      onPressed: () => _submitMembershipRequest(
-                                        'upgrade',
-                                        targetPlanId: planOption['id']?.toString(),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (_membershipRequests.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          Text('Recent requests', style: theme.textTheme.titleMedium),
-                          const SizedBox(height: 10),
-                          ..._membershipRequests.take(3).map(
-                            (request) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                '${request['requestType']} • ${request['status']}',
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ],
                   ),

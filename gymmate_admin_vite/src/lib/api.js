@@ -12,7 +12,7 @@ const inferDefaultBase = () => {
   return "https://gymmate-backend.vercel.app";
 };
 
-const normalizeRole = (role) => {
+export const normalizeRole = (role) => {
   const value = String(role || "")
     .trim()
     .toLowerCase();
@@ -26,8 +26,67 @@ const normalizeRole = (role) => {
   return value;
 };
 
+const STAFF_PERMISSIONS = [
+  "workspace.access",
+  "members.manage",
+  "announcements.manage",
+  "membership.requests.manage",
+  "payments.manage",
+];
+
+const OWNER_PERMISSIONS = [...STAFF_PERMISSIONS, "membership.plans.manage"];
+const ADMIN_PERMISSIONS = [...OWNER_PERMISSIONS, "gyms.manage"];
+
+const ROLE_PERMISSIONS = {
+  admin: ADMIN_PERMISSIONS,
+  owner: OWNER_PERMISSIONS,
+  staff: STAFF_PERMISSIONS,
+};
+
+const ADMIN_ROUTE_RULES = {
+  AdminDashboard: {
+    nav: { icon: "mdi-view-dashboard-outline", label: "Dashboard", to: "/dashboard" },
+    roles: ["admin", "owner", "staff"],
+  },
+  ManageMembers: {
+    nav: { icon: "mdi-account-group-outline", label: "Members", to: "/manage-members" },
+    roles: ["admin", "owner", "staff"],
+  },
+  Announcements: {
+    nav: { icon: "mdi-bullhorn-outline", label: "Announcements", to: "/announcements" },
+    roles: ["admin", "owner", "staff"],
+  },
+  MembershipOps: {
+    nav: { icon: "mdi-card-account-details-outline", label: "Membership", to: "/membership" },
+    roles: ["admin", "owner", "staff"],
+  },
+  Membership: {
+    nav: { icon: "mdi-card-account-details-outline", label: "Membership", to: "/membership" },
+    roles: ["admin", "owner", "staff"],
+  },
+  Invites: {
+    nav: { icon: "mdi-ticket-confirmation-outline", label: "Invites", to: "/invites" },
+    roles: ["admin", "owner"],
+  },
+  BrandingStudio: {
+    nav: { icon: "mdi-palette-outline", label: "Branding", to: "/branding" },
+    roles: ["owner"],
+  },
+  BiometricOps: {
+    nav: { icon: "mdi-fingerprint", label: "Biometric", to: "/biometric" },
+    roles: ["owner"],
+  },
+  RegisterGym: {
+    nav: { icon: "mdi-domain-plus", label: "Register Gym", to: "/register-gym" },
+    roles: ["admin"],
+  },
+  GymDetails: {
+    roles: ["admin"],
+  },
+};
+
 export const API_BASE_URL = normalizeBase(
-  import.meta.env.VITE_API_BASE_URL || inferDefaultBase(),
+  import.meta.env?.VITE_API_BASE_URL || inferDefaultBase(),
 );
 
 const TOKEN_KEY = "gymmate_admin_token";
@@ -50,6 +109,20 @@ export function getAdminRole() {
   return normalizeRole(session?.user?.normalizedRole || session?.user?.role);
 }
 
+export function getAdminPermissions(input = null) {
+  const role =
+    typeof input === "string"
+      ? normalizeRole(input)
+      : normalizeRole(input?.user?.normalizedRole || input?.user?.role) ||
+        (input ? null : getAdminRole());
+
+  return ROLE_PERMISSIONS[role] || [];
+}
+
+export function hasAdminPermission(permission, input = null) {
+  return getAdminPermissions(input).includes(String(permission || "").trim());
+}
+
 export function isAdminSession() {
   return getAdminRole() === "admin";
 }
@@ -58,9 +131,39 @@ export function isOwnerSession() {
   return getAdminRole() === "owner";
 }
 
-export function hasWorkspaceAccess() {
-  const role = getAdminRole();
-  return role === "admin" || role === "owner" || role === "staff";
+export function hasWorkspaceAccess(input = null) {
+  return hasAdminPermission("workspace.access", input);
+}
+
+export function canAccessAdminRoute(routeName, input = null) {
+  const rule = ADMIN_ROUTE_RULES[routeName];
+  if (!rule) return true;
+
+  const role =
+    typeof input === "string"
+      ? normalizeRole(input)
+      : normalizeRole(input?.user?.normalizedRole || input?.user?.role) ||
+        (input ? null : getAdminRole());
+
+  return rule.roles.includes(role);
+}
+
+export function getAdminNavItems(currentPath, input = null) {
+  const seenTargets = new Set();
+
+  return Object.entries(ADMIN_ROUTE_RULES)
+    .filter(([routeName, rule]) => rule.nav && canAccessAdminRoute(routeName, input))
+    .filter(([, rule]) => {
+      if (seenTargets.has(rule.nav.to)) return false;
+      seenTargets.add(rule.nav.to);
+      return true;
+    })
+    .map(([, rule]) => ({
+      ...rule.nav,
+      active:
+        currentPath === rule.nav.to ||
+        (rule.nav.to === "/membership" && currentPath === "/membership-new"),
+    }));
 }
 
 export function setAdminSession(payload) {

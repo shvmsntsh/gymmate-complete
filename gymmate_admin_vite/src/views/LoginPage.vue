@@ -5,12 +5,10 @@
         <div>
           <div class="eyebrow">Owner & Admin Login</div>
           <h1 class="display-headline">
-            Step into your GymMate workspace and keep everything moving
-            smoothly.
+            Step into your GymMate workspace.
           </h1>
           <p class="lead-copy">
-            Sign in to review your gym, support your members, or manage the
-            wider network with a calmer control surface.
+            Sign in to review your gym, support members, or manage the network.
           </p>
         </div>
 
@@ -36,7 +34,7 @@
         <div class="eyebrow">Login</div>
         <h2 class="section-title">Welcome back</h2>
         <p class="section-copy">
-          Use your account details to enter your GymMate dashboard.
+          Use your account details to enter the dashboard.
         </p>
       </div>
 
@@ -94,13 +92,14 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import PublicAuthShell from "../components/PublicAuthShell.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
-import { apiFetch, setAdminSession } from "../lib/api";
+import { apiFetch, hasWorkspaceAccess, normalizeRole, setAdminSession } from "../lib/api";
 
 const assetBase = import.meta.env.BASE_URL;
+const route = useRoute();
 const router = useRouter();
 const form = ref({ email: "", password: "" });
 const showPassword = ref(false);
@@ -128,13 +127,10 @@ async function submit() {
     const data = await res.json();
 
     if (res.ok) {
-      const normalizedRole = data.user?.normalizedRole || data.user?.role;
-      if (
-        normalizedRole !== "admin" &&
-        normalizedRole !== "superadmin" &&
-        normalizedRole !== "owner" &&
-        normalizedRole !== "gym_owner"
-      ) {
+      const normalizedRole = normalizeRole(
+        data.user?.normalizedRole || data.user?.role,
+      );
+      if (!hasWorkspaceAccess(normalizedRole)) {
         showMessage(
           "This login does not have access to the web workspace.",
           "error",
@@ -154,4 +150,11 @@ async function submit() {
     submitting.value = false;
   }
 }
+
+onMounted(() => {
+  const presetEmail = String(route.query.email || "").trim();
+  if (presetEmail && !form.value.email) {
+    form.value.email = presetEmail;
+  }
+});
 </script>

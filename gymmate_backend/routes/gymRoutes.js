@@ -116,9 +116,14 @@ router.post('/register', async (req, res) => {
       });
 
       await ownerUser.save();
-
-      newGym.owner = ownerUser._id;
-      await newGym.save();
+      const linkedGym = await Gym.findByIdAndUpdate(
+        newGym._id,
+        { $set: { owner: ownerUser._id } },
+        { new: true },
+      );
+      if (!linkedGym) {
+        throw new Error('Failed to link owner to the gym.');
+      }
     } catch (ownerError) {
       await Gym.findByIdAndDelete(newGym._id).catch(() => {});
       throw ownerError;
@@ -323,13 +328,11 @@ router.get('/branding/:gymId', async (req, res) => {
 
 router.put('/branding', authenticateToken, async (req, res) => {
   try {
-    if (!hasRole(req.user, ['owner', 'admin'])) {
+    if (!hasRole(req.user, ['owner'])) {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    const targetGymId = hasRole(req.user, ['admin'])
-      ? (req.body.gymId || req.user.gymId)
-      : req.user.gymId;
+    const targetGymId = req.user.gymId;
 
     if (!targetGymId) {
       return res.status(400).json({ message: 'No gym available for branding update' });
