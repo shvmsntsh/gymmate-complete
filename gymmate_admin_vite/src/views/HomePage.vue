@@ -4,24 +4,24 @@
       <div class="stack">
         <div>
           <div class="eyebrow">GymMate For Gym Owners</div>
-          <h1 class="display-headline">Run your gym with clarity and control.</h1>
+          <h1 class="display-headline">Run your gym clearly.</h1>
           <p class="lead-copy">
-            Keep your gym details, member activity, and daily operations in one clean dashboard.
+            Members, plans, staff, and daily operations in one focused workspace.
           </p>
         </div>
 
         <div class="hero-metrics">
           <div class="hero-metric">
             <div class="hero-metric__value">Clear</div>
-            <div class="hero-metric__label">See your gym, members, and setup details in one place.</div>
+            <div class="hero-metric__label">Your gym, people, and setup in one view.</div>
           </div>
           <div class="hero-metric">
             <div class="hero-metric__value">Simple</div>
-            <div class="hero-metric__label">Easy access to login, gym registration, and team visibility.</div>
+            <div class="hero-metric__label">Fast login, invites, and member updates.</div>
           </div>
           <div class="hero-metric">
             <div class="hero-metric__value">Ready</div>
-            <div class="hero-metric__label">Built to support growth as your gym operations expand.</div>
+            <div class="hero-metric__label">Built for real front-desk gym work.</div>
           </div>
         </div>
       </div>
@@ -36,7 +36,7 @@
         <div class="landing-media__caption">
           <div class="landing-media__caption-title">A gym owners actually recognize</div>
           <div class="landing-media__caption-copy">
-            Bright, premium, and familiar enough to feel like a real studio instead of stock software.
+            Premium, familiar, and grounded in the kind of space owners run every day.
           </div>
         </div>
       </div>
@@ -45,7 +45,7 @@
         <div class="eyebrow">Owner Dashboard</div>
         <h2 class="section-title">Everything you need to run your gym.</h2>
         <p class="section-copy">
-          Set up your gym, review members, and keep daily operations moving.
+          Set up the gym, manage members, and keep the front desk moving.
         </p>
       </div>
 

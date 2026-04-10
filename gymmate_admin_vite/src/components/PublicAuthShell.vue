@@ -8,18 +8,36 @@
         <header class="public-shell__nav">
           <button class="public-shell__home" type="button" @click="router.push('/')">
             <AdminBrand
-              :mark-image-url="brandMark"
               :tone="isDark ? 'light' : 'default'"
               :wordmark-url="brandWordmark"
               brand-name="GymMate"
               compact
+              hide-glyph
             />
           </button>
 
           <div class="public-shell__nav-actions">
-            <v-btn class="admin-nav-link" variant="text" @click="router.push('/login')">Login</v-btn>
-            <v-btn class="admin-nav-link" variant="text" @click="router.push('/register-gym')">Register Gym</v-btn>
-            <AdminThemeToggle :is-dark="isDark" @toggle="emit('toggle-theme')" />
+            <div class="public-shell__nav-links">
+              <v-btn class="admin-nav-link" variant="text" @click="router.push('/login')">Login</v-btn>
+              <v-btn class="admin-nav-link" variant="text" @click="router.push('/register-gym')">Register Gym</v-btn>
+            </div>
+            <div class="public-shell__nav-tools">
+              <AdminThemeToggle :is-dark="isDark" @toggle="emit('toggle-theme')" />
+              <v-menu location="bottom end">
+                <template #activator="{ props: menuProps }">
+                  <v-btn
+                    class="public-shell__menu-btn"
+                    icon="mdi-menu"
+                    variant="text"
+                    v-bind="menuProps"
+                  />
+                </template>
+                <v-list class="public-shell__menu" density="comfortable">
+                  <v-list-item title="Login" @click="router.push('/login')" />
+                  <v-list-item title="Register Gym" @click="router.push('/register-gym')" />
+                </v-list>
+              </v-menu>
+            </div>
           </div>
         </header>
 
@@ -60,9 +78,6 @@ const props = defineProps({
 const emit = defineEmits(['toggle-theme'])
 const router = useRouter()
 const assetBase = import.meta.env.BASE_URL
-const brandMark = computed(() =>
-  `${assetBase}images/${props.isDark ? 'gymmate_logo_mark_light.png' : 'gymmate_logo_mark_dark.png'}`,
-)
 const brandWordmark = computed(() =>
   `${assetBase}images/${props.isDark ? 'gymmate_logo_light.png' : 'gymmate_logo_dark.png'}`,
 )

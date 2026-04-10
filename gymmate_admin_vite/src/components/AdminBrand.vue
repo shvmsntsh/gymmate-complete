@@ -1,6 +1,7 @@
 <template>
   <div class="admin-brand" :class="[toneClass, { 'admin-brand--compact': compact }]">
     <div
+      v-if="!hideGlyph"
       class="admin-brand__glyph"
       :class="{
         'admin-brand__glyph--logo': showLogo,
@@ -58,6 +59,10 @@ const props = defineProps({
   markImageUrl: {
     type: String,
     default: '',
+  },
+  hideGlyph: {
+    type: Boolean,
+    default: false,
   },
   tone: {
     type: String,

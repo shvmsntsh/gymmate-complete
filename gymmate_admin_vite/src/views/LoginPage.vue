@@ -5,10 +5,10 @@
         <div>
           <div class="eyebrow">Owner & Admin Login</div>
           <h1 class="display-headline">
-            Step into your GymMate workspace.
+            Step into your gym workspace.
           </h1>
           <p class="lead-copy">
-            Sign in to review your gym, support members, or manage the network.
+            Sign in to manage members, staff, plans, and day-to-day operations.
           </p>
         </div>
 
@@ -20,7 +20,7 @@
           <div class="landing-media__caption">
             <div class="landing-media__caption-title">Built for real gym operations</div>
             <div class="landing-media__caption-copy">
-              A clean front desk workspace for memberships, team activity, and daily member support.
+              A cleaner front desk workspace for memberships, team activity, and member support.
             </div>
           </div>
         </div>

@@ -144,6 +144,7 @@ a {
   align-items: center;
   gap: 0.9rem;
   text-align: left;
+  min-width: 0;
 }
 
 .admin-brand__glyph {
@@ -172,6 +173,10 @@ a {
   color: var(--gm-text-soft);
   font-size: 0.82rem;
   letter-spacing: 0.03em;
+}
+
+.admin-brand__copy {
+  min-width: 0;
 }
 
 .admin-brand--light .admin-brand__name,
@@ -261,13 +266,31 @@ a {
 .public-shell__nav-actions {
   display: flex;
   align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.public-shell__nav-links,
+.public-shell__nav-tools {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+}
+
+.public-shell__menu-btn {
+  display: none !important;
+}
+
+.public-shell__menu {
+  border-radius: 18px !important;
+  border: 1px solid var(--gm-border) !important;
+  background: var(--gm-surface-strong) !important;
+  color: var(--gm-text) !important;
 }
 
 .public-shell__grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(430px, 0.92fr);
   gap: 24px;
   align-items: start;
 }
@@ -288,6 +311,7 @@ a {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  min-width: 0;
 }
 
 .admin-shell {
@@ -841,6 +865,7 @@ a {
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 248, 240, 0.14);
+  min-width: 0;
 }
 
 .hero-metric__value {
@@ -852,6 +877,9 @@ a {
 .hero-metric__label {
   margin-top: 0.4rem;
   color: rgba(255, 248, 240, 0.72);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  text-wrap: balance;
 }
 
 .landing-media {
@@ -925,6 +953,20 @@ a {
   flex-wrap: wrap;
 }
 
+@media (max-width: 1279px) {
+  .public-shell__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .public-shell__hero {
+    min-height: auto;
+  }
+}
+
 @media (max-width: 1180px) {
   .admin-shell {
     grid-template-columns: 1fr;
@@ -940,18 +982,31 @@ a {
   .dashboard-grid--main,
   .overview-metrics,
   .overview-grid,
-  .public-shell__grid,
   .hero-metrics,
   .detail-grid {
     grid-template-columns: 1fr;
   }
 
-  .public-shell__hero {
-    min-height: auto;
-  }
-
   .admin-shell__header {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 960px) {
+  .public-shell__nav-links {
+    display: none;
+  }
+
+  .public-shell__menu-btn {
+    display: inline-flex !important;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-metrics {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -970,10 +1025,6 @@ a {
     padding: 20px;
   }
 
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
   .public-shell__nav {
     flex-direction: column;
     align-items: flex-start;
@@ -981,6 +1032,7 @@ a {
 
   .public-shell__nav-actions {
     width: 100%;
+    justify-content: space-between;
   }
 
   .cta-row {
