@@ -13,18 +13,16 @@
         </div>
 
         <div class="landing-media">
-          <video
-            autoplay
-            muted
-            loop
-            playsinline
-            :poster="`${assetBase}images/gymbghomepagelight.png`"
-          >
-            <source
-              :src="`${assetBase}videos/gym_pool_cafe.mp4`"
-              type="video/mp4"
-            />
-          </video>
+          <img
+            :src="heroImage"
+            alt="Premium gym floor with strength training equipment"
+          />
+          <div class="landing-media__caption">
+            <div class="landing-media__caption-title">Built for real gym operations</div>
+            <div class="landing-media__caption-copy">
+              A clean front desk workspace for memberships, team activity, and daily member support.
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -98,7 +96,6 @@ import PublicAuthShell from "../components/PublicAuthShell.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
 import { apiFetch, hasWorkspaceAccess, normalizeRole, setAdminSession } from "../lib/api";
 
-const assetBase = import.meta.env.BASE_URL;
 const route = useRoute();
 const router = useRouter();
 const form = ref({ email: "", password: "" });
@@ -108,6 +105,7 @@ const snackbarText = ref("");
 const snackbarColor = ref("");
 const submitting = ref(false);
 const { isDark, toggleTheme } = useAdminTheme();
+const heroImage = `${import.meta.env.BASE_URL}images/login-hero-gym.jpg`;
 
 function showMessage(message, color = "success") {
   snackbarText.value = message;

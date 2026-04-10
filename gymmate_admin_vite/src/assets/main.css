@@ -524,7 +524,13 @@ a {
 
 .overview-card--chart canvas {
   width: 100% !important;
-  min-height: 320px;
+  height: 320px;
+  max-height: 320px;
+}
+
+.chart-canvas-wrapper {
+  height: 320px;
+  max-height: 320px;
 }
 
 .partner-list {
@@ -862,8 +868,9 @@ a {
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgba(10, 7, 4, 0) 15%,
-    rgba(10, 7, 4, 0.5) 100%
+    rgba(10, 7, 4, 0.02) 10%,
+    rgba(10, 7, 4, 0.2) 55%,
+    rgba(10, 7, 4, 0.64) 100%
   );
 }
 
@@ -873,6 +880,38 @@ a {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.landing-media__caption {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 22px;
+  z-index: 1;
+  display: grid;
+  gap: 0.45rem;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: linear-gradient(
+    135deg,
+    rgba(18, 14, 10, 0.82),
+    rgba(18, 14, 10, 0.46)
+  );
+  border: 1px solid rgba(255, 248, 240, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+.landing-media__caption-title {
+  font-family: "Manrope", sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff8f0;
+}
+
+.landing-media__caption-copy {
+  color: rgba(255, 248, 240, 0.82);
+  font-size: 0.96rem;
+  line-height: 1.45;
 }
 
 .stack {

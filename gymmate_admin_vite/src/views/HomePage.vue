@@ -4,9 +4,9 @@
       <div class="stack">
         <div>
           <div class="eyebrow">GymMate For Gym Owners</div>
-          <h1 class="display-headline">Run your gym with more clarity, consistency, and control.</h1>
+          <h1 class="display-headline">Run your gym with clarity and control.</h1>
           <p class="lead-copy">
-            Keep your gym details organized, review member activity, and manage day-to-day operations from one clean dashboard built for modern fitness businesses.
+            Keep your gym details, member activity, and daily operations in one clean dashboard.
           </p>
         </div>
 
@@ -29,16 +29,23 @@
 
     <div class="stack">
       <div class="landing-media">
-        <video autoplay muted loop playsinline :poster="posterImage">
-          <source :src="`${assetBase}videos/gym_pool_cafe.mp4`" type="video/mp4" />
-        </video>
+        <img
+          :src="heroImage"
+          alt="Modern gym interior with strength and cardio equipment"
+        />
+        <div class="landing-media__caption">
+          <div class="landing-media__caption-title">A gym owners actually recognize</div>
+          <div class="landing-media__caption-copy">
+            Bright, premium, and familiar enough to feel like a real studio instead of stock software.
+          </div>
+        </div>
       </div>
 
       <div>
         <div class="eyebrow">Owner Dashboard</div>
-        <h2 class="section-title">Everything you need to stay on top of your gym.</h2>
+        <h2 class="section-title">Everything you need to run your gym.</h2>
         <p class="section-copy">
-          From setting up your gym profile to reviewing members and activity, GymMate helps you manage the business side of fitness with less friction.
+          Set up your gym, review members, and keep daily operations moving.
         </p>
       </div>
 
@@ -51,14 +58,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import PublicAuthShell from '../components/PublicAuthShell.vue'
 import { useAdminTheme } from '../composables/useAdminTheme'
 
-const assetBase = import.meta.env.BASE_URL
 const { isDark, toggleTheme } = useAdminTheme()
-
-const posterImage = computed(() =>
-  `${assetBase}${isDark.value ? 'images/gymbghomepagedark.png' : 'images/gymbghomepagelight.png'}`
-)
+const heroImage = `${import.meta.env.BASE_URL}images/login-hero-gym.jpg`
 </script>

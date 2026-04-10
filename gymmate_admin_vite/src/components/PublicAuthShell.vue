@@ -7,7 +7,13 @@
       <v-container class="public-shell__container">
         <header class="public-shell__nav">
           <button class="public-shell__home" type="button" @click="router.push('/')">
-            <AdminBrand tone="light" compact />
+            <AdminBrand
+              :mark-image-url="brandMark"
+              :tone="isDark ? 'light' : 'default'"
+              :wordmark-url="brandWordmark"
+              brand-name="GymMate"
+              compact
+            />
           </button>
 
           <div class="public-shell__nav-actions">
@@ -39,11 +45,12 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminBrand from './AdminBrand.vue'
 import AdminThemeToggle from './AdminThemeToggle.vue'
 
-defineProps({
+const props = defineProps({
   isDark: {
     type: Boolean,
     default: false,
@@ -52,4 +59,11 @@ defineProps({
 
 const emit = defineEmits(['toggle-theme'])
 const router = useRouter()
+const assetBase = import.meta.env.BASE_URL
+const brandMark = computed(() =>
+  `${assetBase}images/${props.isDark ? 'gymmate_logo_mark_light.png' : 'gymmate_logo_mark_dark.png'}`,
+)
+const brandWordmark = computed(() =>
+  `${assetBase}images/${props.isDark ? 'gymmate_logo_light.png' : 'gymmate_logo_dark.png'}`,
+)
 </script>
