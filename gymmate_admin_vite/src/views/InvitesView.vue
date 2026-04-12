@@ -371,6 +371,9 @@ async function fetchInvites() {
       usedDateLabel: invite.usedDateLabel || null,
       usedBy: invite.usedBy || "",
       claimedBy: invite.usedByUser || null,
+      name: invite.name || invite.invitee?.name || "",
+      email: invite.email || invite.invitee?.email || "",
+      phone_number: invite.phone_number || invite.invitee?.phone_number || "",
       summary: buildInviteSummary(invite),
     }));
   } catch (err) {

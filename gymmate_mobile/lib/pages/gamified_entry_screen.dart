@@ -163,9 +163,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
         _loginPasswordController.text.trim(),
       );
     } catch (e) {
-      setState(
-        () => _loginError = e.toString().replaceFirst('Exception: ', ''),
-      );
+      setState(() => _loginError = _friendlyEntryError(e.toString()));
     } finally {
       if (mounted) {
         setState(() => _loginLoading = false);
@@ -237,13 +235,21 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
             _backendRole = null;
             _backendGymId = null;
             _inviteCodeValid = false;
-            _registerError =
-                'This invite code does not match the selected role.';
+            _registerError = 'Invite code does not match this role.';
           });
           return;
         }
 
         _lastVerifiedCode = code;
+        final invitee = (data['invitee'] is Map)
+            ? Map<String, dynamic>.from(data['invitee'])
+            : const <String, dynamic>{};
+        final inviteeName = invitee['name']?.toString().trim() ?? '';
+        final inviteeEmail = invitee['email']?.toString().trim() ?? '';
+        final inviteePhone = invitee['phone_number']?.toString().trim() ?? '';
+        if (inviteeName.isNotEmpty) _regNameController.text = inviteeName;
+        if (inviteeEmail.isNotEmpty) _regEmailController.text = inviteeEmail;
+        if (inviteePhone.isNotEmpty) _regPhoneNumberController.text = inviteePhone;
         setState(() {
           _backendRole = data['role'];
           _backendGymId = data['gymId'];
@@ -256,7 +262,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
           _backendRole = null;
           _backendGymId = null;
           _inviteCodeValid = false;
-          _registerError = 'Invalid or already used invite code.';
+          _registerError = 'Invite code is invalid or used.';
         });
       }
     } catch (_) {
@@ -264,7 +270,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
         _backendRole = null;
         _backendGymId = null;
         _inviteCodeValid = false;
-        _registerError = 'Failed to verify invite code.';
+        _registerError = 'Could not verify the invite code.';
       });
     } finally {
       if (mounted) {
@@ -310,7 +316,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
     }
 
     if (errors.isNotEmpty) {
-      setState(() => _registerError = errors.join(', '));
+      setState(() => _registerError = errors.first);
       return;
     }
 
@@ -372,12 +378,12 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
         setState(() => _registerError = 'Registration failed.');
       }
     } catch (e) {
-      final message = e.toString().replaceFirst('Exception: ', '');
+      final message = _friendlyEntryError(e.toString());
       if (message.contains('Superadmin already exists')) {
         setState(() => _registerError = 'Superadmin already exists.');
       } else if (message.contains('already used invitation code') ||
-          message.contains('Invalid or already used invite code')) {
-        setState(() => _registerError = 'Invalid or already used invite code.');
+          message.contains('Invite code is invalid or used')) {
+        setState(() => _registerError = 'Invite code is invalid or used.');
       } else if (message.contains(
         'An account with this email already exists',
       )) {
@@ -392,6 +398,24 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
         setState(() => _regLoading = false);
       }
     }
+  }
+
+  String _friendlyEntryError(String raw) {
+    final message = raw.replaceFirst('Exception: ', '');
+    if (message.contains('403') ||
+        message.toLowerCase().contains('invalid or expired token')) {
+      return 'Your session expired. Please sign in again.';
+    }
+    if (message.contains('This invite code does not match')) {
+      return 'Invite code does not match this role.';
+    }
+    if (message.contains('Invalid or already used invite code')) {
+      return 'Invite code is invalid or used.';
+    }
+    if (message.contains('Failed with status')) {
+      return 'We could not finish that right now. Please try again.';
+    }
+    return message;
   }
 
   @override
@@ -522,7 +546,7 @@ class _HeroPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const PhaseOneBadge(label: 'Start Your Session'),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           Text.rich(
             TextSpan(
               text: 'Track. Train. ',
@@ -537,37 +561,34 @@ class _HeroPanel extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(
-            'Log workouts, follow your plan, and stay connected with your gym every day.',
+            'Log workouts, follow your plan, and stay connected every day.',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
-              height: 1.55,
+              height: 1.45,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           const Wrap(
-            spacing: 18,
-            runSpacing: 14,
+            spacing: 12,
+            runSpacing: 10,
             children: [
-              _MetricChip(value: 'Daily', label: 'Workout Tracking'),
-              _MetricChip(value: 'Coach-led', label: 'Trainer Updates'),
-              _MetricChip(value: 'All Week', label: 'Progress & Stats'),
+              _MetricChip(value: 'Daily', label: 'Workout Logs'),
+              _MetricChip(value: 'Coach', label: 'Trainer Chat'),
+              _MetricChip(value: 'Week', label: 'Progress View'),
             ],
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 22),
           PhaseOnePrimaryButton(label: 'Continue Training', onTap: onLogin),
-          const SizedBox(height: 14),
-          OutlinedButton(
-            onPressed: onJoin,
-            child: const Text('Join Your Gym'),
-          ),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: onJoin, child: const Text('Join Your Gym')),
           const SizedBox(height: 6),
           Align(
             alignment: Alignment.center,
             child: TextButton(
               onPressed: onQuickJoin,
-              child: const Text('Join in Seconds (OTP)'),
+              child: const Text('First-time invite access'),
             ),
           ),
         ],
@@ -586,7 +607,7 @@ class _MetricChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface.withValues(alpha: 0.76),
         borderRadius: BorderRadius.circular(22),
@@ -599,7 +620,7 @@ class _MetricChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(value, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             label.toUpperCase(),
             style: GoogleFonts.inter(
@@ -641,23 +662,22 @@ class _LoginStateView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PhaseOneTopBar(onBack: onBack),
-          const SizedBox(height: 22),
+          const SizedBox(height: 16),
           PhaseOneSurface(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const PhaseOneBadge(label: 'Gym Access'),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
                 const PhaseOneSectionTitle(
                   eyebrow: 'Log In',
-                  title: 'Welcome back to your gym space.',
-                  subtitle:
-                      'Owners, trainers, and members all step in here to pick up the day with less friction.',
+                  title: 'Welcome back.',
+                  subtitle: 'Sign in and jump back into your day.',
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 18),
                 if (error != null) ...[
                   PhaseOneStatusBanner(message: error!),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
                 ],
                 AnimatedFormField(
                   controller: emailController,
@@ -671,7 +691,7 @@ class _LoginStateView extends StatelessWidget {
                   },
                   index: 0,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 AnimatedFormField(
                   controller: passwordController,
                   hintText: 'Password',
@@ -682,7 +702,7 @@ class _LoginStateView extends StatelessWidget {
                   },
                   index: 1,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -690,7 +710,7 @@ class _LoginStateView extends StatelessWidget {
                     child: const Text('Forgot password?'),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 PhaseOnePrimaryButton(
                   label: 'Log In',
                   onTap: onLogin,
@@ -724,20 +744,19 @@ class _RoleSelectionView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PhaseOneTopBar(onBack: onBack),
-        const SizedBox(height: 22),
+        const SizedBox(height: 16),
         PhaseOneSurface(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const PhaseOneBadge(label: 'Role Setup'),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
               const PhaseOneSectionTitle(
                 eyebrow: 'Choose Role',
-                title: 'Pick the workspace that matches your access.',
-                subtitle:
-                    'Choose the role that matches how you move through GymMate each day.',
+                title: 'Choose your role.',
+                subtitle: 'Pick the access that matches your gym use.',
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final compact = constraints.maxWidth < 640;
@@ -947,20 +966,19 @@ class _RegistrationView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PhaseOneTopBar(onBack: onBack),
-          const SizedBox(height: 22),
+          const SizedBox(height: 16),
           PhaseOneSurface(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const PhaseOneBadge(label: 'Create Account'),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
                 PhaseOneSectionTitle(
                   eyebrow: roleLabel,
-                  title: 'Set up your $roleLabel workspace.',
-                  subtitle:
-                      'Create your account, add your invite if your gym gave you one, and get ready to train.',
+                  title: 'Set up your $roleLabel account.',
+                  subtitle: 'Add your invite and finish setup.',
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(999),
                   child: LinearProgressIndicator(
@@ -968,24 +986,24 @@ class _RegistrationView extends StatelessWidget {
                     minHeight: 8,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
-                  'Invite verification and account setup',
+                  'Invite and account setup',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 if (error != null) ...[
                   PhaseOneStatusBanner(message: error!),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                 ],
                 if (inviteCodeValid == true) ...[
                   PhaseOneStatusBanner(
                     message: isSuperadmin
                         ? 'Superadmin code verified.'
-                        : 'Invite code verified for ${_prettyRole(backendRole)}.',
+                        : 'Invite verified for ${_prettyRole(backendRole)}.',
                     isError: false,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                 ],
                 LayoutBuilder(
                   builder: (context, constraints) {
@@ -1001,9 +1019,9 @@ class _RegistrationView extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 16),
                 PhaseOnePrimaryButton(
-                  label: 'Create Account',
+                  label: 'Create account',
                   onTap: onRegister,
                   loading: loading,
                 ),
@@ -1024,7 +1042,7 @@ class _RegistrationView extends StatelessWidget {
         validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         index: 0,
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
       AnimatedFormField(
         controller: emailController,
         hintText: 'Email',
@@ -1035,7 +1053,7 @@ class _RegistrationView extends StatelessWidget {
         },
         index: 1,
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
       AnimatedFormField(
         controller: phoneNumberController,
         hintText: 'Phone Number',
@@ -1043,7 +1061,7 @@ class _RegistrationView extends StatelessWidget {
         validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         index: 2,
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
       AnimatedFormField(
         controller: codeController,
         hintText: 'Invite Code',
@@ -1055,7 +1073,7 @@ class _RegistrationView extends StatelessWidget {
 
     if (showGymName) {
       fields.addAll([
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         AnimatedFormField(
           controller: gymNameController,
           hintText: 'Gym Name',
@@ -1066,7 +1084,7 @@ class _RegistrationView extends StatelessWidget {
     }
 
     fields.addAll([
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
       AnimatedFormField(
         controller: passwordController,
         hintText: 'Password',
@@ -1077,7 +1095,7 @@ class _RegistrationView extends StatelessWidget {
         },
         index: showGymName ? 5 : 4,
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
       AnimatedFormField(
         controller: confirmController,
         hintText: 'Confirm Password',

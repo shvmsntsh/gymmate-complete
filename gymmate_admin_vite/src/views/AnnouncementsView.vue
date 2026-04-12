@@ -91,6 +91,9 @@
             </v-chip>
           </div>
           <div class="conversation-preview">{{ announcement.body }}</div>
+          <div v-if="announcement.mediaAssetId && getAnnouncementImageUrl(announcement.mediaAssetId)" class="announcement-image-preview">
+            <img :src="getAnnouncementImageUrl(announcement.mediaAssetId)" :alt="announcement.title" />
+          </div>
           <div class="announcement-meta">
             <span>{{ formatAudience(announcement.audience?.scope) }}</span>
             <span>{{ announcement.deliverySummary?.targetedCount || 0 }} members</span>
@@ -118,6 +121,7 @@ const saving = ref(false);
 const error = ref("");
 const selectedImage = ref(null);
 const announcements = ref([]);
+const imageCache = ref({});
 const form = ref({
   title: "",
   body: "",
@@ -153,7 +157,7 @@ function formatAudience(scope) {
 
 function formatDate(value) {
   if (!value) return "Just now";
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString("en-GB");
 }
 
 async function fileToPayload(file) {
@@ -181,11 +185,33 @@ async function fetchAnnouncements() {
       throw new Error(data.message || "Could not load announcements.");
     }
     announcements.value = data.announcements || [];
+    for (const ann of data.announcements || []) {
+      if (ann.mediaAssetId && !imageCache.value[ann.mediaAssetId]) {
+        loadAnnouncementImage(ann.mediaAssetId);
+      }
+    }
   } catch (err) {
     error.value = err?.message || "Could not load announcements.";
   } finally {
     loading.value = false;
   }
+}
+
+async function loadAnnouncementImage(assetId) {
+  if (imageCache.value[assetId]) return;
+  try {
+    const res = await apiFetch(`/api/owner/assets/${assetId}`);
+    if (res.ok) {
+      const blob = await res.blob();
+      imageCache.value[assetId] = URL.createObjectURL(blob);
+    }
+  } catch {
+    imageCache.value[assetId] = null;
+  }
+}
+
+function getAnnouncementImageUrl(assetId) {
+  return imageCache.value[assetId] || null;
 }
 
 async function submitAnnouncement() {
@@ -240,6 +266,20 @@ onMounted(fetchAnnouncements);
   margin-top: 10px;
   font-size: 13px;
   opacity: 0.78;
+}
+
+.announcement-image-preview {
+  margin-top: 12px;
+  max-width: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.announcement-image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
 }
 
 .section-header--spaced {

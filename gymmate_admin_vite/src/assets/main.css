@@ -321,6 +321,15 @@ a {
   padding: 20px;
 }
 
+.admin-shell--collapsed {
+  grid-template-columns: 92px minmax(0, 1fr);
+}
+
+.admin-shell__menu,
+.admin-shell__scrim {
+  display: none;
+}
+
 .admin-shell__sidebar,
 .admin-shell__header {
   padding: 22px;
@@ -333,6 +342,31 @@ a {
   min-height: calc(100vh - 40px);
   position: sticky;
   top: 20px;
+}
+
+.admin-shell__collapse {
+  display: inline-grid;
+  place-items: center;
+  align-self: flex-end;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--gm-border);
+  border-radius: 8px;
+  background: var(--gm-surface-muted);
+  color: var(--gm-text);
+  cursor: pointer;
+}
+
+.admin-shell--collapsed .admin-shell__eyebrow,
+.admin-shell--collapsed .admin-shell__nav-label,
+.admin-shell--collapsed .admin-shell__sidebar-footer,
+.admin-shell--collapsed .admin-shell__sidebar .admin-brand__copy {
+  display: none;
+}
+
+.admin-shell--collapsed .admin-shell__nav-item {
+  justify-content: center;
+  padding: 0.75rem;
 }
 
 .admin-shell__eyebrow {
@@ -978,13 +1012,27 @@ a {
 
 @media (max-width: 1180px) {
   .admin-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: 86px minmax(0, 1fr);
   }
 
   .admin-shell__sidebar {
-    min-height: unset;
-    position: relative;
-    top: 0;
+    min-height: calc(100vh - 40px);
+    position: sticky;
+    top: 20px;
+    padding: 16px;
+  }
+
+  .admin-shell__eyebrow,
+  .admin-shell__nav-label,
+  .admin-shell__sidebar-footer,
+  .admin-shell__collapse,
+  .admin-shell__sidebar .admin-brand__copy {
+    display: none;
+  }
+
+  .admin-shell__nav-item {
+    justify-content: center;
+    padding: 0.75rem;
   }
 
   .dashboard-grid--stats,
@@ -1051,11 +1099,60 @@ a {
 
   .public-shell__hero,
   .public-shell__panel,
-  .admin-shell__sidebar,
   .admin-shell__header,
   .admin-panel,
   .stat-card {
     padding: 20px;
+  }
+
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-shell__menu {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+  }
+
+  .admin-shell__header {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .admin-shell__sidebar {
+    position: fixed;
+    z-index: 30;
+    inset: 16px auto 16px 16px;
+    width: min(300px, calc(100vw - 32px));
+    min-height: auto;
+    transform: translateX(calc(-100% - 32px));
+    transition: transform 0.2s ease;
+    padding: 20px;
+  }
+
+  .admin-shell--drawer-open .admin-shell__sidebar {
+    transform: translateX(0);
+  }
+
+  .admin-shell__scrim {
+    display: block;
+    position: fixed;
+    z-index: 29;
+    inset: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.42);
+  }
+
+  .admin-shell .admin-shell__eyebrow,
+  .admin-shell .admin-shell__nav-label,
+  .admin-shell .admin-shell__sidebar-footer,
+  .admin-shell .admin-shell__sidebar .admin-brand__copy {
+    display: block;
+  }
+
+  .admin-shell__nav-item {
+    justify-content: flex-start;
+    padding: 0.95rem 1rem;
   }
 
   .public-shell__nav {

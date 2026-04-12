@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'package:gymmate_mobile/models/invite_code_model.dart';
@@ -943,5 +942,8 @@ String _roleLabel(String role) {
 
 String _formatDate(DateTime? date) {
   if (date == null) return 'Unknown';
-  return DateFormat('yyyy-MM-dd').format(date.toLocal());
+  final local = date.toLocal();
+  final day = local.day.toString().padLeft(2, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  return '$day/$month/${local.year}';
 }

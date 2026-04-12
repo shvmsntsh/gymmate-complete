@@ -33,6 +33,17 @@ class AuthProvider with ChangeNotifier {
   String? get avatarPath => _avatarPath;
   Map<String, dynamic> get branding => _branding;
 
+  String _resolvedAvatarPath(dynamic candidate, String? role) {
+    final value = '${candidate ?? ''}'.trim();
+    if (value.isNotEmpty) {
+      if (value.startsWith('data:')) {
+        return value;
+      }
+      return value;
+    }
+    return _defaultAvatarForRole(role);
+  }
+
   Future<bool> login(String email, String password) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
     try {
@@ -63,7 +74,7 @@ class AuthProvider with ChangeNotifier {
       _userEmail = user['email'];
       _gymName = user['gymName'];
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
-      _avatarPath = user['avatarPath'] ?? _defaultAvatarForRole(_userRole);
+      _avatarPath = _resolvedAvatarPath(user['avatarPath'], _userRole);
       await _loadBrandingForGym(user['gymId']);
 
       await _storage.write(key: 'user_token', value: _token);
@@ -87,13 +98,13 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> quickLogin(String phoneNumber, String otp) async {
+  Future<bool> quickLogin(String phoneNumber, String accessCode) async {
     final url = Uri.parse('${ApiConfig.baseUrl}/api/auth/quick-login');
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'phone_number': phoneNumber, 'otp': otp}),
+        body: json.encode({'phone_number': phoneNumber, 'accessCode': accessCode}),
       );
 
       final responseData = json.decode(response.body);
@@ -117,7 +128,7 @@ class AuthProvider with ChangeNotifier {
       _userEmail = user['email'];
       _gymName = user['gymName'];
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
-      _avatarPath = user['avatarPath'] ?? _defaultAvatarForRole(_userRole);
+      _avatarPath = _resolvedAvatarPath(user['avatarPath'], _userRole);
       await _loadBrandingForGym(user['gymId']);
 
       await _storage.write(key: 'user_token', value: _token);
@@ -168,9 +179,10 @@ class AuthProvider with ChangeNotifier {
     _gymName = await _storage.read(key: 'gym_name');
     _hasCompletedOnboarding =
         (await _storage.read(key: 'has_completed_onboarding')) == 'true';
-    _avatarPath =
-        await _storage.read(key: 'avatar_path') ??
-        _defaultAvatarForRole(_userRole);
+    _avatarPath = _resolvedAvatarPath(
+      await _storage.read(key: 'avatar_path'),
+      _userRole,
+    );
     final brandingData = await _storage.read(key: 'branding_data');
     if (brandingData != null) {
       _branding = normalizeBranding(json.decode(brandingData));
@@ -217,19 +229,8 @@ class AuthProvider with ChangeNotifier {
         );
       }
 
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Registration successful, now log in
-      final loginSuccess = await login(
-        registrationData['email'],
-        registrationData['password'],
-      );
-      if (loginSuccess) {
-        // Set default avatar for role
-        _avatarPath = _defaultAvatarForRole(_userRole);
-        await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
-      }
-      return loginSuccess;
+      await applySessionUpdate(responseData);
+      return true;
     } catch (e) {
       rethrow;
     }
@@ -259,16 +260,16 @@ class AuthProvider with ChangeNotifier {
           'role': normalizedRole,
           'normalizedRole': normalizedRole,
         };
-        _userId = user['id'];
+        _userId = (user['id'] ?? user['_id'])?.toString();
         _userRole = normalizedRole;
         _userName = user['name'];
         _userEmail = user['email'];
         _gymName = user['gymName'];
         _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
-        _avatarPath =
-            user['avatarPath'] ??
-            await _storage.read(key: 'avatar_path') ??
-            _defaultAvatarForRole(_userRole);
+        _avatarPath = _resolvedAvatarPath(
+          user['avatarPath'] ?? await _storage.read(key: 'avatar_path'),
+          _userRole,
+        );
         await _loadBrandingForGym(user['gymId']);
         await _storage.write(key: 'user_data', value: json.encode(_userData));
         await _storage.write(key: 'user_id', value: _userId);
@@ -288,6 +289,53 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (_) {}
+  }
+
+  Future<void> applySessionUpdate(Map<String, dynamic> responseData) async {
+    final nextToken = (responseData['token'] ?? _token)?.toString();
+    final rawUser = responseData['user'];
+    if (rawUser is! Map) return;
+
+    final user = Map<String, dynamic>.from(rawUser);
+    final normalizedRole =
+        user['normalizedRole'] ?? normalizeRole(user['role']);
+
+    _token = nextToken;
+    _userData = {
+      ...(_userData ?? const <String, dynamic>{}),
+      ...user,
+      'role': normalizedRole,
+      'normalizedRole': normalizedRole,
+    };
+    _userId = (user['id'] ?? _userId)?.toString();
+    _userRole = normalizedRole;
+    _userName = user['name']?.toString() ?? _userName;
+    _userEmail = user['email']?.toString() ?? _userEmail;
+    _gymName = user['gymName']?.toString() ?? _gymName;
+    _hasCompletedOnboarding =
+        user['hasCompletedOnboarding'] ?? _hasCompletedOnboarding ?? false;
+    _avatarPath = _resolvedAvatarPath(
+      user['avatarPath'] ?? _avatarPath,
+      _userRole,
+    );
+    await _loadBrandingForGym(user['gymId'] ?? _userData?['gymId']);
+
+    if (_token != null) {
+      await _storage.write(key: 'user_token', value: _token);
+    }
+    await _storage.write(key: 'user_data', value: json.encode(_userData));
+    await _storage.write(key: 'user_id', value: _userId);
+    await _storage.write(key: 'user_role', value: _userRole);
+    await _storage.write(key: 'user_name', value: _userName);
+    await _storage.write(key: 'user_email', value: _userEmail);
+    await _storage.write(key: 'gym_name', value: _gymName);
+    await _storage.write(
+      key: 'has_completed_onboarding',
+      value: (_hasCompletedOnboarding ?? false).toString(),
+    );
+    await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
+    await _storage.write(key: 'branding_data', value: json.encode(_branding));
+    notifyListeners();
   }
 
   String _defaultAvatarForRole(String? role) {
@@ -338,9 +386,38 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setLocalAvatarPath(String path) async {
+    _avatarPath = _resolvedAvatarPath(path, _userRole);
+    await _storage.write(key: 'avatar_path', value: _avatarPath);
+    notifyListeners();
+  }
+
   Future<void> setAvatarPath(String path) async {
-    _avatarPath = path;
-    await _storage.write(key: 'avatar_path', value: path);
+    if (_token == null) {
+      throw Exception('Authentication token not found.');
+    }
+
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/avatar'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+      body: json.encode({'avatar': path}),
+    );
+
+    final data = json.decode(response.body);
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Failed to update avatar');
+    }
+
+    _avatarPath = _resolvedAvatarPath(data['avatarPath'] ?? path, _userRole);
+    _userData = {
+      ...(_userData ?? const <String, dynamic>{}),
+      'avatarPath': _avatarPath,
+    };
+    await _storage.write(key: 'avatar_path', value: _avatarPath);
+    await _storage.write(key: 'user_data', value: json.encode(_userData));
     notifyListeners();
   }
 }

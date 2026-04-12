@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:gymmate_mobile/themes/app_colors.dart';
 import 'package:gymmate_mobile/themes/app_theme.dart';
@@ -22,32 +23,46 @@ class PhaseOneScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          AnimatedBackground(
-            denserGlow: denserGlow,
-            lightweight: lightweightBackground,
-          ),
-          SafeArea(
-            child: scrollable
-                ? LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final overlayStyle = (isDark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark)
+        .copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: Colors.transparent,
+        );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        body: Stack(
+          children: [
+            AnimatedBackground(
+              denserGlow: denserGlow,
+              lightweight: lightweightBackground,
+            ),
+            SafeArea(
+              child: scrollable
+                  ? LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
+                            ),
+                            child: child,
                           ),
-                          child: child,
-                        ),
-                      );
-                    },
-                  )
-                : child,
-          ),
-        ],
+                        );
+                      },
+                    )
+                  : child,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -119,7 +134,7 @@ class PhaseOneTopBar extends StatelessWidget {
           _TopPillButton(icon: Icons.arrow_back_ios_new_rounded, onTap: onBack!)
         else
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: (surfaces?.surfaceHigh ?? theme.colorScheme.surface)
                   .withValues(alpha: 0.84),
@@ -141,20 +156,20 @@ class PhaseOneTopBar extends StatelessWidget {
                   ),
                   child: const BrandLogo(),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'GymMate',
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
                       'Your Fitness HQ',
-                      style: theme.textTheme.labelMedium?.copyWith(
+                      style: theme.textTheme.labelSmall?.copyWith(
                         letterSpacing: 1,
                       ),
                     ),
@@ -185,7 +200,7 @@ class _TopPillButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Ink(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: (surfaces?.surfaceHigh ?? theme.colorScheme.surface)
               .withValues(alpha: 0.84),
@@ -209,7 +224,7 @@ class PhaseOneSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.padding,
-    this.radius = 32,
+    this.radius = 28,
   });
 
   @override
@@ -239,7 +254,7 @@ class PhaseOneSurface extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: padding ?? const EdgeInsets.all(22),
+        padding: padding ?? const EdgeInsets.all(16),
         child: child,
       ),
     );
@@ -254,7 +269,7 @@ class PhaseOneBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient(),
         borderRadius: BorderRadius.circular(999),
@@ -263,9 +278,9 @@ class PhaseOneBadge extends StatelessWidget {
         label.toUpperCase(),
         style: GoogleFonts.inter(
           color: AppColors.textOnAccent,
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: FontWeight.w800,
-          letterSpacing: 1.2,
+          letterSpacing: 1.1,
         ),
       ),
     ).animate().fadeIn(duration: 280.ms);
@@ -288,7 +303,7 @@ class PhaseOneStatusBanner extends StatelessWidget {
     final color = isError ? theme.colorScheme.error : theme.colorScheme.primary;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(18),
@@ -296,7 +311,7 @@ class PhaseOneStatusBanner extends StatelessWidget {
       ),
       child: Text(
         message,
-        style: theme.textTheme.bodyMedium?.copyWith(color: color),
+        style: theme.textTheme.bodySmall?.copyWith(color: color),
       ),
     );
   }
@@ -326,10 +341,10 @@ class PhaseOnePrimaryButton extends StatelessWidget {
         onTap: loading ? null : onTap,
         child: Ink(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             gradient: AppColors.primaryGradient(),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
                 color: theme.colorScheme.primary.withValues(alpha: 0.26),
@@ -353,8 +368,9 @@ class PhaseOnePrimaryButton extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: theme.textTheme.titleSmall?.copyWith(
                           color: AppColors.textOnAccent,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -390,17 +406,19 @@ class PhaseOneSectionTitle extends StatelessWidget {
           eyebrow.toUpperCase(),
           style: GoogleFonts.inter(
             color: theme.colorScheme.primary,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w800,
-            letterSpacing: 1.8,
+            letterSpacing: 1.4,
           ),
         ),
-        const SizedBox(height: 10),
-        Text(title, style: theme.textTheme.displayMedium),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
+        Text(title, style: theme.textTheme.headlineMedium),
+        const SizedBox(height: 8),
         Text(
           subtitle,
-          style: theme.textTheme.bodyLarge?.copyWith(
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.72),
           ),
         ),
@@ -418,7 +436,7 @@ class PhaseOneFooterNote extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(top: 18),
+      padding: const EdgeInsets.only(top: 14),
       child: Center(
         child: Text(
           label,

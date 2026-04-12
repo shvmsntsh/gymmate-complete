@@ -39,6 +39,72 @@ function membershipClientErrorStatus(error) {
   return 500;
 }
 
+function asCleanNumber(value, field, { min = 0, max = Number.MAX_SAFE_INTEGER, integer = false } = {}) {
+  const raw = String(value ?? '').replace(/[^0-9.-]/g, '').trim();
+  const number = raw === '' ? 0 : Number(raw);
+  if (!Number.isFinite(number) || number < min || number > max) {
+    const label = field.replace(/([A-Z])/g, ' $1').toLowerCase();
+    throw Object.assign(new Error(`${label} must be between ${min} and ${max}.`), { statusCode: 400 });
+  }
+  return integer ? Math.round(number) : number;
+}
+
+function asBool(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value === 'boolean') return value;
+  return String(value).toLowerCase() === 'true';
+}
+
+function sanitizeTemplatePayload(payload = {}, { partial = false } = {}) {
+  const next = { ...payload };
+
+  if (!partial || next.name !== undefined) {
+    next.name = String(next.name || '').trim();
+    if (!next.name) {
+      throw Object.assign(new Error('Plan name is required.'), { statusCode: 400 });
+    }
+  }
+
+  const numberFields = [
+    ['durationDays', { min: 1, max: 730, integer: true }],
+    ['price', { min: 0, max: 1000000 }],
+    ['joiningFee', { min: 0, max: 1000000 }],
+    ['renewalLeadDays', { min: 0, max: 90, integer: true }],
+    ['sortOrder', { min: -10000, max: 10000, integer: true }],
+    ['upgradeRank', { min: -10000, max: 10000, integer: true }],
+  ];
+  for (const [field, options] of numberFields) {
+    if (!partial || next[field] !== undefined) {
+      next[field] = asCleanNumber(next[field], field, options);
+    }
+  }
+
+  if (next.includedFeatures) {
+    next.includedFeatures = {
+      ...next.includedFeatures,
+      gymAccess: asBool(next.includedFeatures.gymAccess),
+      classAccess: asBool(next.includedFeatures.classAccess),
+      trainerSupport: asBool(next.includedFeatures.trainerSupport),
+      dietSupport: asBool(next.includedFeatures.dietSupport),
+      biometricAccess: asBool(next.includedFeatures.biometricAccess),
+      lockerAccess: asBool(next.includedFeatures.lockerAccess),
+      guestPasses: asCleanNumber(next.includedFeatures.guestPasses, 'guestPasses', { min: 0, max: 365, integer: true }),
+    };
+  }
+
+  if (next.rules) {
+    next.rules = {
+      ...next.rules,
+      freezeLimitDays: asCleanNumber(next.rules.freezeLimitDays, 'freezeLimitDays', { min: 0, max: 365, integer: true }),
+    };
+  }
+
+  if (!partial || next.active !== undefined) next.active = asBool(next.active, true);
+  if (!partial || next.visibleToMembers !== undefined) next.visibleToMembers = asBool(next.visibleToMembers, true);
+
+  return next;
+}
+
 function isActionableRequestStatus(status) {
   return ['submitted', 'awaiting_payment', 'payment_under_review'].includes(status);
 }
@@ -222,7 +288,7 @@ exports.createTemplate = async (req, res) => {
   }
 
   try {
-    const templateData = req.body;
+    const templateData = sanitizeTemplatePayload(req.body);
     
     const template = await MembershipService.createTemplate(
       req.user.gymId,
@@ -236,7 +302,7 @@ exports.createTemplate = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating template:', error);
-    return res.status(500).json({ message: error.message || 'Error creating template' });
+    return res.status(error.statusCode || 400).json({ message: error.message || 'Could not create plan. Check the highlighted fields.' });
   }
 };
 
@@ -247,7 +313,7 @@ exports.updateTemplate = async (req, res) => {
 
   try {
     const { templateId } = req.params;
-    const updateData = { ...req.body, updatedBy: req.user._id };
+    const updateData = { ...sanitizeTemplatePayload(req.body, { partial: true }), updatedBy: req.user._id };
     
     const template = await MembershipService.updateTemplate(
       req.user.gymId,
@@ -261,7 +327,7 @@ exports.updateTemplate = async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating template:', error);
-    return res.status(500).json({ message: error.message || 'Error updating template' });
+    return res.status(error.statusCode || 400).json({ message: error.message || 'Could not update plan. Check the highlighted fields.' });
   }
 };
 

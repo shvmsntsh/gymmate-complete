@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     // Not required if user is only invited
-    required: function() { return !this.invited; },
+    required: function() { return !this.invited && !this.registeredFromInviteAt; },
   },
   // Role determines access level:
   // 'superadmin' = central builder's office (superadmin)
@@ -65,6 +65,24 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  inviteCodeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'InviteCode',
+    default: null,
+  },
+  inviteCode: {
+    type: String,
+    default: null,
+  },
+  registeredFromInviteAt: {
+    type: Date,
+    default: null,
+  },
+  registrationMethod: {
+    type: String,
+    enum: ['invite_registration', 'first_time_invite_access', 'direct', null],
+    default: null,
+  },
   // Date the user joined
   joinDate: {
     type: Date,
@@ -95,6 +113,7 @@ const userSchema = new mongoose.Schema({
     height: { type: Number, min: 100, max: 250 }, // in cm
     avatar: { type: String, default: 'default_user.png' },
     bio: { type: String, maxlength: 200 },
+    profilePicture: { type: String, default: null },
     phoneNumber: { type: String, default: null },
   },
   

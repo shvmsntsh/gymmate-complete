@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const bcrypt = require('bcryptjs');
 const { hasRole } = require('../utils/roles');
+const { getJwtSecret } = require('../utils/jwt');
 
 function normalizeServices(services) {
   if (Array.isArray(services)) {
@@ -230,7 +231,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign(
       { id: gym._id, email: gym.email, role: gym.role, gymId: gym._id },
-      process.env.JWT_SECRET || 'defaultsecret',
+      getJwtSecret(),
       { expiresIn: '2h' }
     );
 

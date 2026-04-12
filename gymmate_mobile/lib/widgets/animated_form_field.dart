@@ -12,6 +12,7 @@ class AnimatedFormField extends StatefulWidget {
   final bool? isValid;
   final int? maxLength;
   final ValueChanged<String>? onChanged;
+  final TextCapitalization textCapitalization;
 
   const AnimatedFormField({
     super.key,
@@ -25,6 +26,7 @@ class AnimatedFormField extends StatefulWidget {
     this.isValid,
     this.maxLength,
     this.onChanged,
+    this.textCapitalization = TextCapitalization.none,
   });
 
   @override
@@ -102,6 +104,7 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> {
           validator: widget.validator,
           enabled: widget.enabled,
           onChanged: widget.onChanged,
+          textCapitalization: widget.textCapitalization,
           style: theme.textTheme.bodyLarge,
           maxLength: widget.maxLength,
           decoration: InputDecoration(

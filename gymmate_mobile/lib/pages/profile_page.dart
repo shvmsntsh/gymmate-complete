@@ -1,9 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:provider/provider.dart';
 
 import '../main.dart';
+import '../utils/gallery_picker.dart';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../services/onboarding_service.dart';
@@ -32,6 +35,9 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController _workoutsPerWeekController;
   late TextEditingController _sessionDurationController;
   late TextEditingController _injuryDetailsController;
+  late TextEditingController _currentPasswordController;
+  late TextEditingController _newPasswordController;
+  late TextEditingController _confirmPasswordController;
 
   bool _isSaving = false;
   bool _showConfetti = false;
@@ -41,13 +47,9 @@ class _ProfilePageState extends State<ProfilePage> {
   String? _savingSection;
   Map<String, dynamic>? _savedMemberData;
   Map<String, dynamic>? _draftMemberData;
-
-  static const List<String> allAvatars = [
-    'assets/avatars/o_m_1.png',
-    'assets/avatars/t_m_1.png',
-    'assets/avatars/m_m_1.png',
-    'assets/avatars/m_f_1.png',
-  ];
+  bool _isUploadingProfilePicture = false;
+  bool _isSavingPassword = false;
+  bool _isSavingAvatar = false;
 
   static const List<(String, String)> _goalOptions = [
     ('Build Muscle', 'muscle_gain'),
@@ -91,10 +93,9 @@ class _ProfilePageState extends State<ProfilePage> {
   ];
 
   static const List<(String, String)> _challengeTypes = [
-    ('7-Day Kickstart', '7_day_checkin'),
+    ('7-Day Check-in', '7_day_checkin'),
     ('First Workout', 'first_workout'),
-    ('Goal Setting', 'goal_setting'),
-    ('Profile Finish', 'profile_photo'),
+    ('Meal Rhythm', 'meal_rhythm'),
   ];
 
   static const List<(String, String)> _genderOptions = [
@@ -109,7 +110,9 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     _nameController = TextEditingController(text: authProvider.userName ?? '');
-    _emailController = TextEditingController(text: authProvider.userEmail ?? '');
+    _emailController = TextEditingController(
+      text: authProvider.userEmail ?? '',
+    );
     _ageController = TextEditingController();
     _weightController = TextEditingController();
     _heightController = TextEditingController();
@@ -120,9 +123,15 @@ class _ProfilePageState extends State<ProfilePage> {
     _workoutsPerWeekController = TextEditingController();
     _sessionDurationController = TextEditingController();
     _injuryDetailsController = TextEditingController();
+    _currentPasswordController = TextEditingController();
+    _newPasswordController = TextEditingController();
+    _confirmPasswordController = TextEditingController();
 
     final normalizedRole =
-        normalizeRole(authProvider.userData?['role'] as String? ?? authProvider.userRole) ?? '';
+        normalizeRole(
+          authProvider.userData?['role'] as String? ?? authProvider.userRole,
+        ) ??
+        '';
     if (isMemberRole(normalizedRole)) {
       _loadMemberDetails();
     }
@@ -142,6 +151,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _workoutsPerWeekController.dispose();
     _sessionDurationController.dispose();
     _injuryDetailsController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -150,6 +162,27 @@ class _ProfilePageState extends State<ProfilePage> {
       return 'Name must be at least 2 characters.';
     }
     return null;
+  }
+
+  Widget _buildAvatarImage(String path, double size) {
+    if (path.startsWith('data:')) {
+      final base64Str = path.replaceFirst(
+        RegExp(r'^data:image/\w+;base64,'),
+        '',
+      );
+      return Image.memory(
+        base64Decode(base64Str),
+        fit: BoxFit.cover,
+        width: size,
+        height: size,
+        errorBuilder: (_, __, ___) => Icon(
+          Icons.person_outline_rounded,
+          size: size * 0.5,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
+    }
+    return Image.asset(path, fit: BoxFit.cover, width: size, height: size);
   }
 
   String? _validateEmail(String? value) {
@@ -182,7 +215,7 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _memberDetailsError = e.toString();
+        _memberDetailsError = _friendlyMemberDetailsError(e.toString());
         _memberDetailsLoading = false;
       });
     }
@@ -207,8 +240,12 @@ class _ProfilePageState extends State<ProfilePage> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final token = authProvider.token;
       final authService = AuthService();
-      await authService.updateProfile(name: name, email: email, token: token);
-      await authProvider.refreshUser();
+      final response = await authService.updateProfile(
+        name: name,
+        email: email,
+        token: token,
+      );
+      await authProvider.applySessionUpdate(response);
       if (!mounted) return;
       _celebrateSave('Profile updated successfully.');
     } catch (e) {
@@ -225,14 +262,88 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  List<(String, String)> _avatarOptionsForRole(String role) {
+    switch (normalizeRole(role)) {
+      case 'owner':
+        return const [('Owner M', 'assets/avatars/o_m_1.png'), ('Owner F', 'assets/avatars/o_f_1.png')];
+      case 'trainer':
+        return const [('Trainer M', 'assets/avatars/t_m_1.png'), ('Trainer F', 'assets/avatars/t_f_1.png')];
+      case 'member':
+        return const [('Member M', 'assets/avatars/m_m_1.png'), ('Member F', 'assets/avatars/m_f_1.png')];
+      case 'staff':
+      case 'admin':
+        return const [('Staff M', 'assets/avatars/staff_m_1.png'), ('Staff F', 'assets/avatars/staff_f_1.png')];
+      default:
+        return const [('Member M', 'assets/avatars/m_m_1.png'), ('Member F', 'assets/avatars/m_f_1.png')];
+    }
+  }
+
+  Future<void> _chooseRoleAvatar(AuthProvider authProvider, String avatar) async {
+    setState(() => _isSavingAvatar = true);
+    try {
+      await authProvider.setAvatarPath(avatar);
+      if (!mounted) return;
+      _celebrateSave('Avatar updated.');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update avatar: ${e.toString()}')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSavingAvatar = false);
+    }
+  }
+
+  Future<void> _savePassword(AuthProvider authProvider) async {
+    final hasPassword = authProvider.userData?['hasPassword'] == true;
+    final current = _currentPasswordController.text;
+    final next = _newPasswordController.text;
+    final confirm = _confirmPasswordController.text;
+
+    if (hasPassword && current.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Current password is required.')),
+      );
+      return;
+    }
+    if (next.length < 6 || next != confirm) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('New passwords must match and use at least 6 characters.')),
+      );
+      return;
+    }
+
+    setState(() => _isSavingPassword = true);
+    try {
+      await AuthService().changePassword(
+        currentPassword: hasPassword ? current : null,
+        newPassword: next,
+        token: authProvider.token,
+      );
+      _currentPasswordController.clear();
+      _newPasswordController.clear();
+      _confirmPasswordController.clear();
+      await authProvider.refreshUser();
+      if (!mounted) return;
+      _celebrateSave('Password updated.');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update password: ${e.toString()}')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSavingPassword = false);
+    }
+  }
+
   Future<void> _saveMemberSection(String section) async {
     if (_draftMemberData == null) return;
 
     final validationError = _applyDraftSectionValues(section);
     if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validationError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationError)));
       return;
     }
 
@@ -240,7 +351,9 @@ class _ProfilePageState extends State<ProfilePage> {
     final token = authProvider.token;
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Your session expired. Please log in again.')),
+        const SnackBar(
+          content: Text('Your session expired. Please log in again.'),
+        ),
       );
       return;
     }
@@ -251,7 +364,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       final service = OnboardingService()..setToken(token);
-      await service.completeOnboarding(_buildOnboardingPayload(_draftMemberData!));
+      await service.completeOnboarding(
+        _buildOnboardingPayload(_draftMemberData!),
+      );
       await authProvider.completeOnboarding();
       if (!mounted) return;
       setState(() {
@@ -276,7 +391,9 @@ class _ProfilePageState extends State<ProfilePage> {
     Future.delayed(const Duration(milliseconds: 1600), () {
       if (!mounted) return;
       setState(() => _showConfetti = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     });
   }
 
@@ -316,9 +433,14 @@ class _ProfilePageState extends State<ProfilePage> {
       _restrictionsController.text = _joinCsv(prefs['restrictions']);
     } else if (section == 'workout') {
       final habits = Map<String, dynamic>.from(draft['workoutHabits'] ?? {});
-      _workoutsPerWeekController.text = _numberOrBlank(habits['workoutsPerWeek']);
-      _sessionDurationController.text = _numberOrBlank(habits['sessionDuration']);
-      _injuryDetailsController.text = (habits['injuryDetails'] ?? '').toString();
+      _workoutsPerWeekController.text = _numberOrBlank(
+        habits['workoutsPerWeek'],
+      );
+      _sessionDurationController.text = _numberOrBlank(
+        habits['sessionDuration'],
+      );
+      _injuryDetailsController.text = (habits['injuryDetails'] ?? '')
+          .toString();
     }
   }
 
@@ -342,7 +464,9 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     if (section == 'goals') {
-      final goals = List<String>.from(draft['fitnessGoals'] ?? const <String>[]);
+      final goals = List<String>.from(
+        draft['fitnessGoals'] ?? const <String>[],
+      );
       if (goals.isEmpty) return 'Choose at least one fitness goal.';
       return null;
     }
@@ -350,7 +474,8 @@ class _ProfilePageState extends State<ProfilePage> {
     if (section == 'diet') {
       final meals = int.tryParse(_dailyMealsController.text.trim());
       final water = int.tryParse(_waterIntakeController.text.trim());
-      if (meals == null || meals <= 0) return 'Enter a valid daily meals count.';
+      if (meals == null || meals <= 0)
+        return 'Enter a valid daily meals count.';
       if (water == null || water <= 0) return 'Enter a valid water intake.';
       final prefs = Map<String, dynamic>.from(draft['dietPreferences'] ?? {});
       prefs['dailyMeals'] = meals;
@@ -387,16 +512,24 @@ class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic> _buildOnboardingPayload(Map<String, dynamic> source) {
     return {
       'profile': Map<String, dynamic>.from(source['profile'] ?? {}),
-      'fitnessGoals': List<String>.from(source['fitnessGoals'] ?? const <String>[]),
-      'dietPreferences': Map<String, dynamic>.from(source['dietPreferences'] ?? {}),
+      'fitnessGoals': List<String>.from(
+        source['fitnessGoals'] ?? const <String>[],
+      ),
+      'dietPreferences': Map<String, dynamic>.from(
+        source['dietPreferences'] ?? {},
+      ),
       'workoutHabits': Map<String, dynamic>.from(source['workoutHabits'] ?? {}),
-      'firstChallenge': Map<String, dynamic>.from(source['firstChallenge'] ?? {}),
+      'firstChallenge': Map<String, dynamic>.from(
+        source['firstChallenge'] ?? {},
+      ),
     };
   }
 
   Map<String, dynamic> _normalizeMemberData(Map<String, dynamic> raw) {
     final profile = Map<String, dynamic>.from(raw['profile'] ?? {});
-    final dietPreferences = Map<String, dynamic>.from(raw['dietPreferences'] ?? {});
+    final dietPreferences = Map<String, dynamic>.from(
+      raw['dietPreferences'] ?? {},
+    );
     final workoutHabits = Map<String, dynamic>.from(
       raw['workoutHabits'] ?? raw['workoutPreferences'] ?? {},
     );
@@ -410,18 +543,27 @@ class _ProfilePageState extends State<ProfilePage> {
         'weight': profile['weight'] ?? 0,
         'height': profile['height'] ?? 0,
       },
-      'fitnessGoals': List<String>.from(raw['fitnessGoals'] ?? const <String>[]),
+      'fitnessGoals': List<String>.from(
+        raw['fitnessGoals'] ?? const <String>[],
+      ),
       'dietPreferences': {
         'type': dietPreferences['type'] ?? 'flexible',
         'dailyMeals': dietPreferences['dailyMeals'] ?? 3,
         'waterIntake': dietPreferences['waterIntake'] ?? 8,
-        'allergies': List<String>.from(dietPreferences['allergies'] ?? const <String>[]),
-        'restrictions': List<String>.from(dietPreferences['restrictions'] ?? const <String>[]),
+        'allergies': List<String>.from(
+          dietPreferences['allergies'] ?? const <String>[],
+        ),
+        'restrictions': List<String>.from(
+          dietPreferences['restrictions'] ?? const <String>[],
+        ),
       },
       'workoutHabits': {
         'preferredTime': workoutHabits['preferredTime'] ?? 'flexible',
-        'currentActivityLevel': workoutHabits['currentActivityLevel'] ?? 'moderately_active',
-        'favoriteExercises': List<String>.from(workoutHabits['favoriteExercises'] ?? const <String>[]),
+        'currentActivityLevel':
+            workoutHabits['currentActivityLevel'] ?? 'moderately_active',
+        'favoriteExercises': List<String>.from(
+          workoutHabits['favoriteExercises'] ?? const <String>[],
+        ),
         'workoutsPerWeek': workoutHabits['workoutsPerWeek'] ?? 3,
         'sessionDuration': workoutHabits['sessionDuration'] ?? 60,
         'hasInjuries': workoutHabits['hasInjuries'] ?? false,
@@ -433,6 +575,12 @@ class _ProfilePageState extends State<ProfilePage> {
         'startDate': challenge['startDate'],
         'endDate': challenge['endDate'],
         'progress': challenge['progress'] ?? 0,
+        'current': challenge['current'],
+        'target': challenge['target'],
+        'summary': challenge['summary'],
+        'nextStep': challenge['nextStep'],
+        'status': challenge['status'],
+        'statusLabel': challenge['statusLabel'],
         'isCompleted': challenge['isCompleted'] ?? false,
         'completedAt': challenge['completedAt'],
       },
@@ -452,75 +600,6 @@ class _ProfilePageState extends State<ProfilePage> {
               : word[0].toUpperCase() + word.substring(1).toLowerCase(),
         )
         .join(' ');
-  }
-
-  void _showAvatarPicker(
-    BuildContext context,
-    String? currentAvatar,
-    Function(String) onSelect,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor:
-          Theme.of(context).dialogTheme.backgroundColor ??
-          Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        final theme = Theme.of(context);
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Choose your avatar', style: theme.textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text(
-                'Pick the look that feels most like your training identity.',
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: allAvatars
-                    .map(
-                      (avatar) => GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          onSelect(avatar);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: avatar == currentAvatar
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.outline.withValues(
-                                      alpha: 0.25,
-                                    ),
-                              width: avatar == currentAvatar ? 2.8 : 1.2,
-                            ),
-                          ),
-                          child: CircleAvatar(
-                            radius: 38,
-                            backgroundColor:
-                                theme.colorScheme.surfaceContainerHighest,
-                            backgroundImage: AssetImage(avatar),
-                          ),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   Future<void> _logout(AuthProvider authProvider) async {
@@ -552,12 +631,112 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _pickAndUploadProfilePicture(AuthProvider authProvider) async {
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: const Text('Take Photo'),
+                  onTap: () => Navigator.pop(context, 'camera'),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () => Navigator.pop(context, 'gallery'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    setState(() => _isUploadingProfilePicture = true);
+
+    try {
+      String? base64Data;
+
+      if (source == 'camera') {
+        final picker = ImagePicker();
+        final pickedFile = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 90,
+        );
+        if (pickedFile == null) {
+          setState(() => _isUploadingProfilePicture = false);
+          return;
+        }
+        final originalBytes = await pickedFile.readAsBytes();
+        final compressed = await FlutterImageCompress.compressWithList(
+          originalBytes,
+          minWidth: 400,
+          minHeight: 400,
+          quality: 75,
+          format: CompressFormat.jpeg,
+        ).catchError((_) => originalBytes);
+        base64Data = 'data:image/jpeg;base64,${base64Encode(compressed)}';
+      } else {
+        final galleryData = await pickGalleryImage();
+        if (galleryData == null) {
+          setState(() => _isUploadingProfilePicture = false);
+          return;
+        }
+        final base64Str = galleryData.replaceFirst(
+          RegExp(r'^data:image/\w+;base64,'),
+          '',
+        );
+        final originalBytes = base64Decode(base64Str);
+        final compressed = await FlutterImageCompress.compressWithList(
+          originalBytes,
+          minWidth: 400,
+          minHeight: 400,
+          quality: 75,
+          format: CompressFormat.jpeg,
+        ).catchError((_) => originalBytes);
+        base64Data = 'data:image/jpeg;base64,${base64Encode(compressed)}';
+      }
+
+      final authService = AuthService();
+      final updatedUrl = await authService.uploadProfilePicture(
+        imageData: base64Data,
+        token: authProvider.token,
+      );
+
+      await authProvider.setLocalAvatarPath(updatedUrl);
+
+      if (!mounted) return;
+      setState(() => _isUploadingProfilePicture = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Profile picture updated.')));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isUploadingProfilePicture = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update picture: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final theme = Theme.of(context);
     final avatarPath = authProvider.avatarPath;
-    final userRole = normalizeRole(
+    final userRole =
+        normalizeRole(
           authProvider.userData?['role'] as String? ?? authProvider.userRole,
         ) ??
         'member';
@@ -613,14 +792,9 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Center(
             child: GestureDetector(
-              onTap: () {
-                _showAvatarPicker(context, avatarPath, (selected) async {
-                  await authProvider.setAvatarPath(selected);
-                  if (mounted) {
-                    setState(() {});
-                  }
-                });
-              },
+              onTap: _isUploadingProfilePicture
+                  ? null
+                  : () => _pickAndUploadProfilePicture(authProvider),
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
@@ -643,14 +817,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         color: theme.colorScheme.surface,
                       ),
                       child: avatarPath != null
-                          ? ClipOval(
-                              child: Image.asset(
-                                avatarPath,
-                                fit: BoxFit.cover,
-                                width: 108,
-                                height: 108,
-                              ),
-                            )
+                          ? ClipOval(child: _buildAvatarImage(avatarPath, 108))
                           : Icon(
                               Icons.person_outline_rounded,
                               size: 54,
@@ -670,11 +837,19 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.edit_rounded,
-                      size: 18,
-                      color: Color(0xFF390C00),
-                    ),
+                    child: _isUploadingProfilePicture
+                        ? const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF390C00),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.camera_alt_rounded,
+                            size: 18,
+                            color: Color(0xFF390C00),
+                          ),
                   ),
                 ],
               ),
@@ -714,6 +889,40 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
           ),
+          const SizedBox(height: 18),
+          Text('Role avatar', style: theme.textTheme.titleSmall),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _avatarOptionsForRole(userRole).map((option) {
+              final selected = avatarPath == option.$2;
+              return InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _isSavingAvatar ? null : () => _chooseRoleAvatar(authProvider, option.$2),
+                child: Container(
+                  width: 92,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: selected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.outline.withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ClipOval(child: _buildAvatarImage(option.$2, 54)),
+                      const SizedBox(height: 8),
+                      Text(option.$1, style: theme.textTheme.labelSmall),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );
@@ -730,9 +939,8 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           const EditorialSectionHeading(
             eyebrow: 'Account Details',
-            title: 'Everything your gym uses to recognize you.',
-            subtitle:
-                'Update your name or email any time. Your role stays tied to your current access.',
+            title: 'Your account details.',
+            subtitle: 'Update your name or email here.',
           ),
           const SizedBox(height: 22),
           _ProfileField(
@@ -749,18 +957,63 @@ class _ProfilePageState extends State<ProfilePage> {
             keyboardType: TextInputType.emailAddress,
           ),
           const SizedBox(height: 16),
-          _LockedProfileField(
-            label: 'Role',
-            value: _formatRole(userRole),
-          ),
+          _LockedProfileField(label: 'Role', value: _formatRole(userRole)),
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
             child: EditorialPrimaryButton(
-              label: 'Save Profile',
+              label: 'Save account',
               loading: _isSaving,
               onPressed: _saveProfile,
               affordance: EditorialPrimaryAffordance.arrow,
+            ),
+          ),
+          const SizedBox(height: 24),
+          EditorialSectionHeading(
+            eyebrow: authProvider.userData?['hasPassword'] == true ? 'Password' : 'Set Password',
+            title: authProvider.userData?['hasPassword'] == true
+                ? 'Change your password.'
+                : 'Create your password.',
+            subtitle: authProvider.userData?['hasPassword'] == true
+                ? 'Use your current password before saving a new one.'
+                : 'First-time invite access can set a password from here.',
+          ),
+          const SizedBox(height: 18),
+          if (authProvider.userData?['hasPassword'] == true) ...[
+            _ProfileField(
+              label: 'Current Password',
+              controller: _currentPasswordController,
+              enabled: !_isSavingPassword,
+              keyboardType: TextInputType.visiblePassword,
+              obscureText: true,
+            ),
+            const SizedBox(height: 16),
+          ],
+          _ProfileField(
+            label: 'New Password',
+            controller: _newPasswordController,
+            enabled: !_isSavingPassword,
+            keyboardType: TextInputType.visiblePassword,
+            obscureText: true,
+          ),
+          const SizedBox(height: 16),
+          _ProfileField(
+            label: 'Confirm New Password',
+            controller: _confirmPasswordController,
+            enabled: !_isSavingPassword,
+            keyboardType: TextInputType.visiblePassword,
+            obscureText: true,
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: EditorialSecondaryButton(
+              label: authProvider.userData?['hasPassword'] == true
+                  ? 'Change password'
+                  : 'Set password',
+              onPressed: _isSavingPassword
+                  ? null
+                  : () => _savePassword(authProvider),
             ),
           ),
         ],
@@ -777,7 +1030,8 @@ class _ProfilePageState extends State<ProfilePage> {
             EditorialSectionHeading(
               eyebrow: 'Member Details',
               title: 'Loading your training profile.',
-              subtitle: 'Pulling in your goals, preferences, and challenge data.',
+              subtitle:
+                  'Pulling in your goals, preferences, and challenge data.',
             ),
             SizedBox(height: 24),
             Center(child: CircularProgressIndicator()),
@@ -794,10 +1048,9 @@ class _ProfilePageState extends State<ProfilePage> {
             const EditorialSectionHeading(
               eyebrow: 'Member Details',
               title: 'We could not load your profile details.',
-              subtitle: 'Try again to bring your goals and preferences back in view.',
+              subtitle:
+                  'Try again to bring your goals and preferences back in view.',
             ),
-            const SizedBox(height: 18),
-            Text(_memberDetailsError!, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
@@ -820,7 +1073,8 @@ class _ProfilePageState extends State<ProfilePage> {
             const EditorialSectionHeading(
               eyebrow: 'Member Details',
               title: 'Your training profile is ready to be filled in.',
-              subtitle: 'As soon as your member details are available, they will live here.',
+              subtitle:
+                  'As soon as your member details are available, they will live here.',
             ),
             const SizedBox(height: 18),
             SizedBox(
@@ -859,7 +1113,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return _MemberSectionCard(
       eyebrow: 'Profile Snapshot',
       title: 'The physical details that shape your plan.',
-      subtitle: 'Keep this current so training and nutrition stay calibrated to you.',
+      subtitle:
+          'Keep this current so training and nutrition stay calibrated to you.',
       isEditing: isEditing,
       isSaving: _savingSection == 'profile',
       onEdit: () => _beginEdit('profile'),
@@ -886,7 +1141,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         items: _genderOptions,
                         onChanged: (value) {
                           setState(() {
-                            final next = Map<String, dynamic>.from(draft['profile'] ?? {});
+                            final next = Map<String, dynamic>.from(
+                              draft['profile'] ?? {},
+                            );
                             next['gender'] = value;
                             draft['profile'] = next;
                           });
@@ -903,7 +1160,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         label: 'Weight (kg)',
                         controller: _weightController,
                         enabled: true,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -912,7 +1171,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         label: 'Height (cm)',
                         controller: _heightController,
                         enabled: true,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
                     ),
                   ],
@@ -922,9 +1183,19 @@ class _ProfilePageState extends State<ProfilePage> {
           : Column(
               children: [
                 _InfoRow(label: 'Age', value: _displayNumber(profile['age'])),
-                _InfoRow(label: 'Gender', value: _friendlyValue(profile['gender'])),
-                _InfoRow(label: 'Weight', value: _displayMeasurement(profile['weight'], 'kg')),
-                _InfoRow(label: 'Height', value: _displayMeasurement(profile['height'], 'cm'), isLast: true),
+                _InfoRow(
+                  label: 'Gender',
+                  value: _friendlyValue(profile['gender']),
+                ),
+                _InfoRow(
+                  label: 'Weight',
+                  value: _displayMeasurement(profile['weight'], 'kg'),
+                ),
+                _InfoRow(
+                  label: 'Height',
+                  value: _displayMeasurement(profile['height'], 'cm'),
+                  isLast: true,
+                ),
               ],
             ),
     );
@@ -979,7 +1250,8 @@ class _ProfilePageState extends State<ProfilePage> {
     return _MemberSectionCard(
       eyebrow: 'Diet Preferences',
       title: 'How your meals should fit your actual week.',
-      subtitle: 'Keep your food style and day-to-day preferences easy to update.',
+      subtitle:
+          'Keep your food style and day-to-day preferences easy to update.',
       isEditing: isEditing,
       isSaving: _savingSection == 'diet',
       onEdit: () => _beginEdit('diet'),
@@ -994,7 +1266,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   items: _dietTypes,
                   onChanged: (value) {
                     setState(() {
-                      final next = Map<String, dynamic>.from(draft['dietPreferences'] ?? {});
+                      final next = Map<String, dynamic>.from(
+                        draft['dietPreferences'] ?? {},
+                      );
                       next['type'] = value;
                       draft['dietPreferences'] = next;
                     });
@@ -1040,10 +1314,22 @@ class _ProfilePageState extends State<ProfilePage> {
             )
           : Column(
               children: [
-                _InfoRow(label: 'Diet Type', value: _friendlyValue(prefs['type'])),
-                _InfoRow(label: 'Daily Meals', value: _displayNumber(prefs['dailyMeals'])),
-                _InfoRow(label: 'Water Intake', value: '${_displayNumber(prefs['waterIntake'])} glasses'),
-                _InfoRow(label: 'Allergies', value: _friendlyList(prefs['allergies'])),
+                _InfoRow(
+                  label: 'Diet Type',
+                  value: _friendlyValue(prefs['type']),
+                ),
+                _InfoRow(
+                  label: 'Daily Meals',
+                  value: _displayNumber(prefs['dailyMeals']),
+                ),
+                _InfoRow(
+                  label: 'Water Intake',
+                  value: '${_displayNumber(prefs['waterIntake'])} glasses',
+                ),
+                _InfoRow(
+                  label: 'Allergies',
+                  value: _friendlyList(prefs['allergies']),
+                ),
                 _InfoRow(
                   label: 'Restrictions',
                   value: _friendlyList(prefs['restrictions']),
@@ -1057,7 +1343,9 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildWorkoutCard(BuildContext context) {
     final draft = _draftMemberData!;
     final habits = Map<String, dynamic>.from(draft['workoutHabits'] ?? {});
-    final favoriteExercises = List<String>.from(habits['favoriteExercises'] ?? const <String>[]);
+    final favoriteExercises = List<String>.from(
+      habits['favoriteExercises'] ?? const <String>[],
+    );
     final isEditing = _editingSection == 'workout';
 
     return _MemberSectionCard(
@@ -1079,7 +1367,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   items: _preferredTimes,
                   onChanged: (value) {
                     setState(() {
-                      final next = Map<String, dynamic>.from(draft['workoutHabits'] ?? {});
+                      final next = Map<String, dynamic>.from(
+                        draft['workoutHabits'] ?? {},
+                      );
                       next['preferredTime'] = value;
                       draft['workoutHabits'] = next;
                     });
@@ -1088,11 +1378,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 16),
                 _InlineDropdownField(
                   label: 'Activity Level',
-                  value: (habits['currentActivityLevel'] as String?) ?? 'moderately_active',
+                  value:
+                      (habits['currentActivityLevel'] as String?) ??
+                      'moderately_active',
                   items: _activityLevels,
                   onChanged: (value) {
                     setState(() {
-                      final next = Map<String, dynamic>.from(draft['workoutHabits'] ?? {});
+                      final next = Map<String, dynamic>.from(
+                        draft['workoutHabits'] ?? {},
+                      );
                       next['currentActivityLevel'] = value;
                       draft['workoutHabits'] = next;
                     });
@@ -1121,7 +1415,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text('Favorite Exercises', style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  'Favorite Exercises',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -1139,8 +1436,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           } else {
                             next.remove(exercise.$2);
                           }
-                          final habitsNext = Map<String, dynamic>.from(draft['workoutHabits'] ?? {});
-                          habitsNext['favoriteExercises'] = next.toSet().toList();
+                          final habitsNext = Map<String, dynamic>.from(
+                            draft['workoutHabits'] ?? {},
+                          );
+                          habitsNext['favoriteExercises'] = next
+                              .toSet()
+                              .toList();
                           draft['workoutHabits'] = habitsNext;
                         });
                       },
@@ -1152,10 +1453,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   value: habits['hasInjuries'] == true,
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Working around injuries'),
-                  subtitle: const Text('Turn this on if your plan should account for injury limits.'),
+                  subtitle: const Text(
+                    'Turn this on if your plan should account for injury limits.',
+                  ),
                   onChanged: (value) {
                     setState(() {
-                      final next = Map<String, dynamic>.from(draft['workoutHabits'] ?? {});
+                      final next = Map<String, dynamic>.from(
+                        draft['workoutHabits'] ?? {},
+                      );
                       next['hasInjuries'] = value;
                       if (!value) {
                         next['injuryDetails'] = null;
@@ -1178,11 +1483,26 @@ class _ProfilePageState extends State<ProfilePage> {
             )
           : Column(
               children: [
-                _InfoRow(label: 'Preferred Time', value: _friendlyValue(habits['preferredTime'])),
-                _InfoRow(label: 'Activity Level', value: _friendlyValue(habits['currentActivityLevel'])),
-                _InfoRow(label: 'Workouts Per Week', value: _displayNumber(habits['workoutsPerWeek'])),
-                _InfoRow(label: 'Session Duration', value: '${_displayNumber(habits['sessionDuration'])} minutes'),
-                _InfoRow(label: 'Favorite Exercises', value: _friendlyList(habits['favoriteExercises'])),
+                _InfoRow(
+                  label: 'Preferred Time',
+                  value: _friendlyValue(habits['preferredTime']),
+                ),
+                _InfoRow(
+                  label: 'Activity Level',
+                  value: _friendlyValue(habits['currentActivityLevel']),
+                ),
+                _InfoRow(
+                  label: 'Workouts Per Week',
+                  value: _displayNumber(habits['workoutsPerWeek']),
+                ),
+                _InfoRow(
+                  label: 'Session Duration',
+                  value: '${_displayNumber(habits['sessionDuration'])} minutes',
+                ),
+                _InfoRow(
+                  label: 'Favorite Exercises',
+                  value: _friendlyList(habits['favoriteExercises']),
+                ),
                 _InfoRow(
                   label: 'Injury Support',
                   value: habits['hasInjuries'] == true
@@ -1198,16 +1518,17 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildChallengeCard(BuildContext context) {
     final draft = _draftMemberData!;
     final challenge = Map<String, dynamic>.from(draft['firstChallenge'] ?? {});
-    final locked = challenge['isAccepted'] == true || challenge['isCompleted'] == true;
+    final locked =
+        challenge['isAccepted'] == true || challenge['isCompleted'] == true;
     final isEditing = _editingSection == 'challenge';
     final challengeType = (challenge['type'] as String?) ?? '7_day_checkin';
 
     return _MemberSectionCard(
       eyebrow: 'Challenge',
-      title: 'The starter goal helping your first streak take shape.',
+      title: 'Your challenge.',
       subtitle: locked
-          ? 'This challenge is already in motion, so its live progress stays read-only here.'
-          : 'You can swap the challenge type before it becomes active.',
+          ? 'Progress stays read-only once it begins.'
+          : 'You can change this before it begins.',
       isEditing: isEditing,
       isSaving: _savingSection == 'challenge',
       canEdit: !locked,
@@ -1223,7 +1544,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   items: _challengeTypes,
                   onChanged: (value) {
                     setState(() {
-                      final next = Map<String, dynamic>.from(draft['firstChallenge'] ?? {});
+                      final next = Map<String, dynamic>.from(
+                        draft['firstChallenge'] ?? {},
+                      );
                       next['type'] = value;
                       draft['firstChallenge'] = next;
                     });
@@ -1240,7 +1563,10 @@ class _ProfilePageState extends State<ProfilePage> {
   String _numberOrBlank(dynamic value) {
     if (value == null) return '';
     if (value is int) return value == 0 ? '' : value.toString();
-    if (value is double) return value == 0 ? '' : value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
+    if (value is double)
+      return value == 0
+          ? ''
+          : value.toStringAsFixed(value.truncateToDouble() == value ? 0 : 1);
     final text = value.toString();
     return text == '0' || text == '0.0' ? '' : text;
   }
@@ -1277,7 +1603,11 @@ class _ProfilePageState extends State<ProfilePage> {
     if (match.isEmpty) return '-';
     return match
         .split('_')
-        .map((part) => part.isEmpty ? part : part[0].toUpperCase() + part.substring(1).toLowerCase())
+        .map(
+          (part) => part.isEmpty
+              ? part
+              : part[0].toUpperCase() + part.substring(1).toLowerCase(),
+        )
         .join(' ');
   }
 
@@ -1350,7 +1680,7 @@ class _MemberSectionCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: EditorialPrimaryButton(
-                    label: 'Save Changes',
+                    label: 'Save',
                     loading: isSaving,
                     onPressed: onSave,
                     affordance: EditorialPrimaryAffordance.arrow,
@@ -1383,7 +1713,9 @@ class _SectionActionButton extends StatelessWidget {
       message: tooltip,
       child: Container(
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.54),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.54,
+          ),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: theme.colorScheme.outline.withValues(alpha: 0.2),
@@ -1405,21 +1737,32 @@ class _ChallengeStatusBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = challenge['isCompleted'] == true
-        ? 'Completed'
-        : challenge['isAccepted'] == true
-        ? 'In Progress'
-        : 'Ready to Start';
+    final status =
+        (challenge['statusLabel'] ??
+                (challenge['isCompleted'] == true
+                    ? 'Completed'
+                    : challenge['isAccepted'] == true
+                    ? 'In Progress'
+                    : 'Ready'))
+            .toString();
     final progress = '${challenge['progress'] ?? 0}%';
     final startDate = challenge['startDate'] == null
         ? 'Not started'
         : challenge['startDate'].toString().split('T').first;
+    final summary = (challenge['summary'] ?? '').toString();
+    final nextStep = (challenge['nextStep'] ?? '').toString();
+    final current = challenge['current'];
+    final target = challenge['target'];
 
     return Column(
       children: [
         _InfoRow(label: 'Type', value: _friendlyLabel(challenge['type'])),
         _InfoRow(label: 'Status', value: status),
+        if (summary.isNotEmpty) _InfoRow(label: 'Summary', value: summary),
+        if (current != null && target != null)
+          _InfoRow(label: 'Progress', value: '$current / $target'),
         _InfoRow(label: 'Progress', value: progress),
+        if (nextStep.isNotEmpty) _InfoRow(label: 'Next Step', value: nextStep),
         _InfoRow(label: 'Start Date', value: startDate, isLast: true),
       ],
     );
@@ -1430,9 +1773,23 @@ class _ChallengeStatusBlock extends StatelessWidget {
     if (text.isEmpty) return '-';
     return text
         .split('_')
-        .map((part) => part.isEmpty ? part : part[0].toUpperCase() + part.substring(1).toLowerCase())
+        .map(
+          (part) => part.isEmpty
+              ? part
+              : part[0].toUpperCase() + part.substring(1).toLowerCase(),
+        )
         .join(' ');
   }
+}
+
+String _friendlyMemberDetailsError(String error) {
+  final normalized = error.toLowerCase();
+  if (normalized.contains('403') ||
+      normalized.contains('expired token') ||
+      normalized.contains('session')) {
+    return 'Your session expired. Please log in again.';
+  }
+  return 'We could not load your profile details right now.';
 }
 
 class _InfoRow extends StatelessWidget {
@@ -1510,8 +1867,13 @@ class _InlineDropdownField extends StatelessWidget {
           value: items.any((item) => item.$2 == value) ? value : items.first.$2,
           decoration: InputDecoration(
             filled: true,
-            fillColor: theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.56),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            fillColor: theme.colorScheme.surfaceContainerHigh.withValues(
+              alpha: 0.56,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 18,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(22),
               borderSide: BorderSide(
@@ -1545,12 +1907,14 @@ class _ProfileField extends StatelessWidget {
   final TextEditingController controller;
   final bool enabled;
   final TextInputType keyboardType;
+  final bool obscureText;
 
   const _ProfileField({
     required this.label,
     required this.controller,
     required this.enabled,
     required this.keyboardType,
+    this.obscureText = false,
   });
 
   @override
@@ -1566,6 +1930,7 @@ class _ProfileField extends StatelessWidget {
           controller: controller,
           enabled: enabled,
           keyboardType: keyboardType,
+          obscureText: obscureText,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurface,
           ),

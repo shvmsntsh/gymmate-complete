@@ -150,4 +150,52 @@ class AuthService {
       throw Exception('Failed to update profile: ${response.body}');
     }
   }
+
+  Future<String> uploadProfilePicture({
+    required String imageData,
+    required String? token,
+  }) async {
+    if (token == null) {
+      throw Exception('Authentication token not found.');
+    }
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/profile-picture'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'imageData': imageData}),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['profilePicture'] ?? imageData;
+    } else {
+      throw Exception('Failed to upload profile picture: ${response.body}');
+    }
+  }
+
+  Future<void> changePassword({
+    required String? currentPassword,
+    required String newPassword,
+    required String? token,
+  }) async {
+    if (token == null) {
+      throw Exception('Authentication token not found.');
+    }
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/password'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        if (currentPassword != null) 'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      }),
+    );
+    if (response.statusCode != 200) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Failed to update password.');
+    }
+  }
 }

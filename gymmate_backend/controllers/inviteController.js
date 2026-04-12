@@ -22,6 +22,70 @@ function buildUsedByLookupVariants(usedBy) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function normalizeInviteCode(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizePhone(value) {
+  return String(value || '').trim();
+}
+
+function inviteePayload(invite) {
+  return {
+    name: invite.inviteeName || '',
+    email: invite.inviteeEmail || '',
+    phone_number: invite.inviteePhone || '',
+  };
+}
+
+exports.validateInviteCode = async (req, res) => {
+  const code = normalizeInviteCode(req.body.code);
+  if (!code) {
+    return res.status(400).json({ error: 'Invite code is required.' });
+  }
+
+  try {
+    const invite = await InviteCode.findOne({ code });
+    if (!invite || invite.used) {
+      return res.status(400).json({ error: 'Invalid invite code.' });
+    }
+
+    if (invite.role === 'gym_owner') {
+      return res.status(200).json({
+        message: 'Valid invite code.',
+        role: invite.role,
+        invitee: inviteePayload(invite),
+        gym: null,
+        gymId: null,
+      });
+    }
+
+    if (!invite.gymId) {
+      return res.status(400).json({ error: 'Invite code does not reference a valid gym.' });
+    }
+
+    const gym = await Gym.findById(invite.gymId);
+    if (!gym) {
+      return res.status(400).json({ error: 'Gym not found for this invite code.' });
+    }
+
+    return res.status(200).json({
+      message: 'Valid invite code.',
+      role: invite.role,
+      invitee: inviteePayload(invite),
+      gym: { gymName: gym.gymName, _id: gym._id },
+      gymId: gym._id,
+    });
+  } catch (err) {
+    console.error('❌ Error validating invite code:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 exports.listInviteCodes = async (req, res) => {
   try {
     let filter = {};
@@ -74,7 +138,11 @@ exports.listInviteCodes = async (req, res) => {
         ...code,
         statusLabel: code.used ? 'Used' : 'Open',
         createdDateLabel: formatDateLabel(code.createdAt),
-        usedDateLabel: code.used ? formatDateLabel(code.updatedAt) : null,
+        usedDateLabel: code.used ? formatDateLabel(code.usedAt || code.updatedAt) : null,
+        name: code.inviteeName || '',
+        email: code.inviteeEmail || '',
+        phone_number: code.inviteePhone || '',
+        invitee: inviteePayload(code),
         usedByUser: matchedUser
           ? {
               id: matchedUser._id,
@@ -99,7 +167,10 @@ exports.listInviteCodes = async (req, res) => {
 // Generate invite code (for gym_owner or superadmin)
 exports.generateInviteCode = async (req, res) => {
   try {
-    const { role, phone_number, name, email } = req.body;
+    const { role } = req.body;
+    const phone_number = normalizePhone(req.body.phone_number);
+    const name = String(req.body.name || '').trim();
+    const email = normalizeEmail(req.body.email);
     const currentUser = req.user;
 
     if (!role) {
@@ -133,26 +204,13 @@ exports.generateInviteCode = async (req, res) => {
     }
 
     if (phone_number) {
-      // Create a user placeholder
-      const userExists = await User.findOne({ phone_number });
-      if (userExists) {
-        return res.status(409).json({ message: 'User with this phone number already exists.' });
-      }
-
       if (!name || !email) {
         return res.status(400).json({ message: 'Name and email are required when providing a phone number.' });
       }
-
-      const newUser = new User({
-        name,
-        email,
-        phone_number,
-        role: normalizedRole,
-        gymId,
-        invited: true,
-        registered: false,
-      });
-      await newUser.save({ validateBeforeSave: false }); // Bypass password requirement
+      const existingRegistered = await User.findOne({ phone_number, role: normalizedRole, gymId, registered: true });
+      if (existingRegistered) {
+        return res.status(409).json({ message: 'User with this phone number already exists.' });
+      }
     }
 
     const code = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -162,10 +220,37 @@ exports.generateInviteCode = async (req, res) => {
       role: normalizedRole,
       gymId: gymId,
       gymName: gymName,
+      inviteeName: name,
+      inviteeEmail: email,
+      inviteePhone: phone_number,
       createdBy: currentUser.id
     });
     
     await invite.save();
+
+    if (phone_number) {
+      let placeholder = await User.findOne({ phone_number, role: normalizedRole, gymId });
+      if (!placeholder) {
+        placeholder = new User({
+          name,
+          email,
+          phone_number,
+          role: normalizedRole,
+          gymId,
+          invited: true,
+          registered: false,
+        });
+      } else {
+        placeholder.name = name;
+        placeholder.email = email;
+        placeholder.invited = true;
+        placeholder.registered = false;
+      }
+      placeholder.inviteCodeId = invite._id;
+      placeholder.inviteCode = invite.code;
+      await placeholder.save({ validateBeforeSave: false });
+    }
+
     res.status(201).json(invite); // Return the full invite object
   } catch (err) {
     console.error('Error generating invite code:', err);

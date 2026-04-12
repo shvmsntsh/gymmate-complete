@@ -3,13 +3,19 @@ const mongoose = require('mongoose');
 const inviteCodeSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
   role: { type: String, required: true },
-  gymId: { type: mongoose.Schema.Types.ObjectId, ref: 'Gym', required: function() { return this.role === 'gym_member'; } },
+  gymId: { type: mongoose.Schema.Types.ObjectId, ref: 'Gym', required: function() { return ['gym_member', 'gym_trainer', 'gym_staff'].includes(this.role); } },
   gymName: { type: String },
+  inviteeName: { type: String, default: '' },
+  inviteeEmail: { type: String, default: '' },
+  inviteePhone: { type: String, default: '' },
   used: { type: Boolean, default: false },
-  usedBy: { type: String, default: null },
+  usedBy: { type: mongoose.Schema.Types.Mixed, default: null },
+  usedAt: { type: Date, default: null },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, { timestamps: true });
 
 inviteCodeSchema.index({ gymId: 1, role: 1, used: 1 });
+inviteCodeSchema.index({ inviteePhone: 1, role: 1, used: 1 });
 
 inviteCodeSchema.post('save', function(error, doc, next) {
   if (error) {
@@ -29,7 +35,7 @@ async function markInviteCodeAsUsed(inviteCode, email) {
   }
 
   inviteDoc.used = true;
-  inviteDoc.updatedAt = new Date();
+  inviteDoc.usedAt = new Date();
   inviteDoc.usedBy = email;
 
   try {

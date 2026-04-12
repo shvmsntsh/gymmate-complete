@@ -94,19 +94,25 @@
         :headers="requestHeaders"
         :items="requests"
         density="comfortable"
+        @click:row="(event, { item }) => openRequestDetail(item.raw || item)"
       >
         <template #item.member="{ item }">
-          {{ item.raw?.member?.name || "Member" }}
+          {{ (item.raw || item)?.member?.name || "Member" }}
         </template>
         <template #item.targetPlan="{ item }">
-          {{ item.raw?.targetPlan?.name || "-" }}
+          {{ (item.raw || item)?.targetPlan?.name || "-" }}
+        </template>
+        <template #item.status="{ item }">
+          <v-chip :color="statusColor((item.raw || item).status)" size="small" variant="tonal">
+            {{ (item.raw || item).status }}
+          </v-chip>
         </template>
         <template #item.actions="{ item }">
-          <div class="assignment-actions">
-            <v-btn size="small" color="primary" variant="tonal" @click="updateRequest(item.raw, 'approved')">
+          <div class="assignment-actions" @click.stop>
+            <v-btn size="small" color="primary" variant="tonal" @click="updateRequest(item.raw || item, 'approved')">
               Approve
             </v-btn>
-            <v-btn size="small" variant="text" @click="updateRequest(item.raw, 'rejected')">
+            <v-btn size="small" variant="text" @click="updateRequest(item.raw || item, 'rejected')">
               Reject
             </v-btn>
           </div>
@@ -138,6 +144,16 @@
         />
         <v-text-field v-model="paymentForm.reference" label="Reference / note" variant="outlined" />
       </div>
+      <v-select
+        v-model="paymentForm.membershipRequestId"
+        :items="pendingRequestOptions"
+        item-title="label"
+        item-value="value"
+        label="Link to request (optional)"
+        variant="outlined"
+        clearable
+        class="mt-2"
+      />
 
       <div class="cta-row">
         <v-btn color="primary" :loading="savingPayment" @click="recordPayment">
@@ -145,6 +161,124 @@
         </v-btn>
       </div>
     </section>
+
+    <v-dialog v-model="requestDialog" max-width="600">
+      <v-card rounded="xl">
+        <v-card-title class="dialog-title">Request Details</v-card-title>
+        <v-card-text>
+          <StateBlock
+            v-if="requestError"
+            title="Could not load request details"
+            :copy="requestError"
+            icon="mdi-alert-circle-outline"
+            tone="error"
+          />
+          <div v-else-if="requestDetail">
+            <div class="request-detail-grid">
+              <div class="detail-field">
+                <div class="detail-label">Member</div>
+                <div class="detail-value">{{ requestDetail.member?.name || 'N/A' }}</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Email</div>
+                <div class="detail-value">{{ requestDetail.member?.email || 'N/A' }}</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Request Type</div>
+                <div class="detail-value">{{ requestDetail.requestType }}</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Status</div>
+                <v-chip :color="statusColor(requestDetail.status)" size="small" variant="tonal">
+                  {{ requestDetail.status }}
+                </v-chip>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Created</div>
+                <div class="detail-value">{{ formatDate(requestDetail.createdAt) }}</div>
+              </div>
+              <div class="detail-field" v-if="requestDetail.handledAt">
+                <div class="detail-label">Processed</div>
+                <div class="detail-value">{{ formatDate(requestDetail.handledAt) }}</div>
+              </div>
+            </div>
+
+            <div v-if="requestDetail.targetPlan" class="plan-summary">
+              <div class="plan-summary-title">Requested Plan</div>
+              <div class="plan-summary-name">{{ requestDetail.targetPlan.name }}</div>
+              <div v-if="requestDetail.targetPlan.description" class="plan-summary-desc">
+                {{ requestDetail.targetPlan.description }}
+              </div>
+              <div class="plan-summary-meta">
+                <span>{{ requestDetail.targetPlan.durationDays }} days</span>
+                <span v-if="requestDetail.targetPlan.addOns?.training">+ Training</span>
+                <span v-if="requestDetail.targetPlan.addOns?.diet">+ Diet</span>
+              </div>
+            </div>
+
+            <div v-if="requestDetail.member?.id && memberCurrentMembership" class="current-membership">
+              <div class="current-membership-title">Current Membership</div>
+              <div class="current-membership-plan">
+                {{ memberCurrentMembership.planName || 'No active plan' }}
+              </div>
+              <div class="current-membership-meta">
+                Status: {{ memberCurrentMembership.status }}
+                <span v-if="memberCurrentMembership.endDate">
+                  | Expires: {{ formatDate(memberCurrentMembership.endDate) }}
+                </span>
+              </div>
+            </div>
+
+            <div v-if="requestDetail.note" class="member-note">
+              <div class="member-note-label">Member's Note</div>
+              <div class="member-note-text">{{ requestDetail.note }}</div>
+            </div>
+
+            <div v-if="requestDetail.response" class="staff-response">
+              <div class="staff-response-label">Staff Response</div>
+              <div class="staff-response-text">{{ requestDetail.response }}</div>
+            </div>
+
+            <v-textarea
+              v-model="requestReply"
+              label="Add reply / comment"
+              variant="outlined"
+              auto-grow
+              rows="2"
+              class="mt-4"
+            />
+          </div>
+        </v-card-text>
+        <v-card-actions class="dialog-actions">
+          <v-spacer />
+          <v-btn variant="text" @click="requestDialog = false">Close</v-btn>
+          <v-btn
+            v-if="requestDetail && requestDetail.status === 'pending'"
+            variant="outlined"
+            color="error"
+            @click="processRequest('rejected')"
+          >
+            Reject
+          </v-btn>
+          <v-btn
+            v-if="requestDetail && requestDetail.status === 'pending'"
+            color="primary"
+            :loading="processingRequest"
+            @click="processRequest('approved')"
+          >
+            Approve
+          </v-btn>
+          <v-btn
+            v-if="requestDetail && ['approved', 'payment_pending'].includes(requestDetail.status)"
+            color="primary"
+            :loading="processingRequest"
+            @click="proceedToPayment"
+          >
+            Record Payment
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </AdminShell>
 </template>
 
@@ -168,6 +302,14 @@ const savingPayment = ref(false);
 const role = computed(() => getAdminRole());
 const isOwner = computed(() => role.value === "owner");
 
+const requestDialog = ref(false);
+const requestDetail = ref(null);
+const requestError = ref("");
+const memberCurrentMembership = ref(null);
+const requestReply = ref("");
+const processingRequest = ref(false);
+const selectedRequestId = ref("");
+
 const planForm = ref({
   name: "",
   description: "",
@@ -183,6 +325,7 @@ const paymentForm = ref({
   amount: "",
   mode: "cash",
   reference: "",
+  membershipRequestId: null,
 });
 
 const planHeaders = [
@@ -205,6 +348,15 @@ const memberOptions = computed(() =>
     label: `${member.name} (${member.email})`,
     value: member.id,
   })),
+);
+
+const pendingRequestOptions = computed(() =>
+  requests.value
+    .filter((r) => ['pending', 'approved', 'payment_pending'].includes(r.status))
+    .map((r) => ({
+      label: `${r.member?.name || 'Member'} - ${r.requestType} - ${r.targetPlan?.name || 'Plan'}`,
+      value: r.id,
+    })),
 );
 
 const paymentModes = [
@@ -284,16 +436,82 @@ async function updateRequest(request, status) {
   }
 }
 
+async function openRequestDetail(request) {
+  requestDialog.value = true;
+  requestError.value = "";
+  requestDetail.value = null;
+  memberCurrentMembership.value = null;
+  requestReply.value = "";
+  selectedRequestId.value = request.id;
+
+  try {
+    const res = await apiFetch(`/api/owner/membership-requests/${request.id}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Could not load request details.");
+    requestDetail.value = data.request;
+    memberCurrentMembership.value = data.memberMembership;
+  } catch (err) {
+    requestError.value = err?.message || "Could not load request details.";
+  }
+}
+
+async function processRequest(status) {
+  processingRequest.value = true;
+  requestError.value = "";
+  try {
+    const res = await apiFetch(`/api/owner/membership-requests/${selectedRequestId.value}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        status,
+        response: requestReply.value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Could not process request.");
+    requestDialog.value = false;
+    await fetchData();
+  } catch (err) {
+    requestError.value = err?.message || "Could not process request.";
+  } finally {
+    processingRequest.value = false;
+  }
+}
+
+function proceedToPayment() {
+  if (!requestDetail.value?.member?.id) return;
+  paymentForm.value.memberId = requestDetail.value.member.id;
+  if (requestDetail.value.targetPlan) {
+    paymentForm.value.reference = `${requestDetail.value.requestType}: ${requestDetail.value.targetPlan.name}`;
+  }
+  requestDialog.value = false;
+}
+
+function statusColor(status) {
+  if (status === 'pending') return 'warning';
+  if (status === 'approved') return 'success';
+  if (status === 'rejected') return 'error';
+  if (status === 'payment_pending') return 'info';
+  if (status === 'activated') return 'success';
+  return 'default';
+}
+
+function formatDate(value) {
+  if (!value) return 'N/A';
+  return new Date(value).toLocaleDateString('en-GB');
+}
+
 async function recordPayment() {
   savingPayment.value = true;
   error.value = "";
   try {
     const selectedMember = members.value.find((member) => member.id === paymentForm.value.memberId);
+    const linkedRequest = requests.value.find((r) => r.id === paymentForm.value.membershipRequestId);
     const res = await apiFetch("/api/owner/payments", {
       method: "POST",
       body: JSON.stringify({
         memberId: paymentForm.value.memberId,
         membershipId: selectedMember?.membership?.id || null,
+        membershipRequestId: paymentForm.value.membershipRequestId || null,
         amount: Number(paymentForm.value.amount),
         mode: paymentForm.value.mode,
         reference: paymentForm.value.reference,
@@ -302,7 +520,13 @@ async function recordPayment() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Could not record payment.");
-    paymentForm.value = { memberId: "", amount: "", mode: "cash", reference: "" };
+    paymentForm.value = {
+      memberId: "",
+      amount: "",
+      mode: "cash",
+      reference: "",
+      membershipRequestId: null,
+    };
     await fetchData();
   } catch (err) {
     error.value = err?.message || "Could not record payment.";
@@ -336,5 +560,115 @@ onMounted(fetchData);
   .announcement-form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.dialog-title {
+  font-weight: 700;
+}
+
+.dialog-actions {
+  padding: 0 24px 20px;
+}
+
+.request-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.detail-value {
+  font-weight: 500;
+}
+
+.plan-summary,
+.current-membership {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.plan-summary-title,
+.current-membership-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.plan-summary-name,
+.current-membership-plan {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.plan-summary-desc {
+  margin-top: 6px;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.plan-summary-meta,
+.current-membership-meta {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.7;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.member-note,
+.staff-response {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.member-note-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  margin-bottom: 8px;
+}
+
+.staff-response-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  margin-bottom: 8px;
+  color: rgba(201, 177, 92, 0.9);
+}
+
+.member-note-text,
+.staff-response-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mt-2 {
+  margin-top: 8px;
 }
 </style>

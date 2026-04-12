@@ -179,7 +179,7 @@ function hydrateForm(nextIntegration) {
 
 function formatDate(value) {
   if (!value) return "Never";
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString("en-GB");
 }
 
 async function fetchSettings() {

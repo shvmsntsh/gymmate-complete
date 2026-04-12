@@ -1,6 +1,19 @@
 <template>
   <v-app :theme="isDark ? 'dark' : 'light'">
-    <div class="admin-shell">
+    <div
+      class="admin-shell"
+      :class="{
+        'admin-shell--collapsed': sidebarCollapsed,
+        'admin-shell--drawer-open': drawerOpen,
+      }"
+    >
+      <button
+        v-if="drawerOpen"
+        class="admin-shell__scrim"
+        type="button"
+        aria-label="Close navigation"
+        @click="drawerOpen = false"
+      />
       <aside class="admin-shell__sidebar admin-surface">
         <AdminBrand
           compact
@@ -8,6 +21,13 @@
           :logo-url="sidebarLogoUrl"
         />
         <div class="admin-shell__eyebrow">{{ workspaceLabel }}</div>
+        <button
+          type="button"
+          class="admin-shell__collapse"
+          @click="sidebarCollapsed = !sidebarCollapsed"
+        >
+          <v-icon :icon="sidebarCollapsed ? 'mdi-chevron-right' : 'mdi-chevron-left'" />
+        </button>
 
         <nav class="admin-shell__nav">
           <button
@@ -16,12 +36,12 @@
             type="button"
             class="admin-shell__nav-item"
             :class="{ 'admin-shell__nav-item--active': item.active }"
-            @click="router.push(item.to)"
+            @click="goTo(item.to)"
           >
             <span class="admin-shell__nav-icon"
               ><v-icon :icon="item.icon"
             /></span>
-            <span>{{ item.label }}</span>
+            <span class="admin-shell__nav-label">{{ item.label }}</span>
           </button>
         </nav>
 
@@ -35,6 +55,13 @@
 
       <main class="admin-shell__main">
         <header class="admin-shell__header admin-surface">
+          <v-btn
+            class="admin-shell__menu"
+            icon="mdi-menu"
+            variant="tonal"
+            aria-label="Open navigation"
+            @click="drawerOpen = true"
+          />
           <div>
             <div class="eyebrow">{{ eyebrow }}</div>
             <h1 class="page-title">{{ title }}</h1>
@@ -100,6 +127,8 @@ const sessionRole = computed(() => getAdminRole());
 const session = computed(() => getAdminSession());
 const sidebarBrandName = ref("");
 const sidebarLogoUrl = ref("");
+const sidebarCollapsed = ref(false);
+const drawerOpen = ref(false);
 const sidebarDisplayName = computed(() =>
   sidebarLogoUrl.value ? sidebarBrandName.value : "",
 );
@@ -133,6 +162,11 @@ const sidebarCopy = computed(() =>
 const navItems = computed(() => {
   return getAdminNavItems(route.path, sessionRole.value);
 });
+
+function goTo(path) {
+  drawerOpen.value = false;
+  router.push(path);
+}
 
 async function loadGymBranding() {
   const role = sessionRole.value;

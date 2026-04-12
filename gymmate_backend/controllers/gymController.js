@@ -3,6 +3,7 @@ const { InviteCode } = require('../models/InviteCode');
 const Gym = require('../models/Gym');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../utils/jwt');
 
 exports.registerGym = async (req, res) => {
   try {
@@ -75,7 +76,7 @@ exports.loginGym = async (req, res) => {
         gymId: gym._id,
         gymName: gym.gymName
       },
-      process.env.JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '2h' }
     );
 

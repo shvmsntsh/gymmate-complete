@@ -15,7 +15,7 @@ class QuickJoinScreen extends StatefulWidget {
 
 class _QuickJoinScreenState extends State<QuickJoinScreen> {
   final _phoneController = TextEditingController();
-  final _otpController = TextEditingController();
+  final _accessCodeController = TextEditingController();
   bool _loading = false;
   String? _error;
 
@@ -29,7 +29,7 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.quickLogin(
         _phoneController.text.trim(),
-        _otpController.text.trim(),
+        _accessCodeController.text.trim(),
       );
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -43,7 +43,7 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
-    _otpController.dispose();
+    _accessCodeController.dispose();
     super.dispose();
   }
 
@@ -60,13 +60,13 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const PhaseOneBadge(label: 'Quick Join'),
+                const PhaseOneBadge(label: 'First-time invite access'),
                 const SizedBox(height: 18),
                 const PhaseOneSectionTitle(
-                  eyebrow: 'Phone Access',
-                  title: 'Jump back into your gym with your phone.',
+                  eyebrow: 'Invite Access',
+                  title: 'Claim your first gym session.',
                   subtitle:
-                      'Use the number your gym has on file and the 4-digit access code they shared with you.',
+                      'Use the number your gym has on file and the invite code they shared with you.',
                 ),
                 const SizedBox(height: 24),
                 if (_error != null) ...[
@@ -85,24 +85,24 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
                 ),
                 const SizedBox(height: 14),
                 AnimatedFormField(
-                  controller: _otpController,
-                  hintText: '4-Digit Access Code',
-                  keyboardType: TextInputType.number,
-                  maxLength: 4,
+                  controller: _accessCodeController,
+                  hintText: 'Invite / Access Code',
+                  keyboardType: TextInputType.text,
+                  textCapitalization: TextCapitalization.characters,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Required';
-                    return v.trim().length == 4 ? null : 'Must be 4 digits';
+                    return v.trim().length >= 4 ? null : 'Enter invite code';
                   },
                   index: 1,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Best for members and trainers who want a faster way back into their training day.',
+                  'Best for members and trainers using their invite for the first time.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 22),
                 PhaseOnePrimaryButton(
-                  label: 'Enter Your Gym',
+                  label: 'Claim Invite',
                   onTap: _onQuickLogin,
                   loading: _loading,
                 ),

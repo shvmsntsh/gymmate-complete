@@ -10,6 +10,9 @@ class InviteCode {
   final String? createdDateLabel;
   final String? usedDateLabel;
   final InviteUsedByUser? usedByUser;
+  final String? name;
+  final String? email;
+  final String? phoneNumber;
 
   InviteCode({
     required this.id,
@@ -23,6 +26,9 @@ class InviteCode {
     this.createdDateLabel,
     this.usedDateLabel,
     this.usedByUser,
+    this.name,
+    this.email,
+    this.phoneNumber,
   });
 
   factory InviteCode.fromJson(Map<String, dynamic> json) {
@@ -44,6 +50,10 @@ class InviteCode {
               Map<String, dynamic>.from(json['usedByUser']),
             )
           : null,
+      name: json['name']?.toString() ?? json['invitee']?['name']?.toString(),
+      email: json['email']?.toString() ?? json['invitee']?['email']?.toString(),
+      phoneNumber:
+          json['phone_number']?.toString() ?? json['invitee']?['phone_number']?.toString(),
     );
   }
 }

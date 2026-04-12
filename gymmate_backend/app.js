@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { getJwtSecret } = require('./utils/jwt');
 
 const authRoutes = require('./routes/authRoutes');
 const gymRoutes = require('./routes/gymRoutes');
@@ -15,6 +16,7 @@ const ownerRoutes = require('./routes/ownerRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gymmate';
+getJwtSecret();
 
 let mongoConnectionPromise = null;
 

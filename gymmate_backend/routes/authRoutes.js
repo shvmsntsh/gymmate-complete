@@ -20,6 +20,11 @@ router.get('/user-details-for-plan', userController.getUserDetailsForPlan);
 // Onboarding-related routes
 router.post('/complete-onboarding', userController.updateOnboardingStatus);
 
+// Profile picture upload
+router.post('/profile-picture', userController.uploadProfilePicture);
+router.post('/password', userController.changePassword);
+router.post('/avatar', userController.updateAvatar);
+
 // Dashboard stats for superadmin
 router.get('/dashboard/stats', userController.getDashboardStats);
 

@@ -1,12 +1,58 @@
 const User = require('../models/User');
 const Gym = require('../models/Gym');
 const { InviteCode } = require('../models/InviteCode');
+const DailyPlanLog = require('../models/DailyPlanLog');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { normalizeRole, hasRole } = require('../utils/roles');
+const { getJwtSecret } = require('../utils/jwt');
 
-// Secret key for JWT - should be in environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-for-development';
+const VALID_AVATARS = new Set([
+  'assets/avatars/o_m_1.png',
+  'assets/avatars/o_f_1.png',
+  'assets/avatars/t_m_1.png',
+  'assets/avatars/t_f_1.png',
+  'assets/avatars/m_m_1.png',
+  'assets/avatars/m_f_1.png',
+  'assets/avatars/staff_m_1.png',
+  'assets/avatars/staff_f_1.png',
+]);
+
+function getAvatarPath(user) {
+  return user?.profile?.avatar || user?.profile?.profilePicture || null;
+}
+
+function createToken(user, gymName = null) {
+  return jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      gymId: user.gymId,
+      gymName,
+    },
+    getJwtSecret(),
+    { expiresIn: '2h' },
+  );
+}
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizeInviteCode(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function normalizePhone(value) {
+  return String(value || '').trim();
+}
+
+async function getGymNameForUser(user) {
+  if (!user?.gymId) return null;
+  const gym = await Gym.findById(user.gymId).select('gymName');
+  return gym?.gymName || null;
+}
 
 function buildUserPayload(user, gymName = null) {
   const isCompleted =
@@ -23,6 +69,8 @@ function buildUserPayload(user, gymName = null) {
     gymId: user.gymId,
     gymName,
     phone_number: user.phone_number || null,
+    hasPassword: Boolean(user.password),
+    avatarPath: getAvatarPath(user),
     staffCapabilities: user.staffCapabilities || {},
     telegramProfile: user.telegramProfile || {},
     hasCompletedOnboarding: Boolean(user.hasCompletedOnboarding || isCompleted),
@@ -42,21 +90,41 @@ function buildWeeklySeries(values) {
   }));
 }
 
-function buildMemberProgressSeries(user) {
-  const workoutsPerWeek = Number(user?.workoutHabits?.workoutsPerWeek || 4);
-  const challengeProgress = Number(user?.firstChallenge?.progress || 0);
-  const base = Math.max(1, Math.min(6, workoutsPerWeek));
-  const lift = challengeProgress >= 100 ? 1 : 0;
+async function buildMemberProgressSeries(user) {
+  const memberId = user._id;
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
 
-  return buildWeeklySeries([
-    Math.max(1, base - 2),
-    Math.max(1, base - 1),
-    base,
-    Math.max(1, base - 1),
-    base + lift,
-    Math.max(1, base - 2),
-    Math.max(1, base - 1),
-  ]);
+  const localDateString = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const weekLogs = await DailyPlanLog.find({
+    memberId,
+    date: {
+      $gte: localDateString(monday),
+      $lte: localDateString(today),
+    },
+  }).select('date');
+
+  const logCounts = {};
+  weekLogs.forEach((log) => {
+    const date = new Date(log.date + 'T00:00:00');
+    const dayName = dayNames[date.getDay() === 0 ? 6 : date.getDay() - 1];
+    logCounts[dayName] = (logCounts[dayName] || 0) + 1;
+  });
+
+  return dayNames.map((day) => ({
+    day,
+    count: logCounts[day] || 0,
+  }));
 }
 
 async function buildTrainerAttendanceSeries(user) {
@@ -86,8 +154,9 @@ exports.register = async (req, res) => {
   if (!name || !email || !password || !inviteCode) {
     return res.status(400).json({ message: 'Name, email, password, and invite code are required.' });
   }
-  email = email.trim().toLowerCase();
-  inviteCode = inviteCode.trim().toUpperCase();
+  email = normalizeEmail(email);
+  inviteCode = normalizeInviteCode(inviteCode);
+  phone_number = normalizePhone(phone_number);
 
   // Handle the very first superadmin registration
   if (inviteCode === '123456') {
@@ -110,16 +179,7 @@ exports.register = async (req, res) => {
     });
     await newUser.save();
     // Generate token and return user object (like login)
-    const token = jwt.sign(
-      {
-        id: newUser._id,
-        email: newUser.email,
-        role: newUser.role,
-        gymId: newUser.gymId,
-      },
-      JWT_SECRET,
-      { expiresIn: '2h' }
-    );
+    const token = createToken(newUser, null);
     return res.status(201).json({
       message: 'Superadmin registered successfully.',
       token,
@@ -128,69 +188,97 @@ exports.register = async (req, res) => {
   }
 
   // For all other users, validate the invite code
-  const code = await InviteCode.findOne({ code: inviteCode });
-  if (!code || code.used) {
+  const code = await InviteCode.findOneAndUpdate(
+    { code: inviteCode, used: false },
+    { $set: { used: true, usedAt: new Date() } },
+    { new: true },
+  );
+  if (!code) {
     return res.status(400).json({ message: 'Invalid or already used invitation code.' });
   }
+  const placeholderQuery = {
+    role: code.role,
+    invited: true,
+    registered: false,
+    $or: [
+      { inviteCodeId: code._id },
+      ...(phone_number ? [{ phone_number }] : []),
+      ...(code.inviteePhone ? [{ phone_number: code.inviteePhone }] : []),
+    ],
+  };
+  if (code.gymId) placeholderQuery.gymId = code.gymId;
+
+  let user = await User.findOne(placeholderQuery);
   const existingUser = await User.findOne({ email });
-  if (existingUser) {
+  if (existingUser && (!user || existingUser._id.toString() !== user._id.toString())) {
+    await InviteCode.updateOne(
+      { _id: code._id, usedBy: null },
+      { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+    );
     return res.status(400).json({ message: 'An account with this email already exists.' });
   }
-  const newUser = new User({
-    name,
-    email,
-    password, // plain password
-    role: code.role,
-    gymId: code.gymId,
-    phone_number,
-  });
-  await newUser.save();
+
+  if (user) {
+    user.name = name;
+    user.email = email;
+    user.password = password;
+    user.phone_number = phone_number || user.phone_number || code.inviteePhone || null;
+    user.invited = false;
+    user.registered = true;
+    user.registeredFromInviteAt = new Date();
+    user.registrationMethod = 'invite_registration';
+    user.inviteCodeId = code._id;
+    user.inviteCode = code.code;
+  } else {
+    user = new User({
+      name,
+      email,
+      password,
+      role: code.role,
+      gymId: code.gymId,
+      phone_number,
+      invited: false,
+      registered: true,
+      registeredFromInviteAt: new Date(),
+      registrationMethod: 'invite_registration',
+      inviteCodeId: code._id,
+      inviteCode: code.code,
+    });
+  }
+  await user.save();
   // If the new user is a gym owner, their gymId should be their own ID.
-  if (newUser.role === 'gym_owner' && !newUser.gymId) {
+  if (user.role === 'gym_owner' && !user.gymId) {
     try {
-      const gymName = req.body.gymName || `${newUser.name}'s Gym`;
+      const gymName = req.body.gymName || `${user.name}'s Gym`;
       const gym = new Gym({
         gymName,
-        email: newUser.email,
-        owner: newUser._id,
+        email: user.email,
+        owner: user._id,
       });
       await gym.save();
-      newUser.gymId = gym._id;
-      await newUser.save();
+      user.gymId = gym._id;
+      await user.save();
     } catch (err) {
       console.error('❌ Failed to create gym for gym_owner:', err);
-      // Optionally, remove the user if gym creation fails
-      await User.findByIdAndDelete(newUser._id);
+      await User.findByIdAndDelete(user._id);
+      await InviteCode.updateOne(
+        { _id: code._id },
+        { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+      );
       return res.status(500).json({ message: 'Failed to create gym for gym owner. Registration aborted.' });
     }
   }
-  // Mark the code as used atomically
-  code.used = true;
-  code.usedBy = newUser._id;
+  code.usedBy = user._id;
+  code.updatedAt = new Date();
   await code.save();
   // Generate token and return user object (like login)
-  const token = jwt.sign(
-    {
-      id: newUser._id,
-      email: newUser.email,
-      role: newUser.role,
-      gymId: newUser.gymId,
-    },
-    JWT_SECRET,
-    { expiresIn: '2h' }
-  );
-  let gymName = null;
-  if (newUser.gymId) {
-    const gym = await Gym.findById(newUser.gymId);
-    if (gym) {
-      gymName = gym.gymName;
-    }
-  }
+  const gymName = await getGymNameForUser(user);
+  const token = createToken(user, gymName);
 
   res.status(201).json({
     message: `User registered successfully as ${code.role}.`,
     token,
-    user: buildUserPayload(newUser, gymName),
+    user: buildUserPayload(user, gymName),
   });
 };
 
@@ -229,17 +317,7 @@ exports.login = async (req, res) => {
       }
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        gymId: user.gymId,
-        gymName: gymName,
-      },
-      JWT_SECRET,
-      { expiresIn: '2h' }
-    );
+    const token = createToken(user, gymName);
 
     return res.json({
       token,
@@ -252,59 +330,129 @@ exports.login = async (req, res) => {
 };
 
 /**
- * Log in a user with a phone number and OTP
+ * First-time invite access with phone number and access code.
  */
 exports.quickLogin = async (req, res) => {
-  const { phone_number, otp } = req.body;
+  const phone_number = normalizePhone(req.body.phone_number);
+  const accessCode = normalizeInviteCode(req.body.accessCode || req.body.inviteCode || req.body.otp);
 
-  if (!phone_number || !otp) {
-    return res.status(400).json({ message: 'Phone number and OTP are required.' });
+  if (!phone_number || !accessCode) {
+    return res.status(400).json({ message: 'Phone number and access code are required.' });
   }
 
-  // For now, OTP is hardcoded to '1234'
-  if (otp !== '1234') {
-    return res.status(401).json({ message: 'Invalid OTP.' });
-  }
-
-  const user = await User.findOne({ phone_number });
-
-  if (!user) {
-    return res.status(404).json({ message: 'No user found with this phone number.' });
-  }
-
-  // If the user was only invited, mark them as registered
-  if (user.invited && !user.registered) {
-    user.registered = true;
-    // Since they are logging in without a password, we might not need to set one.
-    // Or we could set a default placeholder that they are prompted to change later.
-    // For now, we'll leave the password as is (or null if it was never set).
-    await user.save({ validateBeforeSave: false });
-  }
-
-  let gymName = null;
-  if (user.gymId) {
-    const gym = await Gym.findById(user.gymId);
-    if (gym) {
-      gymName = gym.gymName;
-    }
-  }
-
-  const token = jwt.sign(
+  const invite = await InviteCode.findOneAndUpdate(
     {
-      id: user._id,
-      email: user.email,
-      role: user.role,
-      gymId: user.gymId,
-      gymName: gymName,
+      code: accessCode,
+      inviteePhone: phone_number,
+      role: { $in: ['gym_member', 'gym_trainer'] },
+      used: false,
     },
-    JWT_SECRET,
-    { expiresIn: '2h' }
+    { $set: { used: true, usedAt: new Date() } },
+    { new: true },
   );
 
-  res.json({
+  if (!invite) {
+    return res.status(401).json({ message: 'Invalid phone number or access code.' });
+  }
+
+  let user = await User.findOne({
+    role: invite.role,
+    invited: true,
+    registered: false,
+    $or: [{ inviteCodeId: invite._id }, { phone_number }],
+  });
+
+  if (!user) {
+    user = new User({
+      name: invite.inviteeName || 'GymMate Invite',
+      email: normalizeEmail(invite.inviteeEmail),
+      phone_number,
+      role: invite.role,
+      gymId: invite.gymId,
+      invited: true,
+      registered: false,
+    });
+  }
+
+  if (!user.email) {
+    await InviteCode.updateOne(
+      { _id: invite._id },
+      { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+    );
+    return res.status(401).json({ message: 'Invalid phone number or access code.' });
+  }
+
+  user.name = user.name || invite.inviteeName || 'GymMate Invite';
+  user.phone_number = phone_number;
+  user.invited = false;
+  user.registered = true;
+  user.registeredFromInviteAt = new Date();
+  user.registrationMethod = 'first_time_invite_access';
+  user.inviteCodeId = invite._id;
+  user.inviteCode = invite.code;
+  await user.save({ validateBeforeSave: false });
+
+  invite.usedBy = user._id;
+  invite.updatedAt = new Date();
+  await invite.save();
+
+  const gymName = await getGymNameForUser(user);
+  const token = createToken(user, gymName);
+
+  return res.json({
     token,
     user: buildUserPayload(user, gymName),
   });
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || String(newPassword).length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters.' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    if (user.password) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required.' });
+      }
+      const matches = await bcrypt.compare(currentPassword, user.password);
+      if (!matches) {
+        return res.status(401).json({ message: 'Invalid current password.' });
+      }
+    }
+
+    user.password = newPassword;
+    await user.save();
+    return res.status(200).json({ message: 'Password updated.', hasPassword: true });
+  } catch (error) {
+    console.error('Password update error:', error);
+    return res.status(500).json({ message: 'Server error while updating password.' });
+  }
+};
+
+exports.updateAvatar = async (req, res) => {
+  try {
+    const avatar = String(req.body.avatar || '').trim();
+    if (!VALID_AVATARS.has(avatar)) {
+      return res.status(400).json({ message: 'Choose a valid avatar.' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    user.profile = user.profile || {};
+    user.profile.avatar = avatar;
+    await user.save();
+
+    return res.status(200).json({ message: 'Avatar updated.', avatarPath: avatar });
+  } catch (error) {
+    console.error('Avatar update error:', error);
+    return res.status(500).json({ message: 'Server error while updating avatar.' });
+  }
 };
 
 
@@ -475,6 +623,8 @@ exports.getDashboardStats = async (req, res) => {
 
     const trainersCount = await User.countDocuments({ role: 'gym_trainer' });
 
+    const ownersCount = await User.countDocuments({ role: 'gym_owner' });
+
     const invitesCount = await InviteCode.countDocuments({ used: false });
 
     // Registrations in last 7 days (Mon-Sun)
@@ -507,6 +657,7 @@ exports.getDashboardStats = async (req, res) => {
       gyms: gymsCount,
       members: membersCount,
       trainers: trainersCount,
+      owners: ownersCount,
       invites: invitesCount,
       registrations
     };
@@ -530,7 +681,7 @@ exports.getMemberProgressParticipation = async (req, res) => {
     }
 
     return res.status(200).json({
-      progressParticipation: buildMemberProgressSeries(user),
+      progressParticipation: await buildMemberProgressSeries(user),
     });
   } catch (error) {
     console.error('Error fetching member progress participation:', error);
@@ -560,7 +711,7 @@ exports.getTrainerAttendanceProgress = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -577,10 +728,14 @@ const getUserProfile = async (req, res) => {
       (user.onboardingProgress.isCompleted === true ||
         user.onboardingProgress.isCompleted === 'true');
 
+    const userObject = user.toObject();
+    delete userObject.password;
     res.json({
-      ...user.toObject(),
+      ...userObject,
       normalizedRole: normalizeRole(user.role),
       gymName,
+      avatarPath: getAvatarPath(user),
+      hasPassword: Boolean(user.password),
       hasCompletedOnboarding: isCompleted || user.hasCompletedOnboarding === true,
     });
   } catch (error) {
@@ -650,6 +805,44 @@ const updateOnboardingStatus = async (req, res) => {
   }
 };
 
+const uploadProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { imageData } = req.body;
+
+    if (!imageData || typeof imageData !== 'string') {
+      return res.status(400).json({ message: 'Image data is required.' });
+    }
+
+    if (!imageData.startsWith('data:image/')) {
+      return res.status(400).json({ message: 'Invalid image format.' });
+    }
+
+    const maxSizeBytes = 2 * 1024 * 1024;
+    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+    if (Buffer.from(base64Data, 'base64').length > maxSizeBytes) {
+      return res.status(400).json({ message: 'Image size must be under 2MB.' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    user.profile = user.profile || {};
+    user.profile.profilePicture = imageData;
+    await user.save();
+
+    return res.status(200).json({
+      message: 'Profile picture updated.',
+      profilePicture: imageData,
+    });
+  } catch (error) {
+    console.error('Profile picture upload error:', error);
+    return res.status(500).json({ message: 'Server error while uploading profile picture.' });
+  }
+};
+
 // Update profile (name/email)
 exports.updateProfile = async (req, res) => {
   try {
@@ -679,17 +872,7 @@ exports.updateProfile = async (req, res) => {
         gymName = gym.gymName;
       }
     }
-    const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        gymId: user.gymId,
-        gymName,
-      },
-      JWT_SECRET,
-      { expiresIn: '2h' }
-    );
+    const token = createToken(user, gymName);
     return res.json({
       message: 'Profile updated successfully.',
       token,
@@ -822,6 +1005,7 @@ module.exports = {
   getInviteCodes: exports.getInviteCodes,
   getUserProfile,
   updateOnboardingStatus,
+  uploadProfilePicture,
   getUserDetailsForPlan,
   getDashboardStats: exports.getDashboardStats,
   getCategorizedMembers: exports.getCategorizedMembers,
@@ -832,4 +1016,6 @@ module.exports = {
   getGymMembers: exports.getGymMembers,
   getGymDashboardStats: exports.getGymDashboardStats,
   quickLogin: exports.quickLogin,
+  changePassword: exports.changePassword,
+  updateAvatar: exports.updateAvatar,
 };
