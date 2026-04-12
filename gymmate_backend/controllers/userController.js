@@ -71,6 +71,7 @@ function buildUserPayload(user, gymName = null) {
     phone_number: user.phone_number || null,
     hasPassword: Boolean(user.password),
     avatarPath: getAvatarPath(user),
+    accountStatus: user.accountStatus || 'active',
     staffCapabilities: user.staffCapabilities || {},
     telegramProfile: user.telegramProfile || {},
     hasCompletedOnboarding: Boolean(user.hasCompletedOnboarding || isCompleted),
@@ -196,6 +197,16 @@ exports.register = async (req, res) => {
   if (!code) {
     return res.status(400).json({ message: 'Invalid or already used invitation code.' });
   }
+  if (code.gymId) {
+    const inviteGym = await Gym.findById(code.gymId).select('status');
+    if (!inviteGym || inviteGym.status !== 'active') {
+      await InviteCode.updateOne(
+        { _id: code._id, usedBy: null },
+        { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+      );
+      return res.status(403).json({ message: 'This gym account is not active.' });
+    }
+  }
   const placeholderQuery = {
     role: code.role,
     invited: true,
@@ -299,6 +310,9 @@ exports.login = async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
+    if (user.accountStatus === 'deactivated') {
+      return res.status(401).json({ message: 'Invalid credentials.' });
+    }
 
     if (!user.password) {
       return res.status(401).json({ message: 'Invalid credentials.' });
@@ -313,6 +327,9 @@ exports.login = async (req, res) => {
     if (user.gymId) {
       const gym = await Gym.findById(user.gymId);
       if (gym) {
+        if (gym.status !== 'active') {
+          return res.status(403).json({ message: 'Gym account is inactive.' });
+        }
         gymName = gym.gymName;
       }
     }
@@ -354,6 +371,16 @@ exports.quickLogin = async (req, res) => {
   if (!invite) {
     return res.status(401).json({ message: 'Invalid phone number or access code.' });
   }
+  if (invite.gymId) {
+    const gym = await Gym.findById(invite.gymId).select('status');
+    if (!gym || gym.status !== 'active') {
+      await InviteCode.updateOne(
+        { _id: invite._id },
+        { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+      );
+      return res.status(401).json({ message: 'Invalid phone number or access code.' });
+    }
+  }
 
   let user = await User.findOne({
     role: invite.role,
@@ -375,6 +402,13 @@ exports.quickLogin = async (req, res) => {
   }
 
   if (!user.email) {
+    await InviteCode.updateOne(
+      { _id: invite._id },
+      { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+    );
+    return res.status(401).json({ message: 'Invalid phone number or access code.' });
+  }
+  if (user.accountStatus === 'deactivated') {
     await InviteCode.updateOne(
       { _id: invite._id },
       { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },

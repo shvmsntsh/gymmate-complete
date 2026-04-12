@@ -2,6 +2,7 @@ const { InviteCode } = require('../models/InviteCode');
 const Gym = require('../models/Gym');
 const User = require('../models/User');
 const { hasRole } = require('../utils/roles');
+const { ensureCanCreateMemberInvite } = require('../utils/gymLimits');
 
 function formatDateLabel(dateValue) {
   if (!dateValue) return null;
@@ -71,6 +72,9 @@ exports.validateInviteCode = async (req, res) => {
     const gym = await Gym.findById(invite.gymId);
     if (!gym) {
       return res.status(400).json({ error: 'Gym not found for this invite code.' });
+    }
+    if (gym.status !== 'active') {
+      return res.status(400).json({ error: 'Gym is not active for this invite code.' });
     }
 
     return res.status(200).json({
@@ -199,8 +203,15 @@ exports.generateInviteCode = async (req, res) => {
       if (!gym) {
         return res.status(404).json({ message: 'Gym not found for the current user.' });
       }
+      if (gym.status !== 'active') {
+        return res.status(403).json({ message: 'Gym account is inactive.' });
+      }
       gymId = gym._id;
       gymName = gym.gymName;
+    }
+
+    if (normalizedRole === 'gym_member') {
+      await ensureCanCreateMemberInvite(gymId);
     }
 
     if (phone_number) {
@@ -254,7 +265,19 @@ exports.generateInviteCode = async (req, res) => {
     res.status(201).json(invite); // Return the full invite object
   } catch (err) {
     console.error('Error generating invite code:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(err.statusCode || 500).json({
+      message: err.statusCode ? err.message : 'Internal server error',
+      error: err.statusCode ? err.message : 'Internal server error',
+      usage: err.usage
+        ? {
+            activeMembers: err.usage.activeMembers,
+            openMemberInvites: err.usage.openMemberInvites,
+            usedSeats: err.usage.usedSeats,
+            memberCap: err.usage.memberCap,
+            remainingSeats: err.usage.remainingSeats,
+          }
+        : undefined,
+    });
   }
 };
 

@@ -64,6 +64,11 @@
             required
           />
         </div>
+        <div class="login-helper-row">
+          <v-btn variant="text" size="small" @click="router.push('/forgot-password')">
+            Forgot password?
+          </v-btn>
+        </div>
 
         <div class="cta-row">
           <v-btn
@@ -156,3 +161,11 @@ onMounted(() => {
   }
 });
 </script>
+
+<style scoped>
+.login-helper-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+}
+</style>

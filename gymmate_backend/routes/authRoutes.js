@@ -2,11 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken } = require('../middleware/authMiddleware');
 const userController = require('../controllers/userController');
+const passwordResetController = require('../controllers/passwordResetController');
 
 // Public routes
 router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.post('/quick-login', userController.quickLogin);
+router.post('/password-reset/request', passwordResetController.requestPasswordReset);
+router.post('/password-reset/verify', passwordResetController.verifyPasswordResetCode);
+router.post('/password-reset/complete', passwordResetController.completePasswordReset);
 
 // Protected routes - All routes below this line require a valid token
 router.use(authenticateToken);

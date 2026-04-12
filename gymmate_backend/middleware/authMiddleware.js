@@ -22,6 +22,15 @@ const authenticateToken = async (req, res, next) => {
 
     const user = await User.findById(decoded.id);
     if (user) {
+      if (user.accountStatus === 'deactivated') {
+        return res.status(403).json({ message: 'Account is deactivated.' });
+      }
+      if (!hasRole(user, ['admin']) && user.gymId) {
+        const gym = await Gym.findById(user.gymId).select('status');
+        if (gym && gym.status !== 'active') {
+          return res.status(403).json({ message: 'Gym account is inactive.' });
+        }
+      }
       user.normalizedRole = normalizeRole(user.role);
       req.user = user;
       return next();
@@ -29,6 +38,9 @@ const authenticateToken = async (req, res, next) => {
 
     const gym = await Gym.findById(decoded.id);
     if (gym) {
+      if (gym.status !== 'active') {
+        return res.status(403).json({ message: 'Gym account is inactive.' });
+      }
       req.user = {
         ...gym.toObject(),
         id: gym._id.toString(),

@@ -152,6 +152,40 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<String> requestPasswordReset(String email) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/password-reset/request'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'email': email}),
+    );
+    final data = json.decode(response.body);
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Could not send reset code');
+    }
+    return data['message'] ?? 'If that email exists, a reset code was sent.';
+  }
+
+  Future<String> completePasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/api/auth/password-reset/complete'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({
+        'email': email,
+        'code': code,
+        'newPassword': newPassword,
+      }),
+    );
+    final data = json.decode(response.body);
+    if (response.statusCode != 200) {
+      throw Exception(data['message'] ?? 'Could not reset password');
+    }
+    return data['message'] ?? 'Password updated. Please log in again.';
+  }
+
   Future<bool> tryAutoLogin() async {
     final token = await _storage.read(key: 'user_token');
     if (token == null) {

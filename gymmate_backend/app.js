@@ -14,6 +14,7 @@ const memberRoutes = require('./routes/memberRoutes');
 const trainerRoutes = require('./routes/trainerRoutes');
 const ownerRoutes = require('./routes/ownerRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gymmate';
 getJwtSecret();
@@ -100,6 +101,7 @@ app.use('/api/member', memberRoutes);
 app.use('/api/trainer', trainerRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use((error, _req, res, _next) => {
   console.error('Unhandled application error:', error);

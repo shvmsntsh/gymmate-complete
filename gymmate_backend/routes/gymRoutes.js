@@ -3,29 +3,19 @@ const router = express.Router();
 const Gym = require('../models/Gym');
 const User = require('../models/User');
 const { InviteCode } = require('../models/InviteCode');
+const ServiceCatalog = require('../models/ServiceCatalog');
 const jwt = require('jsonwebtoken');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const bcrypt = require('bcryptjs');
 const { hasRole } = require('../utils/roles');
 const { getJwtSecret } = require('../utils/jwt');
-
-function normalizeServices(services) {
-  if (Array.isArray(services)) {
-    return services
-      .flatMap((service) => String(service || '').split(','))
-      .map((service) => service.trim())
-      .filter(Boolean);
-  }
-
-  if (typeof services === 'string') {
-    return services
-      .split(',')
-      .map((service) => service.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-}
+const {
+  DEFAULT_SERVICE_NAMES,
+  normalizeServices,
+  serviceSlug,
+  servicesToCatalogItems,
+} = require('../utils/serviceCatalog');
+const { ensureCanCreateMemberInvite } = require('../utils/gymLimits');
 
 router.post('/register', async (req, res) => {
 
@@ -42,7 +32,7 @@ router.post('/register', async (req, res) => {
     } = req.body;
     const gymName = rawGymName || name;
     const normalizedEmail = String(email || '').trim().toLowerCase();
-    const normalizedContactNumber = contactNumber || phone;
+    const normalizedContactNumber = String(contactNumber || phone || '').trim();
 
     if (!gymName || !normalizedEmail) {
       return res.status(400).json({ message: 'Name and email are required' });
@@ -75,8 +65,14 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'An account with this email already exists' });
     }
 
+    const existingPhone = await User.findOne({ phone_number: normalizedContactNumber });
+    if (existingPhone) {
+      return res.status(400).json({ message: 'An account with this phone number already exists' });
+    }
+
     const assignedRole = 'gym_owner';
     const normalizedServices = normalizeServices(services);
+    const normalizedServiceSlugs = normalizedServices.map(serviceSlug);
 
     let hashedPassword = password;
     if (password) {
@@ -89,6 +85,7 @@ router.post('/register', async (req, res) => {
       address,
       contactNumber: normalizedContactNumber,
       services: normalizedServices,
+      serviceSlugs: normalizedServiceSlugs,
       role: assignedRole,
     };
 
@@ -129,6 +126,25 @@ router.post('/register', async (req, res) => {
       await Gym.findByIdAndDelete(newGym._id).catch(() => {});
       throw ownerError;
     }
+
+    await Promise.all(
+      servicesToCatalogItems(normalizedServices).map((service) =>
+        ServiceCatalog.updateOne(
+          { slug: service.slug },
+          {
+            $setOnInsert: {
+              name: service.name,
+              slug: service.slug,
+              source: DEFAULT_SERVICE_NAMES.map(serviceSlug).includes(service.slug)
+                ? 'default'
+                : 'custom',
+            },
+            $inc: { usageCount: 1 },
+          },
+          { upsert: true },
+        ),
+      ),
+    );
 
     const { InviteCode } = require('../models/InviteCode');
     let invite;
@@ -177,7 +193,15 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Error registering gym:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    if (error?.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'field';
+      return res.status(400).json({ message: `An account with this ${field} already exists.` });
+    }
+    if (error?.name === 'ValidationError') {
+      const firstError = Object.values(error.errors || {})[0];
+      return res.status(400).json({ message: firstError?.message || 'Please check the registration details.' });
+    }
+    res.status(500).json({ message: 'We could not register this gym right now. Please try again.', error: error.message });
   }
 });
 
@@ -189,7 +213,7 @@ router.get('/list', authenticateToken, async (req, res) => {
 
     const gyms = await Gym.find({})
       .sort({ createdAt: -1 })
-      .select('gymName email address contactNumber services status createdAt');
+      .select('gymName email address contactNumber services serviceSlugs status platformPlan memberCap planStatus createdAt');
 
     return res.status(200).json(
       gyms.map((gym) => ({
@@ -199,7 +223,11 @@ router.get('/list', authenticateToken, async (req, res) => {
         address: gym.address || '',
         contactNumber: gym.contactNumber || '',
         services: normalizeServices(gym.services),
+        serviceSlugs: gym.serviceSlugs || normalizeServices(gym.services).map(serviceSlug),
         status: gym.status,
+        platformPlan: gym.platformPlan || 'launch_50',
+        memberCap: gym.memberCap || 50,
+        planStatus: gym.planStatus || 'active',
         createdAt: gym.createdAt,
       })),
     );
@@ -222,6 +250,9 @@ router.post('/login', async (req, res) => {
     const gym = await Gym.findOne({ email });
     if (!gym || !gym.password) {
       return res.status(400).json({ message: 'Invalid email or password' });
+    }
+    if (gym.status !== 'active') {
+      return res.status(403).json({ message: 'Gym account is inactive.' });
     }
 
     const passwordMatch = await bcrypt.compare(password, gym.password);
@@ -273,6 +304,47 @@ router.get('/services', async (req, res) => {
   } catch (error) {
     console.error('Error fetching services:', error);
     res.status(500).json({ message: 'Failed to fetch services', error: error.message });
+  }
+});
+
+router.get('/services/catalog', async (req, res) => {
+  try {
+    const defaultItems = DEFAULT_SERVICE_NAMES.map((name) => ({
+      name,
+      slug: serviceSlug(name),
+      source: 'default',
+      usageCount: 0,
+    }));
+    const catalogItems = await ServiceCatalog.find({}).sort({ source: 1, name: 1 }).lean();
+    const gyms = await Gym.find({}, 'services serviceSlugs').lean();
+    const usageCounts = new Map();
+
+    gyms.forEach((gym) => {
+      normalizeServices(gym.services).forEach((service) => {
+        const slug = serviceSlug(service);
+        usageCounts.set(slug, (usageCounts.get(slug) || 0) + 1);
+      });
+    });
+
+    const bySlug = new Map();
+    [...defaultItems, ...catalogItems].forEach((item) => {
+      bySlug.set(item.slug, {
+        name: item.name,
+        slug: item.slug,
+        source: item.source || 'custom',
+        usageCount: usageCounts.get(item.slug) || item.usageCount || 0,
+      });
+    });
+
+    return res.status(200).json({
+      services: Array.from(bySlug.values()).sort((a, b) => {
+        if (a.source !== b.source) return a.source === 'default' ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      }),
+    });
+  } catch (error) {
+    console.error('Error fetching service catalog:', error);
+    return res.status(500).json({ message: 'Failed to fetch service catalog' });
   }
 });
 
@@ -472,7 +544,11 @@ router.get('/self', authenticateToken, async (req, res) => {
       address: gym.address || '',
       contactNumber: gym.contactNumber || '',
       services: normalizeServices(gym.services),
+      serviceSlugs: gym.serviceSlugs || normalizeServices(gym.services).map(serviceSlug),
       status: gym.status,
+      platformPlan: gym.platformPlan || 'launch_50',
+      memberCap: gym.memberCap || 50,
+      planStatus: gym.planStatus || 'active',
       branding: gym.branding || {},
       owner: gym.owner || null,
     };
@@ -537,6 +613,24 @@ router.post('/generate-invite', authenticateToken, async (req, res) => {
     (generator.role === 'superadmin' && role === 'gym_owner') ||
     (generator.role === 'gym_owner' && role === 'gym_member')
   ) {
+    try {
+      if (role === 'gym_member') {
+        await ensureCanCreateMemberInvite(generator.gymId);
+      }
+    } catch (error) {
+      return res.status(error.statusCode || 500).json({
+        message: error.message || 'Could not create invite.',
+        usage: error.usage
+          ? {
+              activeMembers: error.usage.activeMembers,
+              openMemberInvites: error.usage.openMemberInvites,
+              usedSeats: error.usage.usedSeats,
+              memberCap: error.usage.memberCap,
+              remainingSeats: error.usage.remainingSeats,
+            }
+          : undefined,
+      });
+    }
     const code = Math.random().toString(36).substr(2, 8).toUpperCase();
 
     const { InviteCode } = require('../models/InviteCode');
@@ -586,7 +680,11 @@ router.get('/:id', async (req, res) => {
       contactNumber: gym.contactNumber || '',
       phone: gym.contactNumber || '',
       services: normalizeServices(gym.services),
+      serviceSlugs: gym.serviceSlugs || normalizeServices(gym.services).map(serviceSlug),
       status: gym.status,
+      platformPlan: gym.platformPlan || 'launch_50',
+      memberCap: gym.memberCap || 50,
+      planStatus: gym.planStatus || 'active',
       createdAt: gym.createdAt,
     });
   } catch (error) {

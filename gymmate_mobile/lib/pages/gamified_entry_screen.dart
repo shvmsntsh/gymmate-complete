@@ -17,7 +17,7 @@ import 'package:gymmate_mobile/widgets/role_card.dart';
 
 import 'quick_join_screen.dart';
 
-enum EntryState { entry, login, chooseRole, register, quickJoin }
+enum EntryState { entry, login, chooseRole, register, quickJoin, forgotPassword }
 
 class GamifiedEntryScreen extends StatefulWidget {
   final EntryState initialState;
@@ -39,7 +39,15 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
 
   final _loginEmailController = TextEditingController();
   final _loginPasswordController = TextEditingController();
+  final _resetEmailController = TextEditingController();
+  final _resetCodeController = TextEditingController();
+  final _resetPasswordController = TextEditingController();
+  final _resetConfirmController = TextEditingController();
   bool _loginLoading = false;
+  bool _resetLoading = false;
+  bool _resetCodeSent = false;
+  String? _resetMessage;
+  String? _resetError;
 
   final _regNameController = TextEditingController();
   final _regEmailController = TextEditingController();
@@ -70,6 +78,10 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
     _regCodeController.removeListener(_scheduleInviteVerification);
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
+    _resetEmailController.dispose();
+    _resetCodeController.dispose();
+    _resetPasswordController.dispose();
+    _resetConfirmController.dispose();
     _regNameController.dispose();
     _regEmailController.dispose();
     _regPasswordController.dispose();
@@ -83,6 +95,14 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
   void _showLogin() => setState(() => _state = EntryState.login);
   void _showJoin() => setState(() => _state = EntryState.chooseRole);
   void _showQuickJoin() => setState(() => _state = EntryState.quickJoin);
+  void _showForgotPassword() {
+    _resetEmailController.text = _loginEmailController.text.trim();
+    setState(() {
+      _state = EntryState.forgotPassword;
+      _resetError = null;
+      _resetMessage = null;
+    });
+  }
 
   void _selectRole(String role) {
     setState(() {
@@ -167,6 +187,75 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
     } finally {
       if (mounted) {
         setState(() => _loginLoading = false);
+      }
+    }
+  }
+
+  Future<void> _requestPasswordReset() async {
+    setState(() {
+      _resetLoading = true;
+      _resetError = null;
+      _resetMessage = null;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final message = await authProvider.requestPasswordReset(
+        _resetEmailController.text.trim(),
+      );
+      setState(() {
+        _resetCodeSent = true;
+        _resetMessage = message;
+      });
+    } catch (e) {
+      setState(() => _resetError = _friendlyEntryError(e.toString()));
+    } finally {
+      if (mounted) {
+        setState(() => _resetLoading = false);
+      }
+    }
+  }
+
+  Future<void> _completePasswordReset() async {
+    final password = _resetPasswordController.text;
+    final confirm = _resetConfirmController.text;
+    if (password.length < 6) {
+      setState(() => _resetError = 'Password must be at least 6 characters.');
+      return;
+    }
+    if (password != confirm) {
+      setState(() => _resetError = 'Passwords do not match.');
+      return;
+    }
+
+    setState(() {
+      _resetLoading = true;
+      _resetError = null;
+      _resetMessage = null;
+    });
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final message = await authProvider.completePasswordReset(
+        email: _resetEmailController.text.trim(),
+        code: _resetCodeController.text.trim(),
+        newPassword: password,
+      );
+      _loginEmailController.text = _resetEmailController.text.trim();
+      _loginPasswordController.clear();
+      setState(() {
+        _state = EntryState.login;
+        _loginError = message;
+        _resetCodeSent = false;
+        _resetCodeController.clear();
+        _resetPasswordController.clear();
+        _resetConfirmController.clear();
+      });
+    } catch (e) {
+      setState(() => _resetError = _friendlyEntryError(e.toString()));
+    } finally {
+      if (mounted) {
+        setState(() => _resetLoading = false);
       }
     }
   }
@@ -460,6 +549,21 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
                       error: _loginError,
                       onLogin: _onLogin,
                       onBack: _backToEntry,
+                      onForgot: _showForgotPassword,
+                    ),
+                    EntryState.forgotPassword => _ForgotPasswordView(
+                      key: const ValueKey('forgot-password'),
+                      emailController: _resetEmailController,
+                      codeController: _resetCodeController,
+                      passwordController: _resetPasswordController,
+                      confirmController: _resetConfirmController,
+                      codeSent: _resetCodeSent,
+                      loading: _resetLoading,
+                      message: _resetMessage,
+                      error: _resetError,
+                      onRequestCode: _requestPasswordReset,
+                      onCompleteReset: _completePasswordReset,
+                      onBack: _showLogin,
                     ),
                     EntryState.chooseRole => _RoleSelectionView(
                       key: const ValueKey('role'),
@@ -643,6 +747,7 @@ class _LoginStateView extends StatelessWidget {
   final String? error;
   final VoidCallback onLogin;
   final VoidCallback onBack;
+  final VoidCallback onForgot;
 
   const _LoginStateView({
     super.key,
@@ -652,6 +757,7 @@ class _LoginStateView extends StatelessWidget {
     required this.error,
     required this.onLogin,
     required this.onBack,
+    required this.onForgot,
   });
 
   @override
@@ -706,7 +812,7 @@ class _LoginStateView extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: onForgot,
                     child: const Text('Forgot password?'),
                   ),
                 ),
@@ -716,6 +822,130 @@ class _LoginStateView extends StatelessWidget {
                   onTap: onLogin,
                   loading: loading,
                 ),
+              ],
+            ),
+          ),
+          const PhaseOneFooterNote(),
+        ],
+      ),
+    ).animate().fadeIn(duration: 320.ms).slideY(begin: 0.08, end: 0);
+  }
+}
+
+class _ForgotPasswordView extends StatelessWidget {
+  final TextEditingController emailController;
+  final TextEditingController codeController;
+  final TextEditingController passwordController;
+  final TextEditingController confirmController;
+  final bool codeSent;
+  final bool loading;
+  final String? message;
+  final String? error;
+  final VoidCallback onRequestCode;
+  final VoidCallback onCompleteReset;
+  final VoidCallback onBack;
+
+  const _ForgotPasswordView({
+    super.key,
+    required this.emailController,
+    required this.codeController,
+    required this.passwordController,
+    required this.confirmController,
+    required this.codeSent,
+    required this.loading,
+    required this.message,
+    required this.error,
+    required this.onRequestCode,
+    required this.onCompleteReset,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 560),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PhaseOneTopBar(onBack: onBack),
+          const SizedBox(height: 16),
+          PhaseOneSurface(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const PhaseOneBadge(label: 'Password Reset'),
+                const SizedBox(height: 14),
+                const PhaseOneSectionTitle(
+                  eyebrow: 'Account Recovery',
+                  title: 'Reset your password.',
+                  subtitle:
+                      'Use your account email and the code from your inbox.',
+                ),
+                const SizedBox(height: 18),
+                if (error != null) ...[
+                  PhaseOneStatusBanner(message: error!),
+                  const SizedBox(height: 14),
+                ],
+                if (message != null) ...[
+                  Text(
+                    message!,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                AnimatedFormField(
+                  controller: emailController,
+                  hintText: 'Email',
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    return RegExp(r'^\S+@\S+\.\S+$').hasMatch(v)
+                        ? null
+                        : 'Invalid email';
+                  },
+                  index: 0,
+                ),
+                if (codeSent) ...[
+                  const SizedBox(height: 12),
+                  AnimatedFormField(
+                    controller: codeController,
+                    hintText: 'Reset Code',
+                    keyboardType: TextInputType.number,
+                    index: 1,
+                  ),
+                  const SizedBox(height: 12),
+                  AnimatedFormField(
+                    controller: passwordController,
+                    hintText: 'New Password',
+                    isPassword: true,
+                    index: 2,
+                  ),
+                  const SizedBox(height: 12),
+                  AnimatedFormField(
+                    controller: confirmController,
+                    hintText: 'Confirm New Password',
+                    isPassword: true,
+                    index: 3,
+                  ),
+                ],
+                const SizedBox(height: 18),
+                PhaseOnePrimaryButton(
+                  label: codeSent ? 'Reset Password' : 'Send Reset Code',
+                  onTap: codeSent ? onCompleteReset : onRequestCode,
+                  loading: loading,
+                ),
+                if (codeSent) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.center,
+                    child: TextButton(
+                      onPressed: loading ? null : onRequestCode,
+                      child: const Text('Send code again'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

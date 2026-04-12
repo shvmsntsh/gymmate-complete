@@ -23,6 +23,11 @@ const routes = [
     component: () => import("../views/RegisterGym.vue"),
   },
   {
+    path: "/forgot-password",
+    name: "ForgotPassword",
+    component: () => import("../views/ForgotPassword.vue"),
+  },
+  {
     path: "/dashboard",
     name: "AdminDashboard",
     component: () => import("../views/AdminDashboard.vue"),
@@ -33,6 +38,12 @@ const routes = [
     name: "ManageMembers",
     component: () => import("../views/ManageMembers.vue"),
     meta: { protected: true, routeAccess: "ManageMembers" },
+  },
+  {
+    path: "/network",
+    name: "NetworkControl",
+    component: () => import("../views/NetworkControl.vue"),
+    meta: { protected: true, routeAccess: "NetworkControl" },
   },
   {
     path: "/announcements",

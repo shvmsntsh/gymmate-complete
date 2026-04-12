@@ -18,6 +18,20 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true, // Allows multiple documents to have a null value for this field
   },
+  accountStatus: {
+    type: String,
+    enum: ['active', 'deactivated'],
+    default: 'active',
+  },
+  deactivatedAt: {
+    type: Date,
+    default: null,
+  },
+  deactivatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
   // Hashed password
   password: {
     type: String,

@@ -8,10 +8,34 @@ const gymSchema = new mongoose.Schema({
   address: String,
   contactNumber: String,
   services: [String],
+  serviceSlugs: [String],
   status: {
     type: String,
     enum: ['active', 'inactive'],
     default: 'active'
+  },
+  platformPlan: {
+    type: String,
+    enum: ['launch_50', 'studio_100', 'growth_1000', 'scale_5000', 'enterprise_10000', 'custom'],
+    default: 'launch_50',
+  },
+  memberCap: {
+    type: Number,
+    default: 50,
+  },
+  planStatus: {
+    type: String,
+    enum: ['active', 'locked'],
+    default: 'active',
+  },
+  planUpdatedAt: {
+    type: Date,
+    default: null,
+  },
+  planUpdatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
   },
   branding: {
     logoUrl: { type: String, default: null },

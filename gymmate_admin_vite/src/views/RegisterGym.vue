@@ -147,11 +147,17 @@
           </div>
 
           <div>
-            <div class="field-label">Services (comma-separated)</div>
-            <v-text-field
+            <div class="field-label">Services</div>
+            <v-combobox
               v-model="form.services"
+              :items="serviceOptions"
+              chips
+              closable-chips
               density="comfortable"
               hide-details="auto"
+              hint="Search, select, or type a new service"
+              multiple
+              persistent-hint
               variant="outlined"
             />
           </div>
@@ -175,7 +181,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import PublicAuthShell from "../components/PublicAuthShell.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
@@ -188,7 +194,7 @@ const form = ref({
   password: "",
   address: "",
   contactNumber: "",
-  services: "",
+  services: [],
 });
 const showPassword = ref(false);
 const snackbar = ref(false);
@@ -197,6 +203,26 @@ const snackbarColor = ref("");
 const submitting = ref(false);
 const createdGym = ref(null);
 const createdOwner = ref(null);
+const serviceOptions = ref([
+  "Strength Training",
+  "Cardio",
+  "Personal Training",
+  "Yoga",
+  "Pilates",
+  "CrossFit",
+  "HIIT",
+  "Zumba",
+  "Boxing/MMA",
+  "Swimming",
+  "Physiotherapy",
+  "Nutrition Coaching",
+  "Sauna/Steam",
+  "Locker",
+  "Group Classes",
+  "Kids Fitness",
+  "Sports Conditioning",
+  "Recovery/Mobility",
+]);
 const { isDark, toggleTheme } = useAdminTheme();
 
 const createdServicesLabel = computed(() => {
@@ -223,7 +249,7 @@ function emptyForm() {
     password: "",
     address: "",
     contactNumber: "",
-    services: "",
+    services: [],
   };
 }
 
@@ -250,10 +276,9 @@ async function submit() {
     address: form.value.address,
     contactNumber: form.value.contactNumber,
     phone: form.value.contactNumber,
-    services: form.value.services
-      .split(",")
-      .map((service) => service.trim())
-      .filter(Boolean),
+    services: Array.isArray(form.value.services)
+      ? form.value.services.map((service) => String(service).trim()).filter(Boolean)
+      : [],
   };
 
   try {
@@ -278,6 +303,20 @@ async function submit() {
     submitting.value = false;
   }
 }
+
+async function loadServiceOptions() {
+  try {
+    const res = await apiFetch("/api/gym/services/catalog", { skipAuth: true });
+    const data = await res.json();
+    if (!res.ok) return;
+    const options = (data.services || [])
+      .map((service) => service.name || service)
+      .filter(Boolean);
+    serviceOptions.value = [...new Set([...serviceOptions.value, ...options])];
+  } catch (_) {}
+}
+
+onMounted(loadServiceOptions);
 </script>
 
 <style scoped>

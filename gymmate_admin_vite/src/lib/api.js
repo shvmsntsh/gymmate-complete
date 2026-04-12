@@ -48,6 +48,10 @@ const ADMIN_ROUTE_RULES = {
     nav: { icon: "mdi-view-dashboard-outline", label: "Dashboard", to: "/dashboard" },
     roles: ["admin", "owner", "staff"],
   },
+  NetworkControl: {
+    nav: { icon: "mdi-domain", label: "Network", to: "/network" },
+    roles: ["admin"],
+  },
   ManageMembers: {
     nav: { icon: "mdi-account-group-outline", label: "Members", to: "/manage-members" },
     roles: ["admin", "owner", "staff"],
@@ -82,6 +86,9 @@ const ADMIN_ROUTE_RULES = {
   },
   GymDetails: {
     roles: ["admin"],
+  },
+  ForgotPassword: {
+    roles: ["admin", "owner", "staff"],
   },
 };
 

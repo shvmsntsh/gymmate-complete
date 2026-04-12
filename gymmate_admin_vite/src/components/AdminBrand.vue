@@ -17,12 +17,12 @@
       />
       <img
         v-else-if="showMarkImage"
-        :src="markImageUrl"
+        :src="effectiveMarkImageUrl"
         :alt="`${displayName} mark`"
         class="admin-brand__logo"
         @error="handleMarkError"
       />
-      <span v-else>GM</span>
+      <span v-else class="admin-brand__fallback-text">GymMate</span>
     </div>
     <div class="admin-brand__copy">
       <img
@@ -79,8 +79,13 @@ const markFailed = ref(false)
 const toneClass = computed(() => `admin-brand--${props.tone}`)
 const displayName = computed(() => props.brandName?.trim() || 'GymMate')
 const showLogo = computed(() => Boolean(props.logoUrl?.trim()) && !logoFailed.value)
+const effectiveMarkImageUrl = computed(
+  () =>
+    props.markImageUrl?.trim() ||
+    `${import.meta.env.BASE_URL}images/gymmate_logo_mark_dark.png`,
+)
 const showMarkImage = computed(
-  () => Boolean(props.markImageUrl?.trim()) && !markFailed.value,
+  () => Boolean(effectiveMarkImageUrl.value) && !markFailed.value,
 )
 const wordmarkFailed = ref(false)
 const showWordmark = computed(
@@ -145,6 +150,10 @@ function handleWordmarkError() {
   max-width: 170px;
   object-fit: contain;
   display: block;
+}
+
+.admin-brand__fallback-text {
+  font-size: 0;
 }
 
 .admin-brand--compact .admin-brand__wordmark {

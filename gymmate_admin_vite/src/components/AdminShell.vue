@@ -19,6 +19,8 @@
           compact
           :brand-name="sidebarDisplayName"
           :logo-url="sidebarLogoUrl"
+          :mark-image-url="sidebarMarkUrl"
+          :wordmark-url="sidebarWordmarkUrl"
         />
         <div class="admin-shell__eyebrow">{{ workspaceLabel }}</div>
         <button
@@ -100,7 +102,7 @@ import AdminBrand from "./AdminBrand.vue";
 import AdminThemeToggle from "./AdminThemeToggle.vue";
 import { apiFetch, getAdminNavItems, getAdminRole, getAdminSession } from "../lib/api";
 
-defineProps({
+const props = defineProps({
   description: {
     type: String,
     default: "",
@@ -130,7 +132,18 @@ const sidebarLogoUrl = ref("");
 const sidebarCollapsed = ref(false);
 const drawerOpen = ref(false);
 const sidebarDisplayName = computed(() =>
-  sidebarLogoUrl.value ? sidebarBrandName.value : "",
+  sidebarLogoUrl.value ? sidebarBrandName.value : "GymMate",
+);
+const assetBase = import.meta.env.BASE_URL;
+const sidebarMarkUrl = computed(() =>
+  sidebarLogoUrl.value
+    ? ""
+    : `${assetBase}images/${props.isDark ? "gymmate_logo_mark_light.png" : "gymmate_logo_mark_dark.png"}`,
+);
+const sidebarWordmarkUrl = computed(() =>
+  sidebarLogoUrl.value
+    ? ""
+    : `${assetBase}images/${props.isDark ? "gymmate_logo_light.png" : "gymmate_logo_dark.png"}`,
 );
 
 const workspaceLabel = computed(() =>
