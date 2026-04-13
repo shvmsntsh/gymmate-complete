@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { chromium, devices } = require('playwright');
 
-const BASE_URL = process.env.GYMMATE_QA_BASE || 'http://localhost:3100';
+const MOBILE_BASE = process.env.GYMMATE_MOBILE_BASE || 'http://127.0.0.1:58967';
+const WEB_BASE = process.env.GYMMATE_WEB_BASE || 'http://127.0.0.1:4173';
+const API_BASE = process.env.GYMMATE_API_BASE || 'http://127.0.0.1:5050';
 const SCREENSHOT_DIR = '/Users/shivamsantosh/gymmate_mvp/deploy/qa/screenshots';
 const REPORT_PATH = '/Users/shivamsantosh/gymmate_mvp/deploy/qa/qa-report.json';
 
@@ -13,21 +15,26 @@ const accounts = {
   member: { email: 'demo_member_iron@gymmate.local', password: 'DemoMember123!' },
 };
 
+function sanitizeErrorText(value) {
+  return String(value || '')
+    .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[redacted-jwt]')
+    .replace(/"token"\s*:\s*"[^"]+"/gi, '"token":"[redacted]"')
+    .replace(/"password"\s*:\s*"[^"]+"/gi, '"password":"[redacted]"')
+    .slice(0, 500);
+}
+
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-function toBase64(bytes) {
-  let binary = '';
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-  }
-  return Buffer.from(binary, 'binary').toString('base64');
+function joinUrl(base, route = '') {
+  const normalizedBase = String(base || '').replace(/\/$/, '');
+  const normalizedRoute = String(route || '').replace(/^\//, '');
+  return normalizedRoute ? `${normalizedBase}/${normalizedRoute}` : normalizedBase;
 }
 
 async function apiJson(pathname, options = {}) {
-  const res = await fetch(`${BASE_URL}${pathname}`, options);
+  const res = await fetch(`${API_BASE}${pathname}`, options);
   const text = await res.text();
   let json;
   try {
@@ -36,7 +43,7 @@ async function apiJson(pathname, options = {}) {
     json = { raw: text };
   }
   if (!res.ok) {
-    throw new Error(`${pathname} -> ${res.status}: ${JSON.stringify(json)}`);
+    throw new Error(`${pathname} -> ${res.status}: ${sanitizeErrorText(JSON.stringify(json))}`);
   }
   return json;
 }
@@ -58,20 +65,35 @@ async function getBranding(gymId) {
   }
 }
 
+async function getFirstGymId(adminSession) {
+  try {
+    const res = await fetch(`${API_BASE}/api/gym/list`, {
+      headers: { Authorization: `Bearer ${adminSession.token}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !Array.isArray(data) || data.length === 0) {
+      return null;
+    }
+    return data[0].id;
+  } catch {
+    return null;
+  }
+}
+
 async function attachErrorCapture(page, record) {
   record.consoleErrors = [];
   record.pageErrors = [];
   page.on('console', (msg) => {
     if (msg.type() === 'error') {
-      record.consoleErrors.push(msg.text());
+      record.consoleErrors.push(sanitizeErrorText(msg.text()));
     }
   });
   page.on('pageerror', (error) => {
-    record.pageErrors.push(error.stack || error.message || String(error));
+    record.pageErrors.push(sanitizeErrorText(error.stack || error.message || String(error)));
   });
 }
 
-async function setMobileSession(page, payload, { forceOnboarding = false } = {}) {
+async function setMobileSession(page, payload, { forceOnboarding = false, route = '' } = {}) {
   const user = {
     ...payload.user,
     role: payload.user.normalizedRole || payload.user.role,
@@ -82,7 +104,7 @@ async function setMobileSession(page, payload, { forceOnboarding = false } = {})
   };
   const branding = await getBranding(user.gymId);
 
-  await page.goto(BASE_URL, { waitUntil: 'networkidle' });
+  await page.goto(joinUrl(MOBILE_BASE, route), { waitUntil: 'networkidle' });
   await page.evaluate(async ({ token, user, branding }) => {
     const toB64 = (bytes) => {
       let binary = '';
@@ -159,7 +181,7 @@ async function setMobileSession(page, payload, { forceOnboarding = false } = {})
 }
 
 async function setWebSession(page, payload, theme) {
-  await page.goto(`${BASE_URL}/admin`, { waitUntil: 'networkidle' });
+  await page.goto(WEB_BASE, { waitUntil: 'networkidle' });
   await page.evaluate(({ payload, theme }) => {
     localStorage.clear();
     localStorage.setItem('gymmate_theme', theme);
@@ -169,57 +191,55 @@ async function setWebSession(page, payload, theme) {
   }, { payload, theme });
 }
 
-async function captureMobile(browser, name, setupFn, theme = 'light') {
+async function captureMobile(browser, name, route, session, theme, options = {}) {
   console.log(`capturing mobile ${name} (${theme})`);
   const context = await browser.newContext({
     ...devices['iPhone 14 Pro Max'],
     colorScheme: theme,
   });
   const page = await context.newPage();
-  const record = { name, theme, type: 'mobile' };
+  const record = { name, theme, type: 'mobile', route };
   await attachErrorCapture(page, record);
-  await setupFn(page);
-  record.consoleErrors = [];
-  record.pageErrors = [];
-  await page.waitForTimeout(_mobileSettleDelay(name));
+  await setMobileSession(page, session, { route, forceOnboarding: options.forceOnboarding });
+  await page.waitForTimeout(options.waitMs || 6500);
+
+  if (options.afterLoad) {
+    await options.afterLoad(page);
+    await page.waitForTimeout(options.afterWaitMs || 1800);
+  }
+
   const filePath = path.join(SCREENSHOT_DIR, `${name}-${theme}.png`);
   await page.screenshot({ path: filePath, fullPage: true });
   record.url = page.url();
-  record.screenshot = filePath;
+  record.screenshot = path.basename(filePath);
   await context.close();
   return record;
 }
 
-async function captureWeb(browser, name, route, setupFn, theme = 'light') {
+async function captureWeb(browser, name, route, theme, setupFn) {
   console.log(`capturing web ${name} (${theme})`);
   const context = await browser.newContext({
     viewport: { width: 1512, height: 982 },
     colorScheme: theme,
   });
   const page = await context.newPage();
-  const record = { name, theme, type: 'web' };
+  const record = { name, theme, type: 'web', route };
   await attachErrorCapture(page, record);
-  await setupFn(page, theme);
-  record.consoleErrors = [];
-  record.pageErrors = [];
-  await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle' });
+  if (setupFn) {
+    await setupFn(page, theme);
+  }
+  await page.goto(joinUrl(WEB_BASE, route), { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
   const filePath = path.join(SCREENSHOT_DIR, `${name}-${theme}.png`);
   await page.screenshot({ path: filePath, fullPage: false });
   record.url = page.url();
-  record.screenshot = filePath;
+  record.screenshot = path.basename(filePath);
   await context.close();
   return record;
 }
 
-function _mobileSettleDelay(name) {
-  if (name === 'mobile-admin-dashboard') {
-    return 9500;
-  }
-  if (name === 'mobile-onboarding-welcome') {
-    return 4500;
-  }
-  return 6500;
+async function openFirstTrainerClient(page) {
+  await page.mouse.click(190, 535);
 }
 
 (async () => {
@@ -234,67 +254,95 @@ function _mobileSettleDelay(name) {
     member: await login(accounts.member),
   };
 
+  const firstGymId = await getFirstGymId(sessions.admin);
+
   for (const theme of ['light', 'dark']) {
+    results.push(await captureWeb(browser, 'public-home', '', theme));
+    results.push(await captureWeb(browser, 'public-login', 'login', theme));
+    results.push(await captureWeb(browser, 'public-register-gym', 'register-gym', theme));
+
     results.push(
-      await captureMobile(browser, 'mobile-entry', async (page) => {
-        await page.goto(BASE_URL, { waitUntil: 'networkidle' });
-        await page.waitForTimeout(3000);
-      }, theme),
+      await captureMobile(
+        browser,
+        'mobile-onboarding-welcome',
+        '',
+        sessions.member,
+        theme,
+        { forceOnboarding: true, waitMs: 4500 },
+      ),
+    );
+
+    results.push(await captureMobile(browser, 'mobile-owner-dashboard', '', sessions.owner, theme));
+    results.push(await captureMobile(browser, 'mobile-owner-invites', '?tab=invites', sessions.owner, theme));
+    results.push(await captureMobile(browser, 'mobile-owner-profile', '?tab=profile', sessions.owner, theme));
+
+    results.push(await captureMobile(browser, 'mobile-admin-dashboard', '', sessions.admin, theme, { waitMs: 9000 }));
+    results.push(await captureMobile(browser, 'mobile-admin-invites', '?tab=invites', sessions.admin, theme));
+    results.push(await captureMobile(browser, 'mobile-admin-profile', '?tab=profile', sessions.admin, theme));
+
+    results.push(await captureMobile(browser, 'mobile-member-dashboard', '', sessions.member, theme));
+    results.push(await captureMobile(browser, 'mobile-member-plan', '?tab=plan', sessions.member, theme));
+    results.push(await captureMobile(browser, 'mobile-member-coach', '?tab=coach', sessions.member, theme));
+    results.push(await captureMobile(browser, 'mobile-member-profile', '?tab=profile', sessions.member, theme));
+
+    results.push(await captureMobile(browser, 'mobile-trainer-dashboard', '', sessions.trainer, theme));
+    results.push(await captureMobile(browser, 'mobile-trainer-clients', '?tab=clients', sessions.trainer, theme));
+    results.push(await captureMobile(browser, 'mobile-trainer-messages', '?tab=messages', sessions.trainer, theme));
+    results.push(await captureMobile(browser, 'mobile-trainer-profile', '?tab=profile', sessions.trainer, theme));
+    results.push(
+      await captureMobile(
+        browser,
+        'mobile-trainer-client-detail',
+        '?tab=clients',
+        sessions.trainer,
+        theme,
+        { afterLoad: openFirstTrainerClient, afterWaitMs: 2500 },
+      ),
     );
 
     results.push(
-      await captureMobile(browser, 'mobile-onboarding-welcome', async (page) => {
-        await setMobileSession(page, sessions.member, { forceOnboarding: true });
-      }, theme),
+      await captureWeb(browser, 'web-owner-dashboard', 'dashboard', theme, async (page, selectedTheme) => {
+        await setWebSession(page, sessions.owner, selectedTheme);
+      }),
+    );
+    results.push(
+      await captureWeb(browser, 'web-owner-manage-members', 'manage-members', theme, async (page, selectedTheme) => {
+        await setWebSession(page, sessions.owner, selectedTheme);
+      }),
+    );
+    results.push(
+      await captureWeb(browser, 'web-owner-invites', 'invites', theme, async (page, selectedTheme) => {
+        await setWebSession(page, sessions.owner, selectedTheme);
+      }),
+    );
+    results.push(
+      await captureWeb(browser, 'web-owner-branding', 'branding', theme, async (page, selectedTheme) => {
+        await setWebSession(page, sessions.owner, selectedTheme);
+      }),
     );
 
     results.push(
-      await captureMobile(browser, 'mobile-member-dashboard', async (page) => {
-        await setMobileSession(page, sessions.member);
-      }, theme),
-    );
-
-    results.push(
-      await captureMobile(browser, 'mobile-owner-dashboard', async (page) => {
-        await setMobileSession(page, sessions.owner);
-      }, theme),
-    );
-
-    results.push(
-      await captureMobile(browser, 'mobile-trainer-dashboard', async (page) => {
-        await setMobileSession(page, sessions.trainer);
-      }, theme),
-    );
-
-    results.push(
-      await captureMobile(browser, 'mobile-admin-dashboard', async (page) => {
-        await setMobileSession(page, sessions.admin);
-      }, theme),
-    );
-
-    results.push(
-      await captureWeb(browser, 'web-admin-dashboard', '/admin/dashboard', async (page, selectedTheme) => {
+      await captureWeb(browser, 'web-admin-dashboard', 'dashboard', theme, async (page, selectedTheme) => {
         await setWebSession(page, sessions.admin, selectedTheme);
-      }, theme),
+      }),
     );
-
     results.push(
-      await captureWeb(browser, 'web-owner-dashboard', '/admin/dashboard', async (page, selectedTheme) => {
-        await setWebSession(page, sessions.owner, selectedTheme);
-      }, theme),
+      await captureWeb(browser, 'web-admin-manage-members', 'manage-members', theme, async (page, selectedTheme) => {
+        await setWebSession(page, sessions.admin, selectedTheme);
+      }),
     );
-
     results.push(
-      await captureWeb(browser, 'web-owner-invites', '/admin/invites', async (page, selectedTheme) => {
-        await setWebSession(page, sessions.owner, selectedTheme);
-      }, theme),
+      await captureWeb(browser, 'web-admin-register-gym', 'register-gym', theme, async (page, selectedTheme) => {
+        await setWebSession(page, sessions.admin, selectedTheme);
+      }),
     );
-
-    results.push(
-      await captureWeb(browser, 'web-owner-branding', '/admin/branding', async (page, selectedTheme) => {
-        await setWebSession(page, sessions.owner, selectedTheme);
-      }, theme),
-    );
+    if (firstGymId) {
+      results.push(
+        await captureWeb(browser, 'web-admin-gym-details', `gyms/${firstGymId}`, theme, async (page, selectedTheme) => {
+          await setWebSession(page, sessions.admin, selectedTheme);
+        }),
+      );
+    }
   }
 
   fs.writeFileSync(REPORT_PATH, JSON.stringify(results, null, 2));

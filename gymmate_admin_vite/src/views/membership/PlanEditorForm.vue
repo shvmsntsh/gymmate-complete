@@ -193,7 +193,7 @@ const freezePolicyOptions = [
   { title: "Manual only", value: "manual_only" },
   { title: "None", value: "none" },
 ];
-const paymentModeOptions = ["cash", "upi", "card", "online", "manual"];
+const paymentModeOptions = ["cash", "upi", "card", "online", "manual", "waived"];
 
 const defaultForm = {
   name: "",
@@ -233,7 +233,7 @@ const defaultForm = {
     prorationPolicy: "none",
     freezePolicy: "extend_end_date",
     manualOverridePolicy: "owner_only",
-    paymentModesAllowed: ["cash", "upi", "card", "online", "manual"],
+    paymentModesAllowed: ["cash", "upi", "card", "online", "manual", "waived"],
   },
 };
 

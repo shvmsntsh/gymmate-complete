@@ -5,6 +5,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 const userController = require('../controllers/userController');
 const planLogController = require('../controllers/planLogController');
 const operationsController = require('../controllers/operationsController');
+const memberMembershipController = require('../controllers/memberMembershipController');
 
 router.use(authenticateToken);
 
@@ -20,5 +21,11 @@ router.post('/announcements/:deliveryId/read', operationsController.markAnnounce
 router.get('/membership', operationsController.getMemberMembershipSummary);
 router.post('/membership-requests', operationsController.createMemberMembershipRequest);
 router.get('/assets/:assetId', operationsController.streamMediaAssetForMember);
+
+router.get('/me/membership', memberMembershipController.getMyMembership);
+router.get('/me/membership-options', memberMembershipController.getMyMembershipOptions);
+router.get('/me/membership-requests', memberMembershipController.getMyMembershipRequests);
+router.post('/me/membership-requests', memberMembershipController.createMembershipRequest);
+router.get('/me/entitlements', memberMembershipController.getMyEntitlements);
 
 module.exports = router;

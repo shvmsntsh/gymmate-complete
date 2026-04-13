@@ -664,7 +664,12 @@ const paymentStatusOptions = [
 const paymentMethodOptions = [
   { title: "Cash", value: "cash" },
   { title: "UPI", value: "upi" },
+  { title: "Card", value: "card" },
+  { title: "Online", value: "online" },
+  { title: "Manual", value: "manual" },
+  { title: "Waived", value: "waived" },
 ];
+const paymentMethodValues = paymentMethodOptions.map((item) => item.value);
 
 const approveModeOptions = [
   { title: "Start Now", value: "force_immediate" },
@@ -683,11 +688,17 @@ const canVerifyPayment = computed(() => {
 
 const canApprove = computed(() => {
   if (!selectedRequest.value) return false;
-  return ["submitted", "awaiting_payment", "payment_under_review"].includes(selectedRequest.value.status);
+  if (selectedDecisionPreview.value?.blockers?.length) return false;
+  if (selectedRequest.value.status === "payment_under_review") return true;
+  return ["submitted", "awaiting_payment"].includes(selectedRequest.value.status) &&
+    selectedRequest.value.paymentMode === "waived";
 });
 
-const canReject = computed(() => canApprove.value);
-const canUseOwnerOverride = computed(() => getAdminRole() === "owner");
+const canReject = computed(() =>
+  selectedRequest.value &&
+  ["submitted", "awaiting_payment", "payment_under_review"].includes(selectedRequest.value.status),
+);
+const canUseOwnerOverride = computed(() => getAdminRole() === "owner" && !selectedDecisionPreview.value?.blockers?.length);
 const approvalModeLabel = computed(() =>
   approveForm.value.useOwnerOverride
     ? approveModeOptions.find((item) => item.value === approveForm.value.overrideMode)?.title || "Owner Override"
@@ -1076,7 +1087,7 @@ async function verifyPayment(requestId) {
   processing.value = true;
   try {
     const request = requests.value.find(item => item.id === requestId) || selectedRequest.value;
-    const paymentMethod = ["cash", "upi"].includes(request?.paymentMode) ? request.paymentMode : "cash";
+    const paymentMethod = paymentMethodValues.includes(request?.paymentMode) ? request.paymentMode : "cash";
     const res = await apiFetch(`/api/owner/membership-requests-new/${requestId}/verify-payment`, {
       method: "POST",
       body: JSON.stringify({ paymentMethod }),
@@ -1104,7 +1115,6 @@ async function approveRequest(requestId) {
   const payload = {
     acknowledgedWarnings: [
       ...(selectedDecisionPreview.value?.warnings || []).map((item) => item.code),
-      ...(selectedDecisionPreview.value?.blockers || []).map((item) => item.code),
     ],
   };
 
@@ -1147,8 +1157,8 @@ function openApproveDialog() {
 }
 
 async function confirmApprove() {
-  if (selectedDecisionPreview.value?.blockers?.length && !approveForm.value.useOwnerOverride) {
-    showSnackbar("Owner override required for this approval", "error");
+  if (selectedDecisionPreview.value?.blockers?.length) {
+    showSnackbar("Resolve blockers before approval", "error");
     return;
   }
   if (approveForm.value.useOwnerOverride && !approveForm.value.overrideReason.trim()) {

@@ -21,3 +21,11 @@ DerivedData
 *.lock
 .idea
 *.iml
+.vercel
+.env*.local
+deploy/qa/*-report.json
+deploy/qa/qa-report.json
+deploy/qa/mobile-touch-errors.json
+deploy/qa/screenshots/
+# Added by code-review-graph
+.code-review-graph/

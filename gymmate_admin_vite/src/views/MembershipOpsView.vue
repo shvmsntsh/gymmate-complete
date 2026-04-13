@@ -362,6 +362,10 @@ const pendingRequestOptions = computed(() =>
 const paymentModes = [
   { title: "Cash", value: "cash" },
   { title: "UPI", value: "upi" },
+  { title: "Card", value: "card" },
+  { title: "Online", value: "online" },
+  { title: "Manual", value: "manual" },
+  { title: "Waived", value: "waived" },
 ];
 
 function logout() {

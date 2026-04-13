@@ -104,7 +104,7 @@
             Verify Payment
           </v-btn>
           <v-btn
-            v-if="canApprove(request.status)"
+            v-if="canApprove(request)"
             size="small"
             color="primary"
             @click.stop="$emit('approve', request.id)"
@@ -217,6 +217,9 @@ function formatPaymentMode(mode) {
   const map = {
     cash: "Cash",
     upi: "UPI",
+    card: "Card",
+    online: "Online",
+    manual: "Manual",
     waived: "Waived",
   };
   return map[mode] || mode;
@@ -226,12 +229,14 @@ function canProcess(status) {
   return ["submitted", "awaiting_payment", "payment_under_review"].includes(status);
 }
 
-function canApprove(status) {
-  return ["submitted", "awaiting_payment", "payment_under_review"].includes(status);
+function canApprove(request) {
+  if (!request) return false;
+  if (request.status === "payment_under_review") return true;
+  return ["submitted", "awaiting_payment"].includes(request.status) && request.paymentMode === "waived";
 }
 
 function canReject(status) {
-  return canApprove(status);
+  return canProcess(status);
 }
 </script>
 

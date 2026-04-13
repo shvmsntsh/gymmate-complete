@@ -5,8 +5,10 @@ const AttendanceEvent = require('../models/AttendanceEvent');
 const BiometricIntegration = require('../models/BiometricIntegration');
 const MediaAsset = require('../models/MediaAsset');
 const MemberMembership = require('../models/MemberMembership');
+const MembershipChangeRequest = require('../models/MembershipChangeRequest');
 const MembershipPlanCatalog = require('../models/MembershipPlanCatalog');
 const MembershipRequest = require('../models/MembershipRequest');
+const MembershipTemplate = require('../models/MembershipTemplate');
 const PaymentEntry = require('../models/PaymentEntry');
 const User = require('../models/User');
 const { hasPermission, hasRole } = require('../utils/roles');
@@ -80,16 +82,35 @@ function serializeMembership(membership, plan = null) {
 
   return {
     id: membership._id,
-    planId: plan?._id || membership.planId || null,
-    planName: plan?.name || membership.planName || 'No active plan',
+    planId:
+      plan?._id ||
+      membership.planId ||
+      membership.membershipTemplateId?._id ||
+      membership.membershipTemplateId ||
+      null,
+    planName:
+      plan?.name ||
+      membership.planName ||
+      membership.membershipTemplateId?.name ||
+      'No active plan',
     status: membership.status || 'inactive',
     paymentStatus: membership.paymentStatus || 'none',
     startDate: membership.startDate || null,
     endDate: membership.endDate || null,
-    renewalDueDate: membership.renewalDueDate || membership.endDate || null,
+    renewalDueDate:
+      membership.renewalDueDate ||
+      membership.nextRenewalDate ||
+      membership.endDate ||
+      null,
     addOns: {
-      training: Boolean(membership.addOns?.training),
-      diet: Boolean(membership.addOns?.diet),
+      training: Boolean(
+        membership.addOns?.training ||
+          membership.entitlementsSnapshot?.personalTraining,
+      ),
+      diet: Boolean(
+        membership.addOns?.diet ||
+          membership.entitlementsSnapshot?.dietPlan,
+      ),
     },
     notes: membership.notes || '',
   };
@@ -106,33 +127,80 @@ async function fetchPlanMap(gymId) {
 async function getMembershipMap(memberIds) {
   const memberships = await MemberMembership.find({
     memberId: { $in: memberIds },
-  }).lean();
+  })
+    .populate('membershipTemplateId', 'name category')
+    .sort({ isActiveBaseMembership: -1, updatedAt: -1, createdAt: -1 })
+    .lean();
   return memberships.reduce((acc, membership) => {
-    acc[String(membership.memberId)] = membership;
+    const key = String(membership.memberId);
+    if (!acc[key]) {
+      acc[key] = membership;
+    }
     return acc;
   }, {});
 }
 
 async function getPendingRequestCountMap(memberIds) {
-  const rows = await MembershipRequest.aggregate([
-    {
-      $match: {
-        memberId: { $in: memberIds },
-        status: { $in: ['pending', 'approved', 'payment_pending'] },
+  const [legacyRows, newRows] = await Promise.all([
+    MembershipRequest.aggregate([
+      {
+        $match: {
+          memberId: { $in: memberIds },
+          status: { $in: ['pending', 'approved', 'payment_pending'] },
+        },
       },
-    },
-    {
-      $group: {
-        _id: '$memberId',
-        count: { $sum: 1 },
+      {
+        $group: {
+          _id: '$memberId',
+          count: { $sum: 1 },
+        },
       },
-    },
+    ]),
+    MembershipChangeRequest.aggregate([
+      {
+        $match: {
+          memberId: { $in: memberIds },
+          status: { $in: ['submitted', 'awaiting_payment', 'payment_under_review'] },
+        },
+      },
+      {
+        $group: {
+          _id: '$memberId',
+          count: { $sum: 1 },
+        },
+      },
+    ]),
   ]);
 
-  return rows.reduce((acc, row) => {
-    acc[String(row._id)] = Number(row.count || 0);
+  return [...legacyRows, ...newRows].reduce((acc, row) => {
+    const key = String(row._id);
+    acc[key] = (acc[key] || 0) + Number(row.count || 0);
     return acc;
   }, {});
+}
+
+async function fetchHybridPlanMap(gymId) {
+  const [legacyPlans, newPlans] = await Promise.all([
+    MembershipPlanCatalog.find({ gymId }).lean(),
+    MembershipTemplate.find({ gymId, active: true }).lean(),
+  ]);
+
+  const acc = {};
+  for (const plan of legacyPlans) {
+    acc[String(plan._id)] = plan;
+  }
+  for (const plan of newPlans) {
+    acc[String(plan._id)] = {
+      ...plan,
+      includedServices: plan.includedServices || [],
+      addOns: {
+        training: Boolean(plan.availableAddOns?.personalTraining),
+        diet: Boolean(plan.availableAddOns?.dietPlan),
+      },
+      renewalLeadDays: plan.renewalLeadDays,
+    };
+  }
+  return acc;
 }
 
 async function getLatestAttendanceMap(memberIds) {
@@ -212,10 +280,19 @@ function buildAudienceFilter(scope, memberIds) {
 
 function mergeMembershipStatusFilter(scope) {
   if (scope === 'active') {
-    return new Set(['active', 'expiring']);
+    return new Set(['active', 'expiring', 'renewal_due']);
   }
   if (scope === 'inactive') {
-    return new Set(['inactive', 'expired', 'payment_pending']);
+    return new Set([
+      'inactive',
+      'expired',
+      'payment_pending',
+      'pending_payment',
+      'pending_approval',
+      'frozen',
+      'canceled',
+      'rejected',
+    ]);
   }
   return null;
 }
@@ -271,10 +348,8 @@ exports.getMemberWorkspace = async (req, res) => {
       filter.$or = [{ name: pattern }, { email: pattern }];
     }
 
-    const [allPlans, members, total] = await Promise.all([
-      MembershipPlanCatalog.find({ gymId: req.user.gymId, active: true })
-        .sort({ name: 1 })
-        .lean(),
+    const [planMap, members, total] = await Promise.all([
+      fetchHybridPlanMap(req.user.gymId),
       User.find(filter)
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -306,7 +381,9 @@ exports.getMemberWorkspace = async (req, res) => {
           pendingRequestCount: pendingRequestCountMap[String(member._id)] || 0,
           lastAttendanceAt: attendanceMap[String(member._id)] || null,
           activeState:
-            serializedMembership.status === 'active' || serializedMembership.status === 'expiring'
+            serializedMembership.status === 'active' ||
+            serializedMembership.status === 'expiring' ||
+            serializedMembership.status === 'renewal_due'
               ? 'active'
               : 'inactive',
         };
@@ -315,13 +392,15 @@ exports.getMemberWorkspace = async (req, res) => {
         if (status === 'all') return true;
         if (status === 'active') return row.activeState === 'active';
         if (status === 'inactive') return row.activeState === 'inactive';
-        if (status === 'expiring') return row.membership.status === 'expiring';
+        if (status === 'expiring') {
+          return ['expiring', 'renewal_due'].includes(row.membership.status);
+        }
         return true;
       });
 
     return res.status(200).json({
       members: rows,
-      plans: allPlans.map((plan) => ({
+      plans: Object.values(planMap).map((plan) => ({
         id: plan._id,
         name: plan.name,
         durationDays: plan.durationDays,
@@ -558,6 +637,7 @@ exports.listMembershipPlans = async (req, res) => {
         name: plan.name,
         description: plan.description || '',
         durationDays: plan.durationDays,
+        price: plan.price || 0,
         includedServices: plan.includedServices || [],
         renewalLeadDays: plan.renewalLeadDays,
         active: Boolean(plan.active),
@@ -583,6 +663,7 @@ exports.upsertMembershipPlan = async (req, res) => {
       name,
       description = '',
       durationDays,
+      price = 0,
       includedServices = [],
       renewalLeadDays = 7,
       active = true,
@@ -599,6 +680,7 @@ exports.upsertMembershipPlan = async (req, res) => {
       name: String(name).trim(),
       description: String(description || '').trim(),
       durationDays: Number(durationDays),
+      price: Number(price || 0),
       includedServices: Array.isArray(includedServices)
         ? includedServices.map((entry) => String(entry).trim()).filter(Boolean)
         : [],
@@ -667,6 +749,78 @@ exports.listMembershipRequests = async (req, res) => {
   } catch (error) {
     console.error('Error listing membership requests:', error);
     return res.status(500).json({ message: 'Error listing membership requests' });
+  }
+};
+
+exports.getMembershipRequest = async (req, res) => {
+  if (!canManageRequests(req.user)) {
+    return res.status(403).json({ message: 'Forbidden: membership request access required' });
+  }
+
+  try {
+    const request = await MembershipRequest.findOne({
+      _id: req.params.requestId,
+      gymId: req.user.gymId,
+    })
+      .populate('memberId', 'name email')
+      .populate('targetPlanId', 'name description durationDays price includedServices addOns renewalLeadDays')
+      .populate('handledBy', 'name')
+      .lean();
+
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+
+    let memberMembership = null;
+    if (request.memberId) {
+      memberMembership = await MemberMembership.findOne({
+        gymId: req.user.gymId,
+        memberId: request.memberId._id,
+      })
+        .populate('membershipTemplateId', 'name category')
+        .sort({ isActiveBaseMembership: -1, updatedAt: -1, createdAt: -1 })
+        .lean();
+    }
+
+    return res.status(200).json({
+      request: {
+        id: request._id,
+        requestType: request.requestType,
+        status: request.status,
+        note: request.note || '',
+        response: request.response || '',
+        createdAt: request.createdAt,
+        handledAt: request.handledAt || null,
+        member: request.memberId
+          ? {
+              id: request.memberId._id,
+              name: request.memberId.name,
+              email: request.memberId.email,
+            }
+          : null,
+        targetPlan: request.targetPlanId
+          ? {
+              id: request.targetPlanId._id,
+              name: request.targetPlanId.name,
+              description: request.targetPlanId.description || '',
+              durationDays: request.targetPlanId.durationDays,
+              price: request.targetPlanId.price || 0,
+              includedServices: request.targetPlanId.includedServices || [],
+              addOns: request.targetPlanId.addOns || {},
+              renewalLeadDays: request.targetPlanId.renewalLeadDays,
+            }
+          : null,
+        handledBy: request.handledBy
+          ? {
+              name: request.handledBy.name,
+            }
+          : null,
+      },
+      memberMembership: memberMembership ? serializeMembership(memberMembership) : null,
+    });
+  } catch (error) {
+    console.error('Error fetching membership request:', error);
+    return res.status(500).json({ message: 'Error fetching membership request' });
   }
 };
 

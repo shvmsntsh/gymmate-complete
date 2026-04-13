@@ -6,6 +6,10 @@ const MembershipAuditLog = require('../models/MembershipAuditLog');
 const PaymentEntry = require('../models/PaymentEntry');
 
 class MembershipService {
+  static paymentEntryModes = new Set(['cash', 'upi', 'card', 'online', 'manual', 'waived']);
+
+  static paidMembershipRequestTypes = new Set(['new_membership', 'renewal', 'upgrade', 'downgrade']);
+
   static isPopulatedRef(value) {
     return Boolean(
       value &&
@@ -63,7 +67,7 @@ class MembershipService {
       manualOverridePolicy: rules.manualOverridePolicy || 'owner_only',
       paymentModesAllowed: Array.isArray(rules.paymentModesAllowed)
         ? rules.paymentModesAllowed
-        : ['cash', 'upi', 'card', 'online', 'manual'],
+        : ['cash', 'upi', 'card', 'online', 'manual', 'waived'],
     };
   }
 
@@ -169,6 +173,7 @@ class MembershipService {
     override = {},
   }) {
     const amountPaid = requestPayments.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+    const paymentWaived = this.isPaymentWaived(request);
     const creditAmount = this.computeProrationCredit(
       currentMembership,
       currentTemplate,
@@ -184,15 +189,27 @@ class MembershipService {
     const expectedAmount = hasManualAmount && Number.isFinite(normalizedManualAmount)
       ? Number(Math.max(0, normalizedManualAmount).toFixed(2))
       : this.computeExpectedAmount(request, targetTemplate);
-    const remainingAmount = Number(Math.max(0, expectedAmount - creditAmount - amountPaid).toFixed(2));
+    const remainingAmount = paymentWaived
+      ? 0
+      : Number(Math.max(0, expectedAmount - creditAmount - amountPaid).toFixed(2));
 
     return {
       expectedAmount,
       amountPaid: Number(amountPaid.toFixed(2)),
       creditedAmount: Number(creditAmount.toFixed(2)),
       remainingAmount,
-      paymentStatusDecision: remainingAmount <= 0 ? 'paid' : amountPaid > 0 ? 'payment_under_review' : 'unpaid',
+      paymentStatusDecision: paymentWaived
+        ? 'waived'
+        : remainingAmount <= 0 ? 'paid' : amountPaid > 0 ? 'payment_under_review' : 'unpaid',
     };
+  }
+
+  static isPaymentWaived(request) {
+    return (
+      request?.paymentMode === 'waived' ||
+      request?.paymentStatus === 'waived' ||
+      request?.paymentStatusDecision === 'waived'
+    );
   }
 
   static async findPaymentConflicts(gymId, request, paymentSummary) {
@@ -351,12 +368,16 @@ class MembershipService {
 
     if (
       paymentSummary.remainingAmount > 0 &&
-      ['new_membership', 'renewal', 'upgrade', 'downgrade'].includes(request.requestType)
+      this.paidMembershipRequestTypes.has(request.requestType) &&
+      !this.isPaymentWaived(request) &&
+      !override.allowPendingPayment
     ) {
-      warnings.push(
+      blockers.push(
         this.buildWarning(
           'payment_remaining',
-          `Payment still pending: ${paymentSummary.remainingAmount.toFixed(2)}`,
+          `Payment still pending: ${paymentSummary.remainingAmount.toFixed(2)}. Verify payment before approval.`,
+          'error',
+          true,
         ),
       );
     }
@@ -394,7 +415,11 @@ class MembershipService {
   }
 
   static normalizePaymentEntryMode(mode) {
-    return ['cash', 'upi'].includes(mode) ? mode : 'cash';
+    const normalizedMode = String(mode || '').trim().toLowerCase();
+    if (!this.paymentEntryModes.has(normalizedMode)) {
+      throw new Error('Unsupported payment mode');
+    }
+    return normalizedMode;
   }
 
   static async ensureRequestPaymentEntry(request, adminId) {
@@ -413,7 +438,7 @@ class MembershipService {
 
     const template = await this.resolveTemplateRef(request.targetMembershipTemplateId);
 
-    const amount = Number(template?.price || 0);
+    const amount = request.paymentMode === 'waived' ? 0 : Number(template?.price || 0);
     const mode = this.normalizePaymentEntryMode(request.paymentMode);
 
     return PaymentEntry.create({
@@ -669,6 +694,9 @@ class MembershipService {
       ? 'upgrade'
       : 'downgrade';
     const previewOverride = { ...options };
+    if (options.paymentStatus !== 'paid') {
+      previewOverride.allowPendingPayment = true;
+    }
 
     if (
       options.flowType === 'manual_change' &&
@@ -888,7 +916,7 @@ class MembershipService {
         override: options,
       });
 
-      if (decisionPreview.blockers.length && !options.overrideReason) {
+      if (decisionPreview.blockers.length) {
         throw new Error(decisionPreview.blockers.map((item) => item.message).join(' | '));
       }
 
@@ -943,7 +971,7 @@ class MembershipService {
         nextRenewalDate,
         activatedAt: decisionPreview.action === 'queue_after_current' ? null : new Date(),
         approvedBy: adminId,
-        paymentStatus: 'paid',
+        paymentStatus: decisionPreview.paymentSummary.paymentStatusDecision === 'waived' ? 'waived' : 'paid',
         paymentMethod: request.paymentMode,
         paymentReference: request.paymentReference || '',
         notes: request.memberNote,
@@ -956,7 +984,11 @@ class MembershipService {
       });
 
       await membership.save();
-      if (decisionPreview.paymentSummary.amountPaid <= 0 && decisionPreview.paymentSummary.expectedAmount > 0) {
+      if (
+        membership.paymentStatus === 'paid' &&
+        decisionPreview.paymentSummary.amountPaid <= 0 &&
+        decisionPreview.paymentSummary.expectedAmount > 0
+      ) {
         await this.createMembershipPaymentEntry(
           membership,
           decisionPreview.paymentSummary.expectedAmount - decisionPreview.paymentSummary.creditedAmount,

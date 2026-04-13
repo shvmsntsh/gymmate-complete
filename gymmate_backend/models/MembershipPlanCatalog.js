@@ -31,6 +31,11 @@ const membershipPlanCatalogSchema = new mongoose.Schema(
       min: 1,
       max: 730,
     },
+    price: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     includedServices: {
       type: [String],
       default: [],

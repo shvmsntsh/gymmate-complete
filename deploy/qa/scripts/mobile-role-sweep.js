@@ -1,276 +1,226 @@
-const { chromium } = require('/tmp/gymmate-qa/node_modules/playwright');
 const fs = require('fs');
 const path = require('path');
+const { chromium, devices } = require('playwright');
 
-const chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const MOBILE_BASE = process.env.GYMMATE_MOBILE_BASE || 'http://127.0.0.1:58967';
+const API_BASE = process.env.GYMMATE_API_BASE || 'http://127.0.0.1:5050';
 const outDir = '/Users/shivamsantosh/gymmate_mvp/deploy/qa/screenshots';
 fs.mkdirSync(outDir, { recursive: true });
 
-const APP_URL = process.env.APP_URL || 'http://127.0.0.1:8090';
-const API_URL = process.env.API_URL || 'http://127.0.0.1:5050';
-
-const qaRoles = {
-  owner: {
-    email: 'qa_owner_iron@gymmate.local',
-    password: 'QaOwner123!',
-    nav: [
-      { name: 'dashboard', x: 65, y: 790 },
-      { name: 'invites', x: 195, y: 790 },
-      { name: 'profile', x: 325, y: 790 },
-    ],
-  },
-  trainer: {
-    email: 'qa_trainer_iron@gymmate.local',
-    password: 'QaTrainer123!',
-    nav: [
-      { name: 'dashboard', x: 65, y: 790 },
-      { name: 'trainees', x: 195, y: 790 },
-      { name: 'profile', x: 325, y: 790 },
-    ],
-  },
-  member: {
-    email: 'qa_member_iron@gymmate.local',
-    password: 'QaMember123!',
-    nav: [
-      { name: 'dashboard', x: 39, y: 790 },
-      { name: 'progress', x: 117, y: 790 },
-      { name: 'plan', x: 195, y: 790 },
-      { name: 'coach', x: 273, y: 790 },
-      { name: 'profile', x: 351, y: 790 },
-    ],
-  },
-  admin: {
-    email: 'qa_superadmin@gymmate.local',
-    password: 'QaAdmin123!',
-    nav: [
-      { name: 'dashboard', x: 65, y: 790 },
-      { name: 'invites', x: 195, y: 790 },
-      { name: 'profile', x: 325, y: 790 },
-    ],
-  },
-};
-
-const demoRoles = {
+const roles = {
   owner: {
     email: 'demo_owner_iron@gymmate.local',
     password: 'DemoOwner123!',
-    nav: qaRoles.owner.nav,
+    tabs: ['dashboard', 'invites', 'profile'],
   },
   trainer: {
     email: 'demo_trainer_iron@gymmate.local',
     password: 'DemoTrainer123!',
-    nav: qaRoles.trainer.nav,
+    tabs: ['dashboard', 'clients', 'messages', 'profile'],
   },
   member: {
     email: 'demo_member_iron@gymmate.local',
     password: 'DemoMember123!',
-    nav: qaRoles.member.nav,
+    tabs: ['dashboard', 'plan', 'coach', 'profile'],
   },
   admin: {
     email: 'demo_admin@gymmate.local',
     password: 'DemoAdmin123!',
-    nav: qaRoles.admin.nav,
+    tabs: ['dashboard', 'invites', 'profile'],
   },
 };
 
-const roles = process.env.ACCOUNT_SET === 'demo' ? demoRoles : qaRoles;
+function sanitizeErrorText(value) {
+  return String(value || '')
+    .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[redacted-jwt]')
+    .replace(/"token"\s*:\s*"[^"]+"/gi, '"token":"[redacted]"')
+    .replace(/"password"\s*:\s*"[^"]+"/gi, '"password":"[redacted]"')
+    .slice(0, 500);
+}
 
-function attachConsole(page, bucket) {
-  page.on('console', (msg) => {
-    const type = msg.type();
-    if (type === 'error' || type === 'warning') {
-      bucket.push(`[${type}] ${msg.text()}`);
-    }
-  });
-  page.on('pageerror', (err) => {
-    bucket.push(`[pageerror] ${err.message}`);
-  });
+function safeError(message, pathname, status) {
+  const sanitized = sanitizeErrorText(message);
+  return status ? `${pathname} -> ${status}: ${sanitized}` : sanitized;
+}
+
+function joinUrl(base, route = '') {
+  const normalizedBase = String(base || '').replace(/\/$/, '');
+  const normalizedRoute = String(route || '').replace(/^\//, '');
+  return normalizedRoute ? `${normalizedBase}/${normalizedRoute}` : normalizedBase;
+}
+
+async function apiJson(pathname, options = {}) {
+  const res = await fetch(`${API_BASE}${pathname}`, options);
+  const text = await res.text();
+  const json = JSON.parse(text);
+  if (!res.ok) {
+    throw new Error(safeError(JSON.stringify(json), pathname, res.status));
+  }
+  return json;
 }
 
 async function login(email, password) {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
+  return apiJson('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-  const body = await response.json();
-  if (!response.ok) {
-    throw new Error(`Login failed for ${email}: ${body.message || response.status}`);
+}
+
+async function getBranding(gymId) {
+  if (!gymId) return {};
+  try {
+    return await apiJson(`/api/gym/branding/${gymId}`);
+  } catch {
+    return {};
   }
-  return body;
+}
+
+async function setMobileSession(page, payload, route = '') {
+  const user = {
+    ...payload.user,
+    role: payload.user.normalizedRole || payload.user.role,
+    normalizedRole: payload.user.normalizedRole || payload.user.role,
+  };
+  const branding = await getBranding(user.gymId);
+
+  await page.goto(joinUrl(MOBILE_BASE, route), { waitUntil: 'networkidle' });
+  await page.evaluate(async ({ token, user, branding }) => {
+    const toB64 = (bytes) => {
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+      }
+      return btoa(binary);
+    };
+
+    const getKey = async () => {
+      const publicKeyName = 'FlutterSecureStorage';
+      const existing = localStorage.getItem(publicKeyName);
+      if (existing) {
+        const raw = Uint8Array.from(atob(existing), (c) => c.charCodeAt(0));
+        return crypto.subtle.importKey(
+          'raw',
+          raw,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['encrypt', 'decrypt'],
+        );
+      }
+
+      const generated = await crypto.subtle.generateKey(
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt'],
+      );
+      const raw = new Uint8Array(await crypto.subtle.exportKey('raw', generated));
+      localStorage.setItem(publicKeyName, toB64(raw));
+      return crypto.subtle.importKey(
+        'raw',
+        raw,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt'],
+      );
+    };
+
+    const writeSecure = async (key, value) => {
+      const cryptoKey = await getKey();
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const encrypted = new Uint8Array(
+        await crypto.subtle.encrypt(
+          { name: 'AES-GCM', iv },
+          cryptoKey,
+          new TextEncoder().encode(value),
+        ),
+      );
+      localStorage.setItem(`FlutterSecureStorage.${key}`, `${toB64(iv)}.${toB64(encrypted)}`);
+    };
+
+    localStorage.clear();
+    const entries = {
+      user_token: token,
+      user_data: JSON.stringify(user),
+      user_id: user.id || '',
+      user_role: user.normalizedRole || user.role || '',
+      user_name: user.name || '',
+      user_email: user.email || '',
+      gym_name: user.gymName || '',
+      has_completed_onboarding: String(Boolean(user.hasCompletedOnboarding ?? true)),
+      avatar_path: user.avatarPath || '',
+      branding_data: JSON.stringify(branding || {}),
+    };
+
+    for (const [key, value] of Object.entries(entries)) {
+      await writeSecure(key, String(value ?? ''));
+    }
+  }, { token: payload.token, user, branding });
+
+  await page.reload({ waitUntil: 'networkidle' });
 }
 
 async function screenshot(page, name) {
   await page.screenshot({ path: path.join(outDir, name), fullPage: true });
 }
 
-async function clickSubmitCluster(page) {
-  const points = [
-    [195, 590],
-    [195, 575],
-    [195, 605],
-    [170, 590],
-    [220, 590],
-  ];
-
-  for (const [x, y] of points) {
-    await page.mouse.click(x, y);
-    await page.waitForTimeout(500);
-  }
-}
-
-async function tapNavTarget(page, x, y) {
-  const points = [
-    [x, y],
-    [x, y - 8],
-    [x, y + 8],
-  ];
-
-  for (const [px, py] of points) {
-    await page.touchscreen.tap(px, py);
-    await page.waitForTimeout(350);
-  }
-
-  await page.mouse.click(x, y);
-  await page.waitForTimeout(1200);
+function attachConsole(page, bucket) {
+  page.on('console', (msg) => {
+    if (msg.type() === 'error' || msg.type() === 'warning') {
+      bucket.push(sanitizeErrorText(`[${msg.type()}] ${msg.text()}`));
+    }
+  });
+  page.on('pageerror', (err) => {
+    bucket.push(sanitizeErrorText(`[pageerror] ${err.message}`));
+  });
 }
 
 async function runRole(roleName, creds) {
-  const browser = await chromium.launch({
-    headless: true,
-    executablePath: chromePath,
-  });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    isMobile: true,
-    hasTouch: true,
-    deviceScaleFactor: 2,
+    ...devices['iPhone 14 Pro Max'],
   });
-
   const page = await context.newPage();
   const errors = [];
-  const loginTraffic = [];
   attachConsole(page, errors);
-  page.on('request', (req) => {
-    if (req.url().includes('/api/auth/login')) {
-      loginTraffic.push({ type: 'request', postData: req.postData() });
-    }
-  });
-  page.on('response', async (res) => {
-    if (res.url().includes('/api/auth/login')) {
-      loginTraffic.push({
-        type: 'response',
-        status: res.status(),
-        body: await res.text(),
-      });
-    }
-  });
 
-  await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2600);
-  await page.touchscreen.tap(195, 705);
-  await page.waitForTimeout(1600);
-  await page.touchscreen.tap(190, 345);
-  await page.keyboard.type(creds.email);
-  await page.waitForTimeout(300);
-  await page.touchscreen.tap(190, 433);
-  await page.keyboard.type(creds.password);
-  await page.waitForTimeout(300);
-  await clickSubmitCluster(page);
-  await page.waitForTimeout(5200);
-  await screenshot(page, `mobile-${roleName}-dashboard-sweep.png`);
+  const session = await login(creds.email, creds.password);
+  const shots = [];
 
-  const shots = [`mobile-${roleName}-dashboard-sweep.png`];
-
-  for (const item of creds.nav.slice(1)) {
-    await tapNavTarget(page, item.x, item.y);
-    const file = `mobile-${roleName}-${item.name}-sweep.png`;
+  for (const tab of creds.tabs) {
+    const route = tab === 'dashboard' ? '' : `?tab=${tab}`;
+    await setMobileSession(page, session, route);
+    await page.waitForTimeout(tab === 'dashboard' && roleName === 'admin' ? 9000 : 6500);
+    const file = `mobile-${roleName}-${tab}-sweep.png`;
     await screenshot(page, file);
     shots.push(file);
   }
 
-  const storage = await page.evaluate(() => ({
-    keys: Object.keys(localStorage),
-    role: localStorage.getItem('user_role'),
-    gymName: localStorage.getItem('gym_name'),
+  const sessionState = await page.evaluate(() => ({
+    hasSecureToken: Boolean(localStorage.getItem('FlutterSecureStorage.user_token')),
+    hasSecureUserData: Boolean(localStorage.getItem('FlutterSecureStorage.user_data')),
+    hasBrandingData: Boolean(localStorage.getItem('FlutterSecureStorage.branding_data')),
   }));
 
   await browser.close();
 
   return {
     role: roleName,
-    email: creds.email,
-    url: APP_URL,
+    mobileBase: MOBILE_BASE,
     screenshots: shots,
-    errors,
-    loginTraffic,
-    storage,
-  };
-}
-
-async function runLoginForm(roleName, email, password) {
-  const browser = await chromium.launch({
-    headless: true,
-    executablePath: chromePath,
-  });
-  const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    isMobile: true,
-    hasTouch: true,
-    deviceScaleFactor: 2,
-  });
-  const page = await context.newPage();
-  const errors = [];
-  attachConsole(page, errors);
-
-  await page.goto(APP_URL, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2600);
-  await page.touchscreen.tap(195, 705);
-  await page.waitForTimeout(1600);
-  await screenshot(page, `mobile-${roleName}-login-before-sweep.png`);
-
-  await page.touchscreen.tap(190, 345);
-  await page.keyboard.type(email);
-  await page.waitForTimeout(300);
-  await page.touchscreen.tap(190, 433);
-  await page.keyboard.type(password);
-  await screenshot(page, `mobile-${roleName}-login-filled-sweep.png`);
-
-  await clickSubmitCluster(page);
-  await page.waitForTimeout(4200);
-  await screenshot(page, `mobile-${roleName}-login-result-sweep.png`);
-
-  const storage = await page.evaluate(() => ({
-    role: localStorage.getItem('user_role'),
-    hasToken: Boolean(localStorage.getItem('user_token')),
-    gymName: localStorage.getItem('gym_name'),
-  }));
-
-  await browser.close();
-
-  return {
-    role: roleName,
-    screenshots: [
-      `mobile-${roleName}-login-before-sweep.png`,
-      `mobile-${roleName}-login-filled-sweep.png`,
-      `mobile-${roleName}-login-result-sweep.png`,
-    ],
-    errors,
-    storage,
+    errors: errors.map(sanitizeErrorText),
+    loginSucceeded: Boolean(session?.token),
+    sessionState,
   };
 }
 
 (async () => {
   const report = {
-    appUrl: APP_URL,
-    apiUrl: API_URL,
+    mobileBase: MOBILE_BASE,
+    apiBase: API_BASE,
     generatedAt: new Date().toISOString(),
-    formLogins: {},
     roles: {},
   };
-
-  report.formLogins.owner = await runLoginForm('owner', roles.owner.email, roles.owner.password);
-  report.formLogins.member = await runLoginForm('member', roles.member.email, roles.member.password);
 
   for (const [roleName, creds] of Object.entries(roles)) {
     report.roles[roleName] = await runRole(roleName, creds);

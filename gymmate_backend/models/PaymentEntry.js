@@ -21,7 +21,7 @@ const paymentEntrySchema = new mongoose.Schema(
     },
     membershipRequestId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'MembershipRequest',
+      ref: 'MembershipChangeRequest',
       default: null,
     },
     amount: {
@@ -31,7 +31,7 @@ const paymentEntrySchema = new mongoose.Schema(
     },
     mode: {
       type: String,
-      enum: ['cash', 'upi'],
+      enum: ['cash', 'upi', 'card', 'online', 'manual', 'waived'],
       required: true,
     },
     reference: {
