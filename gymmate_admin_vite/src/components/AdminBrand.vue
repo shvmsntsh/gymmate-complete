@@ -1,5 +1,15 @@
 <template>
-  <div class="admin-brand" :class="[toneClass, { 'admin-brand--compact': compact }]">
+  <div
+    class="admin-brand"
+    :class="[
+      toneClass,
+      {
+        'admin-brand--compact': compact,
+        'admin-brand--custom-logo': showLogo,
+        'admin-brand--has-wordmark': showWordmark,
+      },
+    ]"
+  >
     <div
       v-if="!hideGlyph"
       class="admin-brand__glyph"
@@ -131,6 +141,7 @@ function handleWordmarkError() {
 .admin-brand__glyph--logo {
   overflow: hidden;
   padding: 0;
+  background: transparent;
 }
 
 .admin-brand__glyph--mark {
@@ -140,14 +151,14 @@ function handleWordmarkError() {
 .admin-brand__logo {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
 .admin-brand__wordmark {
   width: auto;
-  height: 42px;
-  max-width: 170px;
+  height: clamp(28px, 3.2vw, 42px);
+  max-width: min(170px, 42vw);
   object-fit: contain;
   display: block;
 }
@@ -157,7 +168,12 @@ function handleWordmarkError() {
 }
 
 .admin-brand--compact .admin-brand__wordmark {
-  height: 34px;
-  max-width: 148px;
+  height: clamp(26px, 3vw, 34px);
+  max-width: min(148px, 38vw);
+}
+
+.admin-brand--custom-logo .admin-brand__glyph {
+  background: transparent;
+  box-shadow: none;
 }
 </style>

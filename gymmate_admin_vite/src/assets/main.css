@@ -190,6 +190,10 @@ a {
   border-radius: 14px;
 }
 
+.admin-brand--has-wordmark .admin-brand__glyph {
+  display: none;
+}
+
 .admin-theme-toggle,
 .admin-nav-link,
 .admin-logout-btn {
@@ -1025,9 +1029,16 @@ a {
   .admin-shell__eyebrow,
   .admin-shell__nav-label,
   .admin-shell__sidebar-footer,
-  .admin-shell__collapse,
   .admin-shell__sidebar .admin-brand__copy {
     display: none;
+  }
+
+  .admin-shell__collapse {
+    display: inline-grid;
+  }
+
+  .admin-shell__sidebar .admin-brand--has-wordmark .admin-brand__glyph {
+    display: grid;
   }
 
   .admin-shell__nav-item {
@@ -1148,6 +1159,14 @@ a {
   .admin-shell .admin-shell__sidebar-footer,
   .admin-shell .admin-shell__sidebar .admin-brand__copy {
     display: block;
+  }
+
+  .admin-shell .admin-shell__sidebar .admin-brand--has-wordmark .admin-brand__glyph {
+    display: none;
+  }
+
+  .admin-shell__collapse {
+    display: inline-grid;
   }
 
   .admin-shell__nav-item {
