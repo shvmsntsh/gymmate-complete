@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:admin": "VITE_PUBLIC_BASE=/admin/ VITE_API_BASE_URL= vite build",
     "preview": "vite preview"
   },
   "dependencies": {
