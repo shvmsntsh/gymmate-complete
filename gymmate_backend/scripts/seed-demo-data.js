@@ -8,6 +8,10 @@ const Gym = require('../models/Gym');
 const { InviteCode } = require('../models/InviteCode');
 const MealPlan = require('../models/mealPlan');
 const WorkoutPlan = require('../models/workoutPlan');
+const MembershipTemplate = require('../models/MembershipTemplate');
+const MemberMembership = require('../models/MemberMembership');
+const MembershipChangeRequest = require('../models/MembershipChangeRequest');
+const MembershipAuditLog = require('../models/MembershipAuditLog');
 const mealPlans = require(path.join(__dirname, '..', 'seed', 'seed_mealPlans.json'));
 const workoutPlans = require(path.join(__dirname, '..', 'seed', 'seed_workoutPlans.json'));
 
@@ -145,6 +149,15 @@ async function deleteExistingDemoData() {
 
   const gyms = await Gym.find({ gymName: { $in: demoGymNames } }).select('_id');
   const gymIds = gyms.map((gym) => gym._id);
+  
+  const users = await User.find({ 
+    $or: [
+      { email: { $in: demoEmails } },
+      { phone_number: { $in: demoPhones } },
+      ...(gymIds.length ? [{ gymId: { $in: gymIds } }] : []),
+    ]
+  }).select('_id');
+  const userIds = users.map(u => u._id);
 
   await InviteCode.deleteMany({
     $or: [
@@ -153,6 +166,12 @@ async function deleteExistingDemoData() {
       ...(gymIds.length ? [{ gymId: { $in: gymIds } }] : []),
     ],
   });
+
+  if (userIds.length > 0) {
+    await MemberMembership.deleteMany({ memberId: { $in: userIds } });
+    await MembershipChangeRequest.deleteMany({ memberId: { $in: userIds } });
+    await MembershipAuditLog.deleteMany({ memberId: { $in: userIds } });
+  }
 
   await User.deleteMany({
     $or: [
@@ -288,6 +307,266 @@ async function seedDemoData() {
     ...onboardingBundle(),
   });
 
+  const ironTemplates = await MembershipTemplate.insertMany([
+    {
+      gymId: iron.gym._id,
+      createdBy: iron.owner._id,
+      name: 'Trial Pass',
+      shortDescription: '7-day access to try everything',
+      fullDescription: 'Get full access to gym facilities, classes, and trainer support for one week.',
+      durationDays: 7,
+      price: 0,
+      joiningFee: 0,
+      renewalLeadDays: 3,
+      active: true,
+      visibleToMembers: true,
+      sortOrder: 1,
+      upgradeRank: 0,
+      category: 'trial',
+      includedFeatures: {
+        gymAccess: true,
+        classAccess: false,
+        trainerSupport: true,
+        dietSupport: false,
+        biometricAccess: false,
+        lockerAccess: false,
+        guestPasses: 0,
+      },
+      availableAddOns: {
+        personalTraining: false,
+        dietPlan: false,
+      },
+      rules: {
+        canUpgrade: true,
+        canDowngrade: false,
+        canFreeze: false,
+        freezeLimitDays: 0,
+        requiresOwnerApproval: false,
+        prorationMode: 'none',
+        paymentModesAllowed: ['cash', 'upi', 'card', 'online', 'manual'],
+      },
+    },
+    {
+      gymId: iron.gym._id,
+      createdBy: iron.owner._id,
+      name: 'Monthly Basic',
+      shortDescription: 'Essential gym access',
+      fullDescription: 'Perfect for getting started. Includes gym access and locker.',
+      durationDays: 30,
+      price: 1500,
+      joiningFee: 500,
+      renewalLeadDays: 7,
+      active: true,
+      visibleToMembers: true,
+      sortOrder: 2,
+      upgradeRank: 1,
+      category: 'monthly',
+      includedFeatures: {
+        gymAccess: true,
+        classAccess: false,
+        trainerSupport: false,
+        dietSupport: false,
+        biometricAccess: true,
+        lockerAccess: true,
+        guestPasses: 0,
+      },
+      availableAddOns: {
+        personalTraining: true,
+        dietPlan: true,
+      },
+      rules: {
+        canUpgrade: true,
+        canDowngrade: false,
+        canFreeze: true,
+        freezeLimitDays: 15,
+        requiresOwnerApproval: true,
+        prorationMode: 'credit_remaining_days',
+        paymentModesAllowed: ['cash', 'upi', 'card', 'online', 'manual'],
+      },
+    },
+    {
+      gymId: iron.gym._id,
+      createdBy: iron.owner._id,
+      name: 'Monthly Premium',
+      shortDescription: 'Full access with classes',
+      fullDescription: 'Everything in Basic plus class access and trainer consultations.',
+      durationDays: 30,
+      price: 2500,
+      joiningFee: 500,
+      renewalLeadDays: 7,
+      active: true,
+      visibleToMembers: true,
+      sortOrder: 3,
+      upgradeRank: 2,
+      category: 'monthly',
+      includedFeatures: {
+        gymAccess: true,
+        classAccess: true,
+        trainerSupport: true,
+        dietSupport: false,
+        biometricAccess: true,
+        lockerAccess: true,
+        guestPasses: 2,
+      },
+      availableAddOns: {
+        personalTraining: true,
+        dietPlan: true,
+      },
+      rules: {
+        canUpgrade: true,
+        canDowngrade: true,
+        canFreeze: true,
+        freezeLimitDays: 15,
+        requiresOwnerApproval: true,
+        prorationMode: 'credit_remaining_days',
+        paymentModesAllowed: ['cash', 'upi', 'card', 'online', 'manual'],
+      },
+    },
+    {
+      gymId: iron.gym._id,
+      createdBy: iron.owner._id,
+      name: 'Quarterly Pro',
+      shortDescription: 'Best value for serious members',
+      fullDescription: '3 months of full access with personal training sessions included.',
+      durationDays: 90,
+      price: 6000,
+      joiningFee: 300,
+      renewalLeadDays: 14,
+      active: true,
+      visibleToMembers: true,
+      sortOrder: 4,
+      upgradeRank: 3,
+      category: 'quarterly',
+      includedFeatures: {
+        gymAccess: true,
+        classAccess: true,
+        trainerSupport: true,
+        dietSupport: true,
+        biometricAccess: true,
+        lockerAccess: true,
+        guestPasses: 5,
+      },
+      availableAddOns: {
+        personalTraining: true,
+        dietPlan: true,
+      },
+      rules: {
+        canUpgrade: true,
+        canDowngrade: false,
+        canFreeze: true,
+        freezeLimitDays: 30,
+        requiresOwnerApproval: true,
+        prorationMode: 'credit_remaining_days',
+        paymentModesAllowed: ['cash', 'upi', 'card', 'online', 'manual'],
+      },
+    },
+    {
+      gymId: iron.gym._id,
+      createdBy: iron.owner._id,
+      name: 'Yearly Elite',
+      shortDescription: 'Ultimate membership',
+      fullDescription: 'Full year of premium access with all benefits and priority support.',
+      durationDays: 365,
+      price: 20000,
+      joiningFee: 0,
+      renewalLeadDays: 30,
+      active: true,
+      visibleToMembers: true,
+      sortOrder: 5,
+      upgradeRank: 4,
+      category: 'yearly',
+      includedFeatures: {
+        gymAccess: true,
+        classAccess: true,
+        trainerSupport: true,
+        dietSupport: true,
+        biometricAccess: true,
+        lockerAccess: true,
+        guestPasses: 12,
+      },
+      availableAddOns: {
+        personalTraining: true,
+        dietPlan: true,
+      },
+      rules: {
+        canUpgrade: false,
+        canDowngrade: false,
+        canFreeze: true,
+        freezeLimitDays: 60,
+        requiresOwnerApproval: true,
+        prorationMode: 'restart_full_term',
+        paymentModesAllowed: ['cash', 'upi', 'card', 'online', 'manual'],
+      },
+    },
+  ]);
+
+  const ironBasicTemplate = ironTemplates.find(
+    (template) => template.name === 'Monthly Basic',
+  );
+  const ironPremiumTemplate = ironTemplates.find(
+    (template) => template.name === 'Monthly Premium',
+  );
+
+  const ironMembershipStartDate = new Date();
+  ironMembershipStartDate.setDate(ironMembershipStartDate.getDate() - 20);
+
+  const ironMembershipEndDate = new Date(ironMembershipStartDate);
+  ironMembershipEndDate.setDate(
+    ironMembershipEndDate.getDate() + (ironBasicTemplate?.durationDays || 30),
+  );
+
+  const ironNextRenewalDate = new Date(ironMembershipEndDate);
+  ironNextRenewalDate.setDate(
+    ironNextRenewalDate.getDate() - (ironBasicTemplate?.renewalLeadDays || 7),
+  );
+
+  await MemberMembership.create({
+    gymId: iron.gym._id,
+    memberId: member._id,
+    membershipTemplateId: ironBasicTemplate?._id || null,
+    status: 'active',
+    startDate: ironMembershipStartDate,
+    endDate: ironMembershipEndDate,
+    nextRenewalDate: ironNextRenewalDate,
+    activatedAt: ironMembershipStartDate,
+    approvedBy: iron.owner._id,
+    paymentStatus: 'paid',
+    paymentMethod: 'cash',
+    paymentReference: 'DEMO-CASH-001',
+    notes: 'Seeded active membership for lifecycle verification.',
+    entitlementsSnapshot: {
+      gymAccess: true,
+      classAccess: false,
+      trainerSupport: false,
+      dietSupport: false,
+      biometricAccess: true,
+      lockerAccess: true,
+      guestPasses: 0,
+      personalTraining: false,
+      dietPlan: false,
+    },
+    isFrozen: false,
+    isActiveBaseMembership: true,
+  });
+
+  if (ironPremiumTemplate) {
+    await MembershipChangeRequest.create({
+      gymId: iron.gym._id,
+      memberId: member._id,
+      requestType: 'upgrade',
+      targetMembershipTemplateId: ironPremiumTemplate._id,
+      requestedAddOns: {
+        personalTraining: false,
+        dietPlan: false,
+      },
+      paymentMode: 'upi',
+      paymentReference: '',
+      memberNote: 'Interested in classes and trainer support.',
+      status: 'submitted',
+      requestedAt: new Date(),
+    });
+  }
+
   const flowMember = await User.create({
     name: 'Demo Member Skye',
     email: DEMO_USERS.memberFlow.email,
@@ -323,6 +602,35 @@ async function seedDemoData() {
         split: 'Full Body',
       },
     }),
+  });
+
+  await MemberMembership.create({
+    gymId: flow.gym._id,
+    memberId: flowMember._id,
+    membershipTemplateId: null,
+    status: 'pending_payment',
+    startDate: null,
+    endDate: null,
+    nextRenewalDate: null,
+    activatedAt: null,
+    approvedBy: iron.owner._id,
+    paymentStatus: 'unpaid',
+    paymentMethod: null,
+    paymentReference: '',
+    notes: '',
+    entitlementsSnapshot: {
+      gymAccess: false,
+      classAccess: false,
+      trainerSupport: false,
+      dietSupport: false,
+      biometricAccess: false,
+      lockerAccess: false,
+      guestPasses: 0,
+      personalTraining: false,
+      dietPlan: false,
+    },
+    isFrozen: false,
+    isActiveBaseMembership: false,
   });
 
   const admin = await User.create({

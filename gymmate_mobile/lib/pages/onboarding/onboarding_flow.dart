@@ -80,9 +80,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                         'Build your rhythm',
                         style: theme.textTheme.titleLarge,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
-                        'A few quick choices now shape a calmer training day later.',
+                        'Quick choices now make training easier later.',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -90,8 +92,8 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
+                    horizontal: 12,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface.withValues(alpha: 0.84),
@@ -106,11 +108,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 14),
             Expanded(
               child: EditorialSurface(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                radius: 34,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                radius: 30,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -121,12 +123,12 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                         minHeight: 8,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Text(
                       _stepCaption(_currentStep),
                       style: theme.textTheme.bodySmall,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 14),
                     Expanded(
                       child: IndexedStack(index: _currentStep, children: steps),
                     ),
@@ -143,19 +145,19 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   String _stepCaption(int step) {
     switch (step) {
       case 0:
-        return 'Start with the basics so your plan feels personal from day one.';
+        return 'Start with the basics.';
       case 1:
-        return 'Profile details help pace your training and recovery more clearly.';
+        return 'Profile details shape your plan.';
       case 2:
-        return 'Pick the outcomes you care about most right now.';
+        return 'Choose your main goals.';
       case 3:
-        return 'Your food style helps GymMate keep nutrition guidance practical.';
+        return 'Set your food style.';
       case 4:
-        return 'Workout habits turn your plan into something that fits your week.';
+        return 'Match the plan to your week.';
       case 5:
-        return 'A first challenge gives your training momentum an easy starting line.';
+        return 'Pick a trackable challenge.';
       case 6:
-        return 'Everything is ready. Save your setup and head into your dashboard.';
+        return 'Save and enter your dashboard.';
       default:
         return '';
     }

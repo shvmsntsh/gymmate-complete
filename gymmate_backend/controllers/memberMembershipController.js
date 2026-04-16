@@ -1,5 +1,6 @@
 const MembershipService = require('../services/membershipService');
 const { hasRole } = require('../utils/roles');
+const receiptController = require('./receiptController');
 
 function serializeMembershipWithEntitlements(membership) {
   if (!membership) return null;
@@ -166,3 +167,5 @@ exports.getMyEntitlements = async (req, res) => {
     return res.status(500).json({ message: 'Error fetching entitlements' });
   }
 };
+
+exports.getMyMembershipReceipt = receiptController.getMyMembershipReceipt;

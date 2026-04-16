@@ -45,9 +45,8 @@ class DietStep extends StatelessWidget {
 
         return OnboardingStepLayout(
           eyebrow: 'Nutrition',
-          title: 'Set a food style that fits your actual week.',
-          subtitle:
-              'The goal here is guidance you can keep. Choose the meal style that feels most natural for your routine.',
+          title: 'Set a food style that fits your week.',
+          subtitle: 'Choose the meal style that feels most natural.',
           body: Column(
             children: dietTypes
                 .map(

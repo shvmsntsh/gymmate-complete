@@ -28,6 +28,11 @@ const routes = [
     component: () => import("../views/ForgotPassword.vue"),
   },
   {
+    path: "/receipt/:token",
+    name: "PublicReceipt",
+    component: () => import("../views/PublicReceipt.vue"),
+  },
+  {
     path: "/dashboard",
     name: "AdminDashboard",
     component: () => import("../views/AdminDashboard.vue"),

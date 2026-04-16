@@ -94,6 +94,10 @@ exports.requestPasswordReset = async (req, res) => {
         subject: 'Your GymMate password reset code',
         html: resetEmailHtml(code, ttlMinutes),
         text: resetEmailText(code, ttlMinutes),
+      }).then((result) => {
+        if (result?.skipped) {
+          throw new Error('Password reset email skipped because email provider is not configured.');
+        }
       });
     } catch (error) {
       console.error('Password reset email failed:', error);

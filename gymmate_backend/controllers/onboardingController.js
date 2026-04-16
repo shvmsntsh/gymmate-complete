@@ -1,4 +1,9 @@
 const User = require('../models/User');
+const DailyPlanLog = require('../models/DailyPlanLog');
+const {
+  dateKeyFromDate,
+  deriveChallengeSummary,
+} = require('../services/coachingService');
 
 // 🎮 Gamification Constants
 const XP_REWARDS = {
@@ -55,6 +60,23 @@ const BADGES = {
     iconUrl: '/badges/onboarding_complete.png'
   }
 };
+
+async function loadChallengeLogs(user) {
+  const startDate = user?.firstChallenge?.startDate
+    ? new Date(user.firstChallenge.startDate)
+    : null;
+  const threshold = startDate && !Number.isNaN(startDate.getTime())
+    ? startDate
+    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const startKey = dateKeyFromDate(threshold);
+
+  return DailyPlanLog.find({
+    memberId: user._id,
+    date: { $gte: startKey },
+  })
+    .sort({ date: 1 })
+    .lean();
+}
 
 // 📊 Get Onboarding Status
 const getOnboardingStatus = async (req, res) => {
@@ -410,6 +432,15 @@ const getUserProgress = async (req, res) => {
     await user.save();
 
     // Send the complete data
+    const challengeSummary = deriveChallengeSummary(
+      user.firstChallenge,
+      await loadChallengeLogs(user),
+      user.dietPreferences?.dailyMeals || 3,
+    );
+    const baseFirstChallenge =
+      typeof user.firstChallenge?.toObject === 'function'
+        ? user.firstChallenge.toObject()
+        : user.firstChallenge || {};
     const progressData = {
       totalXP: user.gamification.totalXP,
       level: user.gamification.level,
@@ -421,7 +452,11 @@ const getUserProgress = async (req, res) => {
       fitnessGoals: user.fitnessGoals,
       dietPreferences: user.dietPreferences,
       workoutHabits: user.workoutHabits,  // Send workoutHabits instead of workoutPreferences
-      firstChallenge: user.firstChallenge,
+      firstChallenge: {
+        ...baseFirstChallenge,
+        ...challengeSummary,
+      },
+      challenge: challengeSummary,
     };
     
     console.log('📊 Sending progress data:', JSON.stringify(progressData, null, 2));

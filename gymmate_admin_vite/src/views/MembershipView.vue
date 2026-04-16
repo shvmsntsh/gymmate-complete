@@ -43,6 +43,7 @@
           @cancel="cancelMembership"
           @assign="openAssignDialog"
           @view="openMembershipReview"
+          @receipt="openReceiptLink"
         />
       </v-window-item>
 
@@ -327,7 +328,16 @@
                     No recorded payments for this membership yet.
                   </v-alert>
                 </div>
-                <div class="d-flex justify-end mt-4">
+                <div class="d-flex justify-end mt-4 ga-2 flex-wrap">
+                  <v-btn
+                    v-if="membership.paymentStatus === 'paid'"
+                    color="secondary"
+                    variant="tonal"
+                    size="small"
+                    @click="openReceiptLink(membership)"
+                  >
+                    Receipt
+                  </v-btn>
                   <v-btn
                     v-if="membership.status !== 'canceled' && membership.status !== 'rejected'"
                     color="primary"
@@ -670,6 +680,7 @@ const paymentMethodOptions = [
   { title: "Waived", value: "waived" },
 ];
 const paymentMethodValues = paymentMethodOptions.map((item) => item.value);
+const publicBasePath = String(import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 
 const approveModeOptions = [
   { title: "Start Now", value: "force_immediate" },
@@ -777,6 +788,35 @@ const adjustSummaryCopy = computed(() => {
 
 function showSnackbar(message, color = "success") {
   snackbar.value = { show: true, message, color };
+}
+
+function receiptUrl(receipt) {
+  const path = receipt?.publicPath || (receipt?.publicToken ? `/receipt/${receipt.publicToken}` : "");
+  if (!path || typeof window === "undefined") return "";
+  return `${window.location.origin}${publicBasePath}${path}`;
+}
+
+async function openReceiptLink(membership) {
+  if (!membership?.id) {
+    showSnackbar("Membership not found for receipt", "error");
+    return;
+  }
+
+  processing.value = true;
+  try {
+    const res = await apiFetch(`/api/owner/memberships/${membership.id}/receipt`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Receipt not found");
+    const url = receiptUrl(data.receipt);
+    if (!url) throw new Error("Receipt link is unavailable");
+    await navigator.clipboard?.writeText(url);
+    window.open(url, "_blank", "noopener,noreferrer");
+    showSnackbar("Receipt link copied and opened");
+  } catch (err) {
+    showSnackbar(err.message || "Could not open receipt", "error");
+  } finally {
+    processing.value = false;
+  }
 }
 
 function logout() {

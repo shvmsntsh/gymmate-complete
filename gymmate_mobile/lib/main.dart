@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
@@ -11,12 +12,15 @@ import 'package:gymmate_mobile/pages/gym_member_dashboard_page.dart';
 import 'package:gymmate_mobile/pages/splash_screen.dart';
 import 'package:gymmate_mobile/themes/app_colors.dart';
 import 'package:gymmate_mobile/themes/app_theme.dart';
+import 'pages/member_membership_page.dart';
 import 'pages/plan_page.dart';
 import 'pages/coach_page.dart';
 import 'pages/gym_trainer_dashboard_page.dart';
 import 'pages/branding_settings_page.dart';
 import 'pages/gamified_entry_screen.dart';
-import 'pages/trainees_list_page.dart';
+import 'pages/required_password_setup_page.dart';
+import 'pages/trainer_clients_page.dart';
+import 'pages/trainer_messages_page.dart';
 import 'package:gymmate_mobile/utils/branding_utils.dart';
 import 'package:gymmate_mobile/utils/role_utils.dart';
 
@@ -181,6 +185,7 @@ class MainNavigationScaffold extends StatefulWidget {
 
 class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   late int _selectedIndex;
+  bool _appliedWebTabOverride = false;
 
   @override
   void initState() {
@@ -201,9 +206,9 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final isGymMember = isMemberRole(userRole);
     int maxIndex = 0;
     if (isGymMember) {
-      maxIndex = 3; // Dashboard, Plan, Coach, Profile
+      maxIndex = 4; // Dashboard, Plan, Membership, Coach, Profile
     } else if (isTrainerRole(userRole)) {
-      maxIndex = 2; // Dashboard, Trainees, Profile
+      maxIndex = 3; // Dashboard, Clients, Messages, Profile
     } else {
       maxIndex = 2; // Dashboard, Invites, Profile
     }
@@ -212,6 +217,57 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         _selectedIndex = 0;
       });
     }
+    if (!_appliedWebTabOverride && kIsWeb) {
+      final requestedIndex = _tabIndexFromQuery(userRole);
+      if (requestedIndex != null && requestedIndex <= maxIndex) {
+        _appliedWebTabOverride = true;
+        setState(() {
+          _selectedIndex = requestedIndex;
+        });
+      } else {
+        _appliedWebTabOverride = true;
+      }
+    }
+  }
+
+  int? _tabIndexFromQuery(String userRole) {
+    final tab = Uri.base.queryParameters['tab']?.trim().toLowerCase();
+    if (tab == null || tab.isEmpty) return null;
+    if (isTrainerRole(userRole)) {
+      switch (tab) {
+        case 'dashboard':
+          return 0;
+        case 'clients':
+          return 1;
+        case 'messages':
+          return 2;
+        case 'profile':
+          return 3;
+      }
+    }
+    if (isMemberRole(userRole)) {
+      switch (tab) {
+        case 'dashboard':
+          return 0;
+        case 'plan':
+          return 1;
+        case 'membership':
+          return 2;
+        case 'coach':
+          return 3;
+        case 'profile':
+          return 4;
+      }
+    }
+    switch (tab) {
+      case 'dashboard':
+        return 0;
+      case 'invites':
+        return 1;
+      case 'profile':
+        return 2;
+    }
+    return null;
   }
 
   Widget _buildRoleLogoAndSignature(String userRole, BuildContext context) {
@@ -221,8 +277,14 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final logoScale = (branding['logoScale'] as num?)?.toDouble() ?? 1;
     final logoOffsetX = (branding['logoOffsetX'] as num?)?.toDouble() ?? 0;
     final logoOffsetY = (branding['logoOffsetY'] as num?)?.toDouble() ?? 0;
+    final rawBrandName =
+        authProvider.gymName ?? branding['gymName']?.toString() ?? '';
+    final normalizedBrandName = rawBrandName.trim();
     final brandName =
-        authProvider.gymName ?? branding['gymName']?.toString() ?? 'GymMate';
+        normalizedBrandName.isEmpty ||
+            normalizedBrandName.toLowerCase() == 'null'
+        ? 'GymMate'
+        : normalizedBrandName;
     String asset = '';
     String label = '';
     switch (userRole) {
@@ -251,15 +313,49 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final textColor = theme.brightness == Brightness.dark
         ? Colors.white
         : Colors.black87;
-    final subtitleColor = theme.brightness == Brightness.dark
-        ? Colors.white.withValues(alpha: 0.82)
-        : Colors.black87.withValues(alpha: 0.72);
-    return Padding(
-      padding: const EdgeInsets.only(left: 6, top: 4, bottom: 4, right: 12),
-      child: SizedBox(
-        height: 60,
+
+    final hasGymLogo = logoUrl != null && logoUrl.isNotEmpty;
+    final hasAsset = asset.isNotEmpty;
+
+    if (hasGymLogo) {
+      return Row(
+        children: [
+          SizedBox(
+            height: 56,
+            width: 56,
+            child: BrandingLogoFrame(
+              source: logoUrl,
+              size: 56,
+              scale: logoScale,
+              offsetX: logoOffsetX,
+              offsetY: logoOffsetY,
+              borderRadius: BorderRadius.circular(12),
+              fallback: hasAsset
+                  ? Image.asset(asset, fit: BoxFit.contain)
+                  : const SizedBox.shrink(),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              brandName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (hasAsset) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 12),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
               width: 50,
@@ -276,21 +372,7 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
                 ),
               ),
               padding: const EdgeInsets.all(5),
-              child: logoUrl != null && logoUrl.isNotEmpty
-                  ? BrandingLogoFrame(
-                      source: logoUrl,
-                      size: 40,
-                      scale: logoScale,
-                      offsetX: logoOffsetX,
-                      offsetY: logoOffsetY,
-                      borderRadius: BorderRadius.circular(10),
-                      fallback: asset.isNotEmpty
-                          ? Image.asset(asset, fit: BoxFit.contain)
-                          : const SizedBox.shrink(),
-                    )
-                  : asset.isNotEmpty
-                  ? Image.asset(asset, fit: BoxFit.contain)
-                  : const SizedBox.shrink(),
+              child: Image.asset(asset, fit: BoxFit.contain),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -317,7 +399,9 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
                     borderColor: theme.brightness == Brightness.dark
                         ? const Color(0xFF5B4C26)
                         : const Color(0xFFE9D2A4),
-                    textColor: subtitleColor,
+                    textColor: theme.brightness == Brightness.dark
+                        ? Colors.white.withValues(alpha: 0.82)
+                        : Colors.black87.withValues(alpha: 0.72),
                     iconColor: theme.colorScheme.primary,
                   ),
                 ],
@@ -325,8 +409,10 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
             ),
           ],
         ),
-      ),
-    );
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   void setTab(int index) {
@@ -347,6 +433,11 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final isAdmin = isAdminRole(userRole);
     final isGymOwner = isOwnerRole(userRole);
     final brandingReady = isBrandingComplete(authProvider.branding);
+    final hasPassword = authProvider.userData?['hasPassword'] == true;
+
+    if (!hasPassword) {
+      return const RequiredPasswordSetupPage();
+    }
 
     // Check for onboarding status for gym members
     if (isGymMember && !authProvider.hasCompletedOnboarding) {
@@ -385,9 +476,16 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     if (isTrainerRole(userRole)) {
       destinations.add(
         const _NavDestination(
-          label: 'Trainees',
+          label: 'Clients',
           icon: Icons.people_alt_outlined,
-          page: TraineesListPage(),
+          page: TrainerClientsPage(),
+        ),
+      );
+      destinations.add(
+        const _NavDestination(
+          label: 'Messages',
+          icon: Icons.forum_outlined,
+          page: TrainerMessagesPage(),
         ),
       );
     }
@@ -399,6 +497,13 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
           label: 'Plan',
           icon: Icons.calendar_today_rounded,
           page: PlanPage(),
+        ),
+      );
+      destinations.add(
+        const _NavDestination(
+          label: 'Membership',
+          icon: Icons.card_membership_rounded,
+          page: MemberMembershipPage(),
         ),
       );
       destinations.add(
@@ -549,85 +654,118 @@ class _ModernBottomNavigationBar extends StatelessWidget {
       colors: [theme.colorScheme.secondary, theme.colorScheme.primary],
     );
 
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: shellColor,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: shellBorder),
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor,
-            blurRadius: 26,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Row(
-        children: List.generate(destinations.length, (index) {
-          final destination = destinations[index];
-          final isSelected = index == currentIndex;
-          final foreground = isSelected
-              ? AppColors.textOnAccent
-              : theme.colorScheme.onSurface.withValues(alpha: 0.64);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compactNav = constraints.maxWidth < 560;
 
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(22),
-                  onTap: () => onTap(index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
-                    height: 56,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isSelected ? 12 : 10,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: isSelected ? selectedGradient : null,
-                      color: isSelected
-                          ? null
-                          : theme.colorScheme.surfaceContainerHighest
-                                .withValues(alpha: isDark ? 0.14 : 0.0),
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(destination.icon, color: foreground, size: 22),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 180),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
-                          child: isSelected
-                              ? Padding(
-                                  key: ValueKey(destination.label),
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Text(
-                                    destination.label,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      color: foreground,
-                                      fontWeight: FontWeight.w800,
-                                    ),
+        return Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: shellColor,
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: shellBorder),
+            boxShadow: [
+              BoxShadow(
+                color: shadowColor,
+                blurRadius: 26,
+                offset: const Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Row(
+            children: List.generate(destinations.length, (index) {
+              final destination = destinations[index];
+              final isSelected = index == currentIndex;
+              final foreground = isSelected
+                  ? AppColors.textOnAccent
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.64);
+
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Tooltip(
+                    message: destination.label,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(22),
+                        onTap: () => onTap(index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 260),
+                          curve: Curves.easeOutCubic,
+                          height: 56,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compactNav
+                                ? 0
+                                : isSelected
+                                ? 12
+                                : 10,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: isSelected ? selectedGradient : null,
+                            color: isSelected
+                                ? null
+                                : theme.colorScheme.surfaceContainerHighest
+                                      .withValues(alpha: isDark ? 0.14 : 0.0),
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                          child: compactNav
+                              ? Center(
+                                  child: Icon(
+                                    destination.icon,
+                                    color: foreground,
+                                    size: 22,
                                   ),
                                 )
-                              : const SizedBox.shrink(),
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      destination.icon,
+                                      color: foreground,
+                                      size: 22,
+                                    ),
+                                    AnimatedSwitcher(
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
+                                      switchInCurve: Curves.easeOut,
+                                      switchOutCurve: Curves.easeIn,
+                                      child: isSelected
+                                          ? Padding(
+                                              key: ValueKey(destination.label),
+                                              padding: const EdgeInsets.only(
+                                                left: 8,
+                                              ),
+                                              child: Text(
+                                                destination.label,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: theme
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      color: foreground,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ],
+                                ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }),
-      ),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 }

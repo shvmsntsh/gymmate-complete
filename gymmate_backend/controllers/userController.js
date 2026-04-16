@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { normalizeRole, hasRole } = require('../utils/roles');
 const { getJwtSecret } = require('../utils/jwt');
+const { normalizeIndianPhone, indianPhoneVariants, looksLikeEmail } = require('../utils/phone');
 
 const VALID_AVATARS = new Set([
   'assets/avatars/o_m_1.png',
@@ -45,7 +46,18 @@ function normalizeInviteCode(value) {
 }
 
 function normalizePhone(value) {
-  return String(value || '').trim();
+  return normalizeIndianPhone(value) || String(value || '').trim();
+}
+
+function isValidEmail(value) {
+  return /^\S+@\S+\.\S+$/.test(String(value || '').trim());
+}
+
+function memberPhoneQuery(value) {
+  const variants = indianPhoneVariants(value);
+  return variants.length
+    ? { phone_number: { $in: variants } }
+    : { phone_number: String(value || '').trim() };
 }
 
 async function getGymNameForUser(user) {
@@ -197,6 +209,22 @@ exports.register = async (req, res) => {
   if (!code) {
     return res.status(400).json({ message: 'Invalid or already used invitation code.' });
   }
+  if (code.role === 'gym_member') {
+    if (!isValidEmail(email)) {
+      await InviteCode.updateOne(
+        { _id: code._id, usedBy: null },
+        { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+      );
+      return res.status(400).json({ message: 'A valid email is required for members.' });
+    }
+    if (!normalizeIndianPhone(phone_number)) {
+      await InviteCode.updateOne(
+        { _id: code._id, usedBy: null },
+        { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+      );
+      return res.status(400).json({ message: 'A valid Indian phone number is required for members.' });
+    }
+  }
   if (code.gymId) {
     const inviteGym = await Gym.findById(code.gymId).select('status');
     if (!inviteGym || inviteGym.status !== 'active') {
@@ -213,8 +241,8 @@ exports.register = async (req, res) => {
     registered: false,
     $or: [
       { inviteCodeId: code._id },
-      ...(phone_number ? [{ phone_number }] : []),
-      ...(code.inviteePhone ? [{ phone_number: code.inviteePhone }] : []),
+      ...(phone_number ? [memberPhoneQuery(phone_number)] : []),
+      ...(code.inviteePhone ? [memberPhoneQuery(code.inviteePhone)] : []),
     ],
   };
   if (code.gymId) placeholderQuery.gymId = code.gymId;
@@ -299,14 +327,17 @@ exports.register = async (req, res) => {
  */
 exports.login = async (req, res) => {
   try {
-    let { email, password } = req.body;
+    let { email, identifier, password } = req.body;
+    let loginIdentifier = identifier || email;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required.' });
+    if (!loginIdentifier || !password) {
+      return res.status(400).json({ message: 'Email or phone and password are required.' });
     }
 
-    email = email.trim().toLowerCase();
-    const user = await User.findOne({ email });
+    loginIdentifier = String(loginIdentifier).trim();
+    const user = looksLikeEmail(loginIdentifier)
+      ? await User.findOne({ email: normalizeEmail(loginIdentifier) })
+      : await User.findOne(memberPhoneQuery(loginIdentifier));
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
@@ -360,7 +391,7 @@ exports.quickLogin = async (req, res) => {
   const invite = await InviteCode.findOneAndUpdate(
     {
       code: accessCode,
-      inviteePhone: phone_number,
+      inviteePhone: { $in: indianPhoneVariants(phone_number) },
       role: { $in: ['gym_member', 'gym_trainer'] },
       used: false,
     },

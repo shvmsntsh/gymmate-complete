@@ -109,6 +109,15 @@
             Manage
           </v-btn>
           <v-btn
+            v-if="item.paymentStatus === 'paid'"
+            size="small"
+            variant="text"
+            color="secondary"
+            @click="$emit('receipt', item)"
+          >
+            Receipt
+          </v-btn>
+          <v-btn
             v-if="item.isFrozen"
             size="small"
             variant="text"
@@ -142,7 +151,7 @@ const props = defineProps({
   assignableMemberCount: { type: Number, default: 0 },
 });
 
-const emit = defineEmits(["unfreeze", "cancel", "assign", "view"]);
+const emit = defineEmits(["unfreeze", "cancel", "assign", "view", "receipt"]);
 
 const search = ref("");
 
@@ -222,7 +231,7 @@ function formatDate(date) {
 }
 
 .section-copy {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--v-theme-on-surface), 0.72);
   margin-top: 8px;
 }
 

@@ -1,5 +1,6 @@
 const MembershipService = require('../services/membershipService');
 const { hasRole, hasPermission } = require('../utils/roles');
+const receiptController = require('./receiptController');
 
 function canManageTemplates(user) {
   return hasPermission(user, 'membership.plans.manage') || hasRole(user, ['owner']);
@@ -621,7 +622,7 @@ exports.getAllMemberMemberships = async (req, res) => {
     const MemberMembership = require('../models/MemberMembership');
     
     const memberships = await MemberMembership.find({ gymId: req.user.gymId })
-      .populate('memberId', 'name email')
+      .populate('memberId', 'name email phone_number')
       .populate('membershipTemplateId', 'name category')
       .lean();
 
@@ -632,6 +633,7 @@ exports.getAllMemberMemberships = async (req, res) => {
           id: m.memberId._id,
           name: m.memberId.name,
           email: m.memberId.email,
+          phone_number: m.memberId.phone_number,
         } : null,
         template: m.membershipTemplateId ? {
           id: m.membershipTemplateId._id,
@@ -705,6 +707,8 @@ exports.assignMembership = async (req, res) => {
       .json({ message: error.message || 'Error assigning membership' });
   }
 };
+
+exports.getMembershipReceipt = receiptController.getOwnerMembershipReceipt;
 
 exports.adjustMembership = async (req, res) => {
   if (!canManageMembers(req.user)) {

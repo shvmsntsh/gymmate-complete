@@ -60,9 +60,8 @@ class WorkoutStep extends StatelessWidget {
 
         return OnboardingStepLayout(
           eyebrow: 'Workout',
-          title: 'Lock in the rhythm that matches your week.',
-          subtitle:
-              'Training works better when it fits your real schedule. Share your pace, timing, and favorite styles here.',
+          title: 'Set the workout rhythm for your week.',
+          subtitle: 'Share your pace, timing, and favorite styles.',
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -159,14 +158,18 @@ class WorkoutStep extends StatelessWidget {
                 'Workouts per week',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-              Slider(
-                value: workoutsPerWeek.clamp(1, 14),
-                min: 1,
-                max: 14,
-                divisions: 13,
-                label: '${workoutsPerWeek.round()}',
-                onChanged: (value) =>
-                    updateHabits({'workoutsPerWeek': value.round()}),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(6, (index) {
+                  final value = index + 2;
+                  return OnboardingChipOption(
+                    label: '${value}x',
+                    selected: workoutsPerWeek.round() == value,
+                    onTap: () => updateHabits({'workoutsPerWeek': value}),
+                  );
+                }),
               ),
             ],
           ),

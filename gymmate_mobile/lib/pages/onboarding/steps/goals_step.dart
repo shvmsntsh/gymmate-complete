@@ -56,9 +56,8 @@ class GoalsStep extends StatelessWidget {
       builder: (context, provider, _) {
         return OnboardingStepLayout(
           eyebrow: 'Goals',
-          title: 'Choose the outcomes you want your training to chase.',
-          subtitle:
-              'Pick one or more priorities. GymMate will keep these goals at the center of your plan and progress story.',
+          title: 'Choose the outcomes you want most.',
+          subtitle: 'Pick one or more priorities for your plan.',
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -83,7 +82,7 @@ class GoalsStep extends StatelessWidget {
                           )
                           .toList(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Column(
                 children: goals
                     .map(

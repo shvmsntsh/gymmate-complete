@@ -334,6 +334,10 @@ a {
   display: none;
 }
 
+.admin-shell__collapse {
+  transition: transform 0.2s ease;
+}
+
 .admin-shell__sidebar,
 .admin-shell__header {
   padding: 22px;
@@ -1016,7 +1020,12 @@ a {
 
 @media (max-width: 1180px) {
   .admin-shell {
-    grid-template-columns: 86px minmax(0, 1fr);
+    grid-template-columns: 260px minmax(0, 1fr);
+    transition: grid-template-columns 0.2s ease;
+  }
+
+  .admin-shell--collapsed {
+    grid-template-columns: 72px minmax(0, 1fr);
   }
 
   .admin-shell__sidebar {
@@ -1024,12 +1033,20 @@ a {
     position: sticky;
     top: 20px;
     padding: 16px;
+    transition: width 0.2s ease, transform 0.2s ease;
   }
 
   .admin-shell__eyebrow,
   .admin-shell__nav-label,
   .admin-shell__sidebar-footer,
   .admin-shell__sidebar .admin-brand__copy {
+    display: block;
+  }
+
+  .admin-shell--collapsed .admin-shell__eyebrow,
+  .admin-shell--collapsed .admin-shell__nav-label,
+  .admin-shell--collapsed .admin-shell__sidebar-footer,
+  .admin-shell--collapsed .admin-shell__sidebar .admin-brand__copy {
     display: none;
   }
 
@@ -1041,7 +1058,16 @@ a {
     display: grid;
   }
 
+  .admin-shell--collapsed .admin-shell__sidebar .admin-brand--has-wordmark .admin-brand__glyph {
+    display: grid;
+  }
+
   .admin-shell__nav-item {
+    justify-content: flex-start;
+    padding: 0.75rem 1rem;
+  }
+
+  .admin-shell--collapsed .admin-shell__nav-item {
     justify-content: center;
     padding: 0.75rem;
   }
@@ -1149,9 +1175,10 @@ a {
     display: block;
     position: fixed;
     z-index: 29;
-    inset: 0;
+    inset: 0 0 0 min(316px, calc(100vw - 32px));
     border: 0;
     background: rgba(0, 0, 0, 0.42);
+    transition: opacity 0.2s ease;
   }
 
   .admin-shell .admin-shell__eyebrow,
@@ -1166,7 +1193,7 @@ a {
   }
 
   .admin-shell__collapse {
-    display: inline-grid;
+    display: none;
   }
 
   .admin-shell__nav-item {

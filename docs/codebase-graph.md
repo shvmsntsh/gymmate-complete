@@ -1,6 +1,6 @@
 # Codebase Graph
 
-Generated: 2026-04-06T09:41:37.848Z
+Generated: 2026-04-12T19:02:08.291Z
 
 Branch: `codex/mvp-figma`
 
@@ -12,14 +12,14 @@ Persistent repo knowledge graph for low-token code navigation. Use it to identif
 
 ## Workspace Summary
 
-- `gymmate_backend`: 51 files, 107 import edges
-- `gymmate_admin_vite`: 22 files, 40 import edges
-- `gymmate_mobile`: 65 files, 136 import edges
+- `gymmate_backend`: 72 files, 172 import edges
+- `gymmate_admin_vite`: 32 files, 63 import edges
+- `gymmate_mobile`: 79 files, 158 import edges
 
 ## Incremental Status
 
-- Reparsed files this run: 0
-- Reused unchanged files: 138
+- Reparsed files this run: 2
+- Reused unchanged files: 181
 
 ## System Graph
 
@@ -44,6 +44,10 @@ graph TD
   Admin --> admin_RegisterGym["RegisterGym: /register-gym"]
   Admin --> admin_AdminDashboard["AdminDashboard: /dashboard"]
   Admin --> admin_ManageMembers["ManageMembers: /manage-members"]
+  Admin --> admin_Announcements["Announcements: /announcements"]
+  Admin --> admin_MembershipOps["MembershipOps: /membership"]
+  Admin --> admin_Membership["Membership: /membership-new"]
+  Admin --> admin_BiometricOps["BiometricOps: /biometric"]
   Admin --> admin_Invites["Invites: /invites"]
   Admin --> admin_BrandingStudio["BrandingStudio: /branding"]
   Admin --> admin_GymDetails["GymDetails: /gyms/:id"]
@@ -65,6 +69,9 @@ graph TD
 - `GET /me` -> gymmate_backend/controllers/userController.js#getUserProfile
 - `GET /user-details-for-plan` -> gymmate_backend/controllers/userController.js#getUserDetailsForPlan
 - `POST /complete-onboarding` -> gymmate_backend/controllers/userController.js#updateOnboardingStatus
+- `POST /profile-picture` -> gymmate_backend/controllers/userController.js#uploadProfilePicture
+- `POST /password` -> gymmate_backend/controllers/userController.js#changePassword
+- `POST /avatar` -> gymmate_backend/controllers/userController.js#updateAvatar
 - `GET /dashboard/stats` -> gymmate_backend/controllers/userController.js#getDashboardStats
 - `GET /members/categorized` -> gymmate_backend/controllers/userController.js#getCategorizedMembers
 
@@ -88,8 +95,8 @@ graph TD
 
 - Route file: `gymmate_backend/routes/inviteRoutes.js`
 - `POST /register` -> req.body, res.status
-- `POST /validate` -> req.body, console.error
-- `POST /verify` -> req.body, console.error
+- `POST /validate` -> validateInviteCode
+- `POST /verify` -> validateInviteCode
 - `POST /generate` -> authenticateToken, inviteControllerGenerate
 - `GET /list` -> authenticateToken, listInviteCodes
 - `POST /superadmin-create` -> req.user, req.user, console.error
@@ -128,6 +135,15 @@ graph TD
 - `GET /progress-participation` -> gymmate_backend/controllers/userController.js#getMemberProgressParticipation
 - `GET /plan-log` -> gymmate_backend/controllers/planLogController.js#getMemberPlanLog
 - `PUT /plan-log` -> gymmate_backend/controllers/planLogController.js#upsertMemberPlanLog
+- `GET /announcements` -> gymmate_backend/controllers/operationsController.js#listMemberAnnouncements
+- `POST /announcements/:deliveryId/read` -> gymmate_backend/controllers/operationsController.js#markAnnouncementRead
+- `GET /membership` -> gymmate_backend/controllers/operationsController.js#getMemberMembershipSummary
+- `POST /membership-requests` -> gymmate_backend/controllers/operationsController.js#createMemberMembershipRequest
+- `GET /assets/:assetId` -> gymmate_backend/controllers/operationsController.js#streamMediaAssetForMember
+- `GET /me/membership` -> gymmate_backend/controllers/memberMembershipController.js#getMyMembership
+- `GET /me/membership-options` -> gymmate_backend/controllers/memberMembershipController.js#getMyMembershipOptions
+- `GET /me/membership-requests` -> gymmate_backend/controllers/memberMembershipController.js#getMyMembershipRequests
+- `POST /me/membership-requests` -> gymmate_backend/controllers/memberMembershipController.js#createMembershipRequest
 
 ### /api/trainer
 
@@ -145,6 +161,14 @@ graph TD
 - `GET /assignments` -> gymmate_backend/controllers/ownerController.js#getOwnerAssignments
 - `PUT /members/:memberId/assignment` -> gymmate_backend/controllers/ownerController.js#assignMemberToTrainer
 - `DELETE /members/:memberId/assignment` -> gymmate_backend/controllers/ownerController.js#unassignMember
+- `GET /member-workspace` -> gymmate_backend/controllers/operationsController.js#getMemberWorkspace
+- `PUT /members/:memberId/membership` -> gymmate_backend/controllers/operationsController.js#assignMemberMembership
+- `GET /announcements` -> gymmate_backend/controllers/operationsController.js#listAnnouncements
+- `POST /announcements` -> gymmate_backend/controllers/operationsController.js#createAnnouncement
+- `GET /assets/:assetId` -> gymmate_backend/controllers/operationsController.js#streamMediaAssetForOwner
+- `GET /membership-plans` -> gymmate_backend/controllers/operationsController.js#listMembershipPlans
+- `POST /membership-plans` -> gymmate_backend/controllers/operationsController.js#upsertMembershipPlan
+- `PUT /membership-plans/:planId` -> gymmate_backend/controllers/operationsController.js#upsertMembershipPlan
 
 ### /api/messages
 
@@ -161,6 +185,10 @@ graph TD
 - `/register-gym` -> `gymmate_admin_vite/src/views/RegisterGym.vue` (RegisterGym)
 - `/dashboard` -> `gymmate_admin_vite/src/views/AdminDashboard.vue` (AdminDashboard)
 - `/manage-members` -> `gymmate_admin_vite/src/views/ManageMembers.vue` (ManageMembers)
+- `/announcements` -> `gymmate_admin_vite/src/views/AnnouncementsView.vue` (Announcements)
+- `/membership` -> `gymmate_admin_vite/src/views/MembershipView.vue` (MembershipOps)
+- `/membership-new` -> `gymmate_admin_vite/src/views/MembershipView.vue` (Membership)
+- `/biometric` -> `gymmate_admin_vite/src/views/BiometricOpsView.vue` (BiometricOps)
 - `/invites` -> `gymmate_admin_vite/src/views/InvitesView.vue` (Invites)
 - `/branding` -> `gymmate_admin_vite/src/views/BrandingStudio.vue` (BrandingStudio)
 - `/gyms/:id` -> `gymmate_admin_vite/src/views/GymDetails.vue` (GymDetails)
@@ -184,8 +212,11 @@ gymmate_backend
 │   ├── authController.js
 │   ├── gymController.js
 │   ├── inviteController.js
+│   ├── memberMembershipController.js
+│   ├── membershipController.js
 │   ├── messageController.js
 │   ├── onboardingController.js
+│   ├── operationsController.js
 │   ├── ownerController.js
 │   ├── planController.js
 │   ├── planLogController.js
@@ -198,12 +229,25 @@ gymmate_backend
 ├── middleware
 │   └── authMiddleware.js
 ├── models
+│   ├── Announcement.js
+│   ├── AnnouncementDelivery.js
+│   ├── AttendanceEvent.js
+│   ├── BiometricIdentity.js
+│   ├── BiometricIntegration.js
 │   ├── Conversation.js
 │   ├── DailyPlanLog.js
 │   ├── Gym.js
 │   ├── InviteCode.js
 │   ├── mealPlan.js
+│   ├── MediaAsset.js
+│   ├── MemberMembership.js
+│   ├── MembershipAuditLog.js
+│   ├── MembershipChangeRequest.js
+│   ├── MembershipPlanCatalog.js
+│   ├── MembershipRequest.js
+│   ├── MembershipTemplate.js
 │   ├── Message.js
+│   ├── PaymentEntry.js
 │   ├── plan.js
 │   ├── PlanCache.js
 │   ├── TrainerAssignment.js
@@ -227,15 +271,20 @@ gymmate_backend
 │   └── userRoutes.js
 ├── scripts
 │   ├── migrate-default-gym.js
+│   ├── migrate-membership.js
+│   ├── reset-and-seed-test-gym.js
 │   ├── seed-demo-data.js
-│   └── seed-qa-data.js
+│   ├── seed-qa-data.js
+│   └── test-membership-flow.js
 ├── seed
 │   ├── seed_mealPlans.json
 │   ├── seed_workoutPlans.json
 │   └── seedPlans.js
 ├── services
-│   └── coachingService.js
+│   ├── coachingService.js
+│   └── membershipService.js
 ├── utils
+│   ├── jwt.js
 │   └── roles.js
 └── vercel.json
 ```
@@ -257,7 +306,8 @@ gymmate_admin_vite/src
 ├── composables
 │   └── useAdminTheme.js
 ├── lib
-│   └── api.js
+│   ├── api.js
+│   └── date.js
 ├── main.js
 ├── plugins
 │   └── vuetify.js
@@ -266,6 +316,8 @@ gymmate_admin_vite/src
 ├── styles
 └── views
     ├── AdminDashboard.vue
+    ├── AnnouncementsView.vue
+    ├── BiometricOpsView.vue
     ├── BrandingStudio.vue
     ├── GymDetails.vue
     ├── HomePage.vue
@@ -273,6 +325,9 @@ gymmate_admin_vite/src
     ├── Login.vue
     ├── LoginPage.vue
     ├── ManageMembers.vue
+    ├── membership
+    ├── MembershipOpsView.vue
+    ├── MembershipView.vue
     └── RegisterGym.vue
 ```
 
@@ -302,10 +357,14 @@ gymmate_mobile/lib
 │   ├── home_page.dart
 │   ├── invite_code_list_page.dart
 │   ├── login_page.dart
+│   ├── member_membership_page.dart
+│   ├── membership_plans_page.dart
+│   ├── membership_requests_page.dart
 │   ├── onboarding
 │   ├── plan_page.dart
 │   ├── profile_page.dart
 │   ├── quick_join_screen.dart
+│   ├── record_payment_page.dart
 │   ├── register_page.dart
 │   ├── splash_entry_page.dart
 │   ├── splash_screen.dart
@@ -320,14 +379,24 @@ gymmate_mobile/lib
 │   ├── auth_service.dart
 │   ├── coaching_service.dart
 │   ├── invite_service.dart
+│   ├── member_hub_service.dart
+│   ├── member_membership_service.dart
+│   ├── membership_plans_service.dart
+│   ├── membership_requests_service.dart
 │   ├── messaging_service.dart
-│   └── onboarding_service.dart
+│   ├── onboarding_service.dart
+│   └── payments_service.dart
 ├── theme.dart
 ├── themes
 │   ├── app_colors.dart
 │   └── app_theme.dart
 ├── utils
 │   ├── branding_utils.dart
+│   ├── date_format.dart
+│   ├── gallery_picker_io.dart
+│   ├── gallery_picker_stub.dart
+│   ├── gallery_picker_web.dart
+│   ├── gallery_picker.dart
 │   ├── logo_picker_io.dart
 │   ├── logo_picker_stub.dart
 │   ├── logo_picker_web.dart

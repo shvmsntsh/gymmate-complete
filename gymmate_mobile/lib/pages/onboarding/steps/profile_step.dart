@@ -67,9 +67,8 @@ class _ProfileStepState extends State<ProfileStep> {
           key: _formKey,
           child: OnboardingStepLayout(
             eyebrow: 'Profile',
-            title: 'Build a starting point that fits your body.',
-            subtitle:
-                'These details help GymMate tune pacing, recovery, and the way your progress is framed throughout the week.',
+            title: 'Build a starting point for your body.',
+            subtitle: 'These details shape pacing, recovery, and calories.',
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-04-06T09:41:37.848Z",
+  "generatedAt": "2026-04-12T19:02:08.291Z",
   "repo": {
     "branch": "codex/mvp-figma",
     "remote": "https://github.com/shvmsntsh/gymmate-complete.git",
-    "head": "3cc426a7b2b85fa3126a211c8f2e08c9e81d0011"
+    "head": "a868df00240dbe8eb2ac3cc9151e0fd6663484e3"
   },
   "workspaces": [
     {
@@ -28,11 +28,12 @@
           "gymmate_backend/routes/ownerRoutes.js",
           "gymmate_backend/routes/planRoutes.js",
           "gymmate_backend/routes/trainerRoutes.js",
-          "gymmate_backend/routes/userRoutes.js"
+          "gymmate_backend/routes/userRoutes.js",
+          "gymmate_backend/utils/jwt.js"
         ]
       },
-      "fileCount": 51,
-      "edgeCount": 107,
+      "fileCount": 72,
+      "edgeCount": 172,
       "externalImports": [
         "axios",
         "bcrypt",
@@ -55,8 +56,11 @@
         "│   ├── authController.js",
         "│   ├── gymController.js",
         "│   ├── inviteController.js",
+        "│   ├── memberMembershipController.js",
+        "│   ├── membershipController.js",
         "│   ├── messageController.js",
         "│   ├── onboardingController.js",
+        "│   ├── operationsController.js",
         "│   ├── ownerController.js",
         "│   ├── planController.js",
         "│   ├── planLogController.js",
@@ -69,12 +73,25 @@
         "├── middleware",
         "│   └── authMiddleware.js",
         "├── models",
+        "│   ├── Announcement.js",
+        "│   ├── AnnouncementDelivery.js",
+        "│   ├── AttendanceEvent.js",
+        "│   ├── BiometricIdentity.js",
+        "│   ├── BiometricIntegration.js",
         "│   ├── Conversation.js",
         "│   ├── DailyPlanLog.js",
         "│   ├── Gym.js",
         "│   ├── InviteCode.js",
         "│   ├── mealPlan.js",
+        "│   ├── MediaAsset.js",
+        "│   ├── MemberMembership.js",
+        "│   ├── MembershipAuditLog.js",
+        "│   ├── MembershipChangeRequest.js",
+        "│   ├── MembershipPlanCatalog.js",
+        "│   ├── MembershipRequest.js",
+        "│   ├── MembershipTemplate.js",
         "│   ├── Message.js",
+        "│   ├── PaymentEntry.js",
         "│   ├── plan.js",
         "│   ├── PlanCache.js",
         "│   ├── TrainerAssignment.js",
@@ -98,15 +115,20 @@
         "│   └── userRoutes.js",
         "├── scripts",
         "│   ├── migrate-default-gym.js",
+        "│   ├── migrate-membership.js",
+        "│   ├── reset-and-seed-test-gym.js",
         "│   ├── seed-demo-data.js",
-        "│   └── seed-qa-data.js",
+        "│   ├── seed-qa-data.js",
+        "│   └── test-membership-flow.js",
         "├── seed",
         "│   ├── seed_mealPlans.json",
         "│   ├── seed_workoutPlans.json",
         "│   └── seedPlans.js",
         "├── services",
-        "│   └── coachingService.js",
+        "│   ├── coachingService.js",
+        "│   └── membershipService.js",
         "├── utils",
+        "│   ├── jwt.js",
         "│   └── roles.js",
         "└── vercel.json"
       ]
@@ -130,8 +152,8 @@
           "gymmate_admin_vite/src/lib/api.js"
         ]
       },
-      "fileCount": 22,
-      "edgeCount": 40,
+      "fileCount": 32,
+      "edgeCount": 63,
       "externalImports": [
         "vue",
         "vue-router",
@@ -154,7 +176,8 @@
         "├── composables",
         "│   └── useAdminTheme.js",
         "├── lib",
-        "│   └── api.js",
+        "│   ├── api.js",
+        "│   └── date.js",
         "├── main.js",
         "├── plugins",
         "│   └── vuetify.js",
@@ -163,6 +186,8 @@
         "├── styles",
         "└── views",
         "    ├── AdminDashboard.vue",
+        "    ├── AnnouncementsView.vue",
+        "    ├── BiometricOpsView.vue",
         "    ├── BrandingStudio.vue",
         "    ├── GymDetails.vue",
         "    ├── HomePage.vue",
@@ -170,6 +195,9 @@
         "    ├── Login.vue",
         "    ├── LoginPage.vue",
         "    ├── ManageMembers.vue",
+        "    ├── membership",
+        "    ├── MembershipOpsView.vue",
+        "    ├── MembershipView.vue",
         "    └── RegisterGym.vue"
       ]
     },
@@ -197,8 +225,8 @@
           "gymmate_mobile/lib/utils/role_utils.dart"
         ]
       },
-      "fileCount": 65,
-      "edgeCount": 136,
+      "fileCount": 79,
+      "edgeCount": 158,
       "externalImports": [
         "branding_settings_page.dart",
         "dart:async",
@@ -209,15 +237,19 @@
         "gamified_entry_screen.dart",
         "login_page.dart",
         "logo_picker_stub.dart",
+        "membership_plans_page.dart",
+        "membership_requests_page.dart",
         "package:confetti/confetti.dart",
         "package:file_picker/file_picker.dart",
         "package:flutter/foundation.dart",
         "package:flutter/material.dart",
         "package:flutter/services.dart",
         "package:flutter_animate/flutter_animate.dart",
+        "package:flutter_image_compress/flutter_image_compress.dart",
         "package:flutter_secure_storage/flutter_secure_storage.dart",
         "package:flutter_svg/flutter_svg.dart",
         "package:google_fonts/google_fonts.dart",
+        "package:image_picker/image_picker.dart",
         "package:intl/intl.dart",
         "package:provider/provider.dart",
         "package:shared_preferences/shared_preferences.dart",
@@ -225,10 +257,11 @@
         "pages/coach_page.dart",
         "pages/gamified_entry_screen.dart",
         "pages/gym_trainer_dashboard_page.dart",
-        "pages/plan_page.dart",
+        "pages/member_membership_page.dart",
         "pages/trainer_clients_page.dart",
         "pages/trainer_messages_page.dart",
         "quick_join_screen.dart",
+        "record_payment_page.dart",
         "register_page.dart",
         "steps/challenge_step.dart",
         "steps/completion_step.dart",
@@ -262,10 +295,14 @@
         "│   ├── home_page.dart",
         "│   ├── invite_code_list_page.dart",
         "│   ├── login_page.dart",
+        "│   ├── member_membership_page.dart",
+        "│   ├── membership_plans_page.dart",
+        "│   ├── membership_requests_page.dart",
         "│   ├── onboarding",
         "│   ├── plan_page.dart",
         "│   ├── profile_page.dart",
         "│   ├── quick_join_screen.dart",
+        "│   ├── record_payment_page.dart",
         "│   ├── register_page.dart",
         "│   ├── splash_entry_page.dart",
         "│   ├── splash_screen.dart",
@@ -280,14 +317,24 @@
         "│   ├── auth_service.dart",
         "│   ├── coaching_service.dart",
         "│   ├── invite_service.dart",
+        "│   ├── member_hub_service.dart",
+        "│   ├── member_membership_service.dart",
+        "│   ├── membership_plans_service.dart",
+        "│   ├── membership_requests_service.dart",
         "│   ├── messaging_service.dart",
-        "│   └── onboarding_service.dart",
+        "│   ├── onboarding_service.dart",
+        "│   └── payments_service.dart",
         "├── theme.dart",
         "├── themes",
         "│   ├── app_colors.dart",
         "│   └── app_theme.dart",
         "├── utils",
         "│   ├── branding_utils.dart",
+        "│   ├── date_format.dart",
+        "│   ├── gallery_picker_io.dart",
+        "│   ├── gallery_picker_stub.dart",
+        "│   ├── gallery_picker_web.dart",
+        "│   ├── gallery_picker.dart",
         "│   ├── logo_picker_io.dart",
         "│   ├── logo_picker_stub.dart",
         "│   ├── logo_picker_web.dart",
@@ -383,6 +430,42 @@
             {
               "controllerAlias": "userController",
               "action": "updateOnboardingStatus",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/profile-picture",
+          "rawHandler": "userController.uploadProfilePicture",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "uploadProfilePicture",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/password",
+          "rawHandler": "userController.changePassword",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "changePassword",
+              "file": "gymmate_backend/controllers/userController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/avatar",
+          "rawHandler": "userController.updateAvatar",
+          "referencedControllers": [
+            {
+              "controllerAlias": "userController",
+              "action": "updateAvatar",
               "file": "gymmate_backend/controllers/userController.js"
             }
           ]
@@ -537,7 +620,7 @@
         {
           "method": "PUT",
           "path": "/branding",
-          "rawHandler": "authenticateToken, async (req, res) => { try { if (!hasRole(req.user, ['owner', 'admin'])) { return res.status(403).json({ message: 'Forbidden' }",
+          "rawHandler": "authenticateToken, async (req, res) => { try { if (!hasRole(req.user, ['owner'])) { return res.status(403).json({ message: 'Forbidden' }",
           "referencedControllers": [
             {
               "controllerAlias": "req",
@@ -750,36 +833,14 @@
         {
           "method": "POST",
           "path": "/validate",
-          "rawHandler": "async (req, res) => { let { code } = req.body; if (!code) { console.error('❌ Invite code is required'",
-          "referencedControllers": [
-            {
-              "controllerAlias": "req",
-              "action": "body",
-              "file": null
-            },
-            {
-              "controllerAlias": "console",
-              "action": "error",
-              "file": null
-            }
-          ]
+          "rawHandler": "validateInviteCode",
+          "referencedControllers": []
         },
         {
           "method": "POST",
           "path": "/verify",
-          "rawHandler": "async (req, res) => { // Call the same logic as /validate let { code } = req.body; if (!code) { console.error('❌ Invite code is required'",
-          "referencedControllers": [
-            {
-              "controllerAlias": "req",
-              "action": "body",
-              "file": null
-            },
-            {
-              "controllerAlias": "console",
-              "action": "error",
-              "file": null
-            }
-          ]
+          "rawHandler": "validateInviteCode",
+          "referencedControllers": []
         },
         {
           "method": "POST",
@@ -1005,6 +1066,126 @@
               "file": "gymmate_backend/controllers/planLogController.js"
             }
           ]
+        },
+        {
+          "method": "GET",
+          "path": "/announcements",
+          "rawHandler": "operationsController.listMemberAnnouncements",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "listMemberAnnouncements",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/announcements/:deliveryId/read",
+          "rawHandler": "operationsController.markAnnouncementRead",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "markAnnouncementRead",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership",
+          "rawHandler": "operationsController.getMemberMembershipSummary",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "getMemberMembershipSummary",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/membership-requests",
+          "rawHandler": "operationsController.createMemberMembershipRequest",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "createMemberMembershipRequest",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/assets/:assetId",
+          "rawHandler": "operationsController.streamMediaAssetForMember",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "streamMediaAssetForMember",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/me/membership",
+          "rawHandler": "memberMembershipController.getMyMembership",
+          "referencedControllers": [
+            {
+              "controllerAlias": "memberMembershipController",
+              "action": "getMyMembership",
+              "file": "gymmate_backend/controllers/memberMembershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/me/membership-options",
+          "rawHandler": "memberMembershipController.getMyMembershipOptions",
+          "referencedControllers": [
+            {
+              "controllerAlias": "memberMembershipController",
+              "action": "getMyMembershipOptions",
+              "file": "gymmate_backend/controllers/memberMembershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/me/membership-requests",
+          "rawHandler": "memberMembershipController.getMyMembershipRequests",
+          "referencedControllers": [
+            {
+              "controllerAlias": "memberMembershipController",
+              "action": "getMyMembershipRequests",
+              "file": "gymmate_backend/controllers/memberMembershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/me/membership-requests",
+          "rawHandler": "memberMembershipController.createMembershipRequest",
+          "referencedControllers": [
+            {
+              "controllerAlias": "memberMembershipController",
+              "action": "createMembershipRequest",
+              "file": "gymmate_backend/controllers/memberMembershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/me/entitlements",
+          "rawHandler": "memberMembershipController.getMyEntitlements",
+          "referencedControllers": [
+            {
+              "controllerAlias": "memberMembershipController",
+              "action": "getMyEntitlements",
+              "file": "gymmate_backend/controllers/memberMembershipController.js"
+            }
+          ]
         }
       ]
     },
@@ -1125,6 +1306,402 @@
               "file": "gymmate_backend/controllers/ownerController.js"
             }
           ]
+        },
+        {
+          "method": "GET",
+          "path": "/member-workspace",
+          "rawHandler": "operationsController.getMemberWorkspace",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "getMemberWorkspace",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/members/:memberId/membership",
+          "rawHandler": "operationsController.assignMemberMembership",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "assignMemberMembership",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/announcements",
+          "rawHandler": "operationsController.listAnnouncements",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "listAnnouncements",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/announcements",
+          "rawHandler": "operationsController.createAnnouncement",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "createAnnouncement",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/assets/:assetId",
+          "rawHandler": "operationsController.streamMediaAssetForOwner",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "streamMediaAssetForOwner",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership-plans",
+          "rawHandler": "operationsController.listMembershipPlans",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "listMembershipPlans",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/membership-plans",
+          "rawHandler": "operationsController.upsertMembershipPlan",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "upsertMembershipPlan",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/membership-plans/:planId",
+          "rawHandler": "operationsController.upsertMembershipPlan",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "upsertMembershipPlan",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership-requests",
+          "rawHandler": "operationsController.listMembershipRequests",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "listMembershipRequests",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership-requests/:requestId",
+          "rawHandler": "operationsController.getMembershipRequest",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "getMembershipRequest",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/membership-requests/:requestId",
+          "rawHandler": "operationsController.updateMembershipRequest",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "updateMembershipRequest",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/payments",
+          "rawHandler": "operationsController.recordPayment",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "recordPayment",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/biometric/providers",
+          "rawHandler": "operationsController.listBiometricProviders",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "listBiometricProviders",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/biometric/settings",
+          "rawHandler": "operationsController.getBiometricSettings",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "getBiometricSettings",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/biometric/settings",
+          "rawHandler": "operationsController.upsertBiometricSettings",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "upsertBiometricSettings",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/biometric/sync",
+          "rawHandler": "operationsController.syncBiometricPilot",
+          "referencedControllers": [
+            {
+              "controllerAlias": "operationsController",
+              "action": "syncBiometricPilot",
+              "file": "gymmate_backend/controllers/operationsController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership-templates",
+          "rawHandler": "membershipController.getTemplates",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "getTemplates",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/membership-templates",
+          "rawHandler": "membershipController.createTemplate",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "createTemplate",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/membership-templates/:templateId",
+          "rawHandler": "membershipController.updateTemplate",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "updateTemplate",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/membership-templates/:templateId",
+          "rawHandler": "membershipController.deleteTemplate",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "deleteTemplate",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership-requests-new",
+          "rawHandler": "membershipController.getRequests",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "getRequests",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership-requests-new/:requestId",
+          "rawHandler": "membershipController.getRequestById",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "getRequestById",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership-requests-new/:requestId/decision-preview",
+          "rawHandler": "membershipController.getRequestDecisionPreview",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "getRequestDecisionPreview",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/membership-requests-new/:requestId/verify-payment",
+          "rawHandler": "membershipController.verifyPayment",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "verifyPayment",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/membership-requests-new/:requestId/approve",
+          "rawHandler": "membershipController.approveRequest",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "approveRequest",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/membership-requests-new/:requestId/reject",
+          "rawHandler": "membershipController.rejectRequest",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "rejectRequest",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/member-memberships",
+          "rawHandler": "membershipController.getAllMemberMemberships",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "getAllMemberMemberships",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/members/:memberId/memberships",
+          "rawHandler": "membershipController.getMemberMemberships",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "getMemberMemberships",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/members/:memberId/memberships",
+          "rawHandler": "membershipController.assignMembership",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "assignMembership",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/memberships/:membershipId/adjust",
+          "rawHandler": "membershipController.adjustMembership",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "adjustMembership",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/memberships/:membershipId/unfreeze",
+          "rawHandler": "membershipController.unfreezeMembership",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "unfreezeMembership",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/memberships/:membershipId/cancel",
+          "rawHandler": "membershipController.cancelMembership",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "cancelMembership",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/membership-audit-logs",
+          "rawHandler": "membershipController.getAuditLogs",
+          "referencedControllers": [
+            {
+              "controllerAlias": "membershipController",
+              "action": "getAuditLogs",
+              "file": "gymmate_backend/controllers/membershipController.js"
+            }
+          ]
         }
       ]
     },
@@ -1210,6 +1787,26 @@
       "component": "gymmate_admin_vite/src/views/ManageMembers.vue"
     },
     {
+      "path": "/announcements",
+      "name": "Announcements",
+      "component": "gymmate_admin_vite/src/views/AnnouncementsView.vue"
+    },
+    {
+      "path": "/membership",
+      "name": "MembershipOps",
+      "component": "gymmate_admin_vite/src/views/MembershipView.vue"
+    },
+    {
+      "path": "/membership-new",
+      "name": "Membership",
+      "component": "gymmate_admin_vite/src/views/MembershipView.vue"
+    },
+    {
+      "path": "/biometric",
+      "name": "BiometricOps",
+      "component": "gymmate_admin_vite/src/views/BiometricOpsView.vue"
+    },
+    {
       "path": "/invites",
       "name": "Invites",
       "component": "gymmate_admin_vite/src/views/InvitesView.vue"
@@ -1239,8 +1836,11 @@
     ]
   },
   "incremental": {
-    "scannedFiles": 138,
-    "reparsedFiles": [],
+    "scannedFiles": 183,
+    "reparsedFiles": [
+      "gymmate_backend/controllers/membershipController.js",
+      "gymmate_admin_vite/src/views/ManageMembers.vue"
+    ],
     "reusedFiles": [
       "gymmate_backend/.eslintrc.js",
       "gymmate_backend/api/index.js",
@@ -1249,8 +1849,10 @@
       "gymmate_backend/controllers/authController.js",
       "gymmate_backend/controllers/gymController.js",
       "gymmate_backend/controllers/inviteController.js",
+      "gymmate_backend/controllers/memberMembershipController.js",
       "gymmate_backend/controllers/messageController.js",
       "gymmate_backend/controllers/onboardingController.js",
+      "gymmate_backend/controllers/operationsController.js",
       "gymmate_backend/controllers/ownerController.js",
       "gymmate_backend/controllers/planController.js",
       "gymmate_backend/controllers/planLogController.js",
@@ -1260,11 +1862,24 @@
       "gymmate_backend/gyms.json",
       "gymmate_backend/index.js",
       "gymmate_backend/middleware/authMiddleware.js",
+      "gymmate_backend/models/Announcement.js",
+      "gymmate_backend/models/AnnouncementDelivery.js",
+      "gymmate_backend/models/AttendanceEvent.js",
+      "gymmate_backend/models/BiometricIdentity.js",
+      "gymmate_backend/models/BiometricIntegration.js",
       "gymmate_backend/models/Conversation.js",
       "gymmate_backend/models/DailyPlanLog.js",
       "gymmate_backend/models/Gym.js",
       "gymmate_backend/models/InviteCode.js",
+      "gymmate_backend/models/MediaAsset.js",
+      "gymmate_backend/models/MemberMembership.js",
+      "gymmate_backend/models/MembershipAuditLog.js",
+      "gymmate_backend/models/MembershipChangeRequest.js",
+      "gymmate_backend/models/MembershipPlanCatalog.js",
+      "gymmate_backend/models/MembershipRequest.js",
+      "gymmate_backend/models/MembershipTemplate.js",
       "gymmate_backend/models/Message.js",
+      "gymmate_backend/models/PaymentEntry.js",
       "gymmate_backend/models/PlanCache.js",
       "gymmate_backend/models/TrainerAssignment.js",
       "gymmate_backend/models/User.js",
@@ -1285,12 +1900,17 @@
       "gymmate_backend/routes/trainerRoutes.js",
       "gymmate_backend/routes/userRoutes.js",
       "gymmate_backend/scripts/migrate-default-gym.js",
+      "gymmate_backend/scripts/migrate-membership.js",
+      "gymmate_backend/scripts/reset-and-seed-test-gym.js",
       "gymmate_backend/scripts/seed-demo-data.js",
       "gymmate_backend/scripts/seed-qa-data.js",
+      "gymmate_backend/scripts/test-membership-flow.js",
       "gymmate_backend/seed/seedPlans.js",
       "gymmate_backend/seed/seed_mealPlans.json",
       "gymmate_backend/seed/seed_workoutPlans.json",
       "gymmate_backend/services/coachingService.js",
+      "gymmate_backend/services/membershipService.js",
+      "gymmate_backend/utils/jwt.js",
       "gymmate_backend/utils/roles.js",
       "gymmate_backend/vercel.json",
       "gymmate_admin_vite/src/App.vue",
@@ -1303,18 +1923,27 @@
       "gymmate_admin_vite/src/components/StateBlock.vue",
       "gymmate_admin_vite/src/composables/useAdminTheme.js",
       "gymmate_admin_vite/src/lib/api.js",
+      "gymmate_admin_vite/src/lib/date.js",
       "gymmate_admin_vite/src/main.js",
       "gymmate_admin_vite/src/plugins/vuetify.js",
       "gymmate_admin_vite/src/router/index.js",
       "gymmate_admin_vite/src/views/AdminDashboard.vue",
+      "gymmate_admin_vite/src/views/AnnouncementsView.vue",
+      "gymmate_admin_vite/src/views/BiometricOpsView.vue",
       "gymmate_admin_vite/src/views/BrandingStudio.vue",
       "gymmate_admin_vite/src/views/GymDetails.vue",
       "gymmate_admin_vite/src/views/HomePage.vue",
       "gymmate_admin_vite/src/views/InvitesView.vue",
       "gymmate_admin_vite/src/views/Login.vue",
       "gymmate_admin_vite/src/views/LoginPage.vue",
-      "gymmate_admin_vite/src/views/ManageMembers.vue",
+      "gymmate_admin_vite/src/views/MembershipOpsView.vue",
+      "gymmate_admin_vite/src/views/MembershipView.vue",
       "gymmate_admin_vite/src/views/RegisterGym.vue",
+      "gymmate_admin_vite/src/views/membership/MembershipsSection.vue",
+      "gymmate_admin_vite/src/views/membership/PlanEditorForm.vue",
+      "gymmate_admin_vite/src/views/membership/PlansSection.vue",
+      "gymmate_admin_vite/src/views/membership/RequestDetailCard.vue",
+      "gymmate_admin_vite/src/views/membership/RequestsSection.vue",
       "gymmate_mobile/lib/api/api_config.dart",
       "gymmate_mobile/lib/api/api_constants.dart",
       "gymmate_mobile/lib/main.dart",
@@ -1332,6 +1961,9 @@
       "gymmate_mobile/lib/pages/home_page.dart",
       "gymmate_mobile/lib/pages/invite_code_list_page.dart",
       "gymmate_mobile/lib/pages/login_page.dart",
+      "gymmate_mobile/lib/pages/member_membership_page.dart",
+      "gymmate_mobile/lib/pages/membership_plans_page.dart",
+      "gymmate_mobile/lib/pages/membership_requests_page.dart",
       "gymmate_mobile/lib/pages/onboarding/diet_step.dart",
       "gymmate_mobile/lib/pages/onboarding/onboarding_flow.dart",
       "gymmate_mobile/lib/pages/onboarding/steps/challenge_step.dart",
@@ -1344,6 +1976,7 @@
       "gymmate_mobile/lib/pages/plan_page.dart",
       "gymmate_mobile/lib/pages/profile_page.dart",
       "gymmate_mobile/lib/pages/quick_join_screen.dart",
+      "gymmate_mobile/lib/pages/record_payment_page.dart",
       "gymmate_mobile/lib/pages/register_page.dart",
       "gymmate_mobile/lib/pages/splash_entry_page.dart",
       "gymmate_mobile/lib/pages/splash_screen.dart",
@@ -1356,12 +1989,22 @@
       "gymmate_mobile/lib/services/auth_service.dart",
       "gymmate_mobile/lib/services/coaching_service.dart",
       "gymmate_mobile/lib/services/invite_service.dart",
+      "gymmate_mobile/lib/services/member_hub_service.dart",
+      "gymmate_mobile/lib/services/member_membership_service.dart",
+      "gymmate_mobile/lib/services/membership_plans_service.dart",
+      "gymmate_mobile/lib/services/membership_requests_service.dart",
       "gymmate_mobile/lib/services/messaging_service.dart",
       "gymmate_mobile/lib/services/onboarding_service.dart",
+      "gymmate_mobile/lib/services/payments_service.dart",
       "gymmate_mobile/lib/theme.dart",
       "gymmate_mobile/lib/themes/app_colors.dart",
       "gymmate_mobile/lib/themes/app_theme.dart",
       "gymmate_mobile/lib/utils/branding_utils.dart",
+      "gymmate_mobile/lib/utils/date_format.dart",
+      "gymmate_mobile/lib/utils/gallery_picker.dart",
+      "gymmate_mobile/lib/utils/gallery_picker_io.dart",
+      "gymmate_mobile/lib/utils/gallery_picker_stub.dart",
+      "gymmate_mobile/lib/utils/gallery_picker_web.dart",
       "gymmate_mobile/lib/utils/logo_picker.dart",
       "gymmate_mobile/lib/utils/logo_picker_io.dart",
       "gymmate_mobile/lib/utils/logo_picker_stub.dart",

@@ -23,6 +23,13 @@ const BIOMETRIC_PROVIDERS = [
 
 const MAX_IMAGE_BYTES = 1024 * 1024;
 const IMAGE_TTL_DAYS = 30;
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+function validationError(message) {
+  const error = new Error(message);
+  error.statusCode = 400;
+  return error;
+}
 
 function canManageWorkspace(user) {
   return hasPermission(user, 'workspace.access') || hasRole(user, ['owner']);
@@ -234,21 +241,28 @@ function parseImagePayload({ imageBase64, imageContentType, imageFileName }) {
     return null;
   }
 
+  const contentType = String(imageContentType || 'image/png').toLowerCase();
+  if (!ALLOWED_IMAGE_TYPES.has(contentType)) {
+    throw validationError('Image must be a JPEG, PNG, or WebP file.');
+  }
+
   const buffer = Buffer.from(String(imageBase64), 'base64');
   if (!buffer.length || buffer.length > MAX_IMAGE_BYTES) {
-    throw new Error('Image must be smaller than 1 MB.');
+    throw validationError('Image must be smaller than 1 MB.');
   }
 
   return {
     buffer,
-    contentType: String(imageContentType || 'image/png'),
+    contentType,
     fileName: String(imageFileName || 'announcement-image'),
     contentHash: crypto.createHash('sha256').update(buffer).digest('hex'),
   };
 }
 
 async function ensureMediaAsset(gymId, userId, payload) {
-  if (!payload) return null;
+  if (!payload) {
+    return null;
+  }
 
   const existing = await MediaAsset.findOne({
     gymId,
@@ -617,7 +631,9 @@ exports.createAnnouncement = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating announcement:', error);
-    return res.status(500).json({ message: error.message || 'Error creating announcement' });
+    return res.status(error.statusCode || 500).json({
+      message: error.message || 'Error creating announcement',
+    });
   }
 };
 

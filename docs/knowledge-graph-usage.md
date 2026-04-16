@@ -30,4 +30,6 @@ Minimize token usage by querying the persisted graph first, then reading only th
 
 Use the knowledge graph first. Refresh it if stale, run context for the changed files, and limit source reads to the recommended read order plus directly impacted files.
 
-Current graph head: `3cc426a7b2b85fa3126a211c8f2e08c9e81d0011`
+For reusable Codex prompts, see `docs/codex-token-minimal-workflow.md`.
+
+Current graph head: `a868df00240dbe8eb2ac3cc9151e0fd6663484e3`

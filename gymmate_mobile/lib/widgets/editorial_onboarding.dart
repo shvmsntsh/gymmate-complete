@@ -24,6 +24,7 @@ class OnboardingStepLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = MediaQuery.of(context).size.width < 420;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,21 +40,28 @@ class OnboardingStepLayout extends StatelessWidget {
                     eyebrow.toUpperCase(),
                     style: GoogleFonts.inter(
                       color: theme.colorScheme.primary,
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 1.8,
+                      letterSpacing: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Text(title, style: theme.textTheme.displaySmall),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: compact
+                        ? theme.textTheme.headlineMedium
+                        : theme.textTheme.displaySmall,
+                  ),
+                  const SizedBox(height: 8),
                   Text(
                     subtitle,
-                    style: theme.textTheme.bodyLarge?.copyWith(
+                    maxLines: compact ? 2 : 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(
                         alpha: 0.72,
                       ),
-                      height: 1.5,
+                      height: 1.4,
                     ),
                   ),
                 ],
@@ -65,14 +73,14 @@ class OnboardingStepLayout extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 16),
         Expanded(
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: body,
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         footer,
       ],
     );
@@ -106,7 +114,7 @@ class OnboardingOptionCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: selected
               ? theme.colorScheme.surface.withValues(alpha: 0.98)
@@ -130,8 +138,8 @@ class OnboardingOptionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: selected
                     ? theme.colorScheme.primary
@@ -140,12 +148,13 @@ class OnboardingOptionCard extends StatelessWidget {
               ),
               child: Icon(
                 icon,
+                size: 20,
                 color: selected
                     ? theme.colorScheme.onPrimary
                     : theme.colorScheme.primary,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,14 +185,16 @@ class OnboardingOptionCard extends StatelessWidget {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     description,
-                    style: theme.textTheme.bodyMedium?.copyWith(
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(
                         alpha: 0.66,
                       ),
-                      height: 1.5,
+                      height: 1.35,
                     ),
                   ),
                 ],
@@ -223,7 +234,7 @@ class OnboardingChipOption extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: selected
               ? theme.colorScheme.primary.withValues(alpha: 0.14)
@@ -237,7 +248,7 @@ class OnboardingChipOption extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: theme.textTheme.bodySmall?.copyWith(
             color: selected
                 ? theme.colorScheme.primary
                 : theme.colorScheme.onSurface.withValues(

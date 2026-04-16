@@ -20,7 +20,7 @@
 
       <StateBlock
         v-if="error"
-        title="Could not load announcements"
+        :title="errorTitle"
         :copy="error"
         icon="mdi-alert-circle-outline"
         tone="error"
@@ -42,8 +42,8 @@
         />
         <v-file-input
           v-model="selectedImage"
-          accept="image/*"
-          label="Image (optional, max 1 MB)"
+          accept="image/png,image/jpeg,image/webp"
+          label="Image (optional, auto-compressed, max 1 MB)"
           variant="outlined"
           prepend-icon="mdi-image-outline"
         />
@@ -119,9 +119,12 @@ const { isDark, toggleTheme } = useAdminTheme();
 const loading = ref(false);
 const saving = ref(false);
 const error = ref("");
+const errorTitle = ref("Could not load announcements");
 const selectedImage = ref(null);
 const announcements = ref([]);
 const imageCache = ref({});
+const maxImageBytes = 1024 * 1024;
+const maxImageDimension = 1600;
 const form = ref({
   title: "",
   body: "",
@@ -160,24 +163,101 @@ function formatDate(value) {
   return new Date(value).toLocaleString("en-GB");
 }
 
+function setError(title, message) {
+  errorTitle.value = title;
+  error.value = message;
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Could not read image."));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not process that image."));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("Could not compress image."))),
+      type,
+      quality,
+    );
+  });
+}
+
+async function compressImageFile(file) {
+  if (!file) return null;
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+  if (!allowedTypes.has(file.type)) {
+    throw new Error("Choose a JPEG, PNG, or WebP image.");
+  }
+  if (file.size <= maxImageBytes) {
+    return file;
+  }
+
+  const image = await loadImage(file);
+  const scale = Math.min(
+    1,
+    maxImageDimension / Math.max(image.naturalWidth || 1, image.naturalHeight || 1),
+  );
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
+  canvas.height = Math.max(1, Math.round((image.naturalHeight || 1) * scale));
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  for (const quality of [0.85, 0.75, 0.65, 0.55, 0.45]) {
+    const blob = await canvasToBlob(canvas, "image/jpeg", quality);
+    if (blob.size <= maxImageBytes) {
+      return new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), {
+        type: "image/jpeg",
+      });
+    }
+  }
+
+  throw new Error("Choose a smaller image. It still exceeds 1 MB after compression.");
+}
+
 async function fileToPayload(file) {
-  if (!file) return {};
-  const buffer = await file.arrayBuffer();
+  const compressedFile = await compressImageFile(file);
+  if (!compressedFile) return {};
+  const dataUrl = await blobToDataUrl(compressedFile);
+  const imageBase64 = dataUrl.split(",")[1] || "";
+  const buffer = await compressedFile.arrayBuffer();
   let binary = "";
   const bytes = new Uint8Array(buffer);
   bytes.forEach((byte) => {
     binary += String.fromCharCode(byte);
   });
   return {
-    imageBase64: btoa(binary),
-    imageContentType: file.type || "image/png",
-    imageFileName: file.name || "announcement-image",
+    imageBase64: imageBase64 || btoa(binary),
+    imageContentType: compressedFile.type || "image/jpeg",
+    imageFileName: compressedFile.name || "announcement-image.jpg",
   };
 }
 
 async function fetchAnnouncements() {
   loading.value = true;
   error.value = "";
+  errorTitle.value = "Could not load announcements";
   try {
     const res = await apiFetch("/api/owner/announcements");
     const data = await res.json();
@@ -191,7 +271,7 @@ async function fetchAnnouncements() {
       }
     }
   } catch (err) {
-    error.value = err?.message || "Could not load announcements.";
+    setError("Could not load announcements", err?.message || "Could not load announcements.");
   } finally {
     loading.value = false;
   }
@@ -217,6 +297,7 @@ function getAnnouncementImageUrl(assetId) {
 async function submitAnnouncement() {
   saving.value = true;
   error.value = "";
+  errorTitle.value = "Could not send announcement";
   try {
     const imageFile = Array.isArray(selectedImage.value)
       ? selectedImage.value[0]
@@ -242,7 +323,7 @@ async function submitAnnouncement() {
     selectedImage.value = null;
     await fetchAnnouncements();
   } catch (err) {
-    error.value = err?.message || "Could not send announcement.";
+    setError("Could not send announcement", err?.message || "Could not send announcement.");
   } finally {
     saving.value = false;
   }

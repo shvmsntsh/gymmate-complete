@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 const MembershipTemplate = require('../models/MembershipTemplate');
 const MemberMembership = require('../models/MemberMembership');
 const MembershipChangeRequest = require('../models/MembershipChangeRequest');
 const MembershipAuditLog = require('../models/MembershipAuditLog');
 const PaymentEntry = require('../models/PaymentEntry');
+const BillingReceipt = require('../models/BillingReceipt');
 
 class MembershipService {
   static paymentEntryModes = new Set(['cash', 'upi', 'card', 'online', 'manual', 'waived']);
@@ -474,6 +476,39 @@ class MembershipService {
     });
   }
 
+  static async ensureReceiptForMembership(membership, adminId, amountOverride = null) {
+    if (!membership?._id || membership.paymentStatus !== 'paid') {
+      return null;
+    }
+
+    const existing = await BillingReceipt.findOne({ membershipId: membership._id });
+    if (existing) {
+      return existing;
+    }
+
+    const template = await this.resolveTemplateRef(membership.membershipTemplateId);
+    const amount = amountOverride !== null && amountOverride !== undefined && amountOverride !== ''
+      ? Number(amountOverride)
+      : Number(template?.price || 0);
+    const issuedAt = membership.activatedAt || membership.startDate || new Date();
+    const datePart = new Date(issuedAt).toISOString().slice(0, 10).replace(/-/g, '');
+
+    return BillingReceipt.create({
+      gymId: membership.gymId,
+      memberId: membership.memberId,
+      membershipId: membership._id,
+      planName: template?.name || 'Membership Plan',
+      amount: Number.isFinite(amount) ? Number(Math.max(0, amount).toFixed(2)) : 0,
+      currency: 'INR',
+      paymentMethod: membership.paymentMethod || '',
+      paymentReference: membership.paymentReference || '',
+      receiptNumber: `GM-${datePart}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+      publicToken: crypto.randomBytes(24).toString('hex'),
+      issuedAt,
+      createdBy: adminId || membership.approvedBy || membership.memberId,
+    });
+  }
+
   static computeStatus(membership, template = null) {
     const now = new Date();
     
@@ -694,6 +729,9 @@ class MembershipService {
       ? 'upgrade'
       : 'downgrade';
     const previewOverride = { ...options };
+    if (options.paymentAmount !== undefined) {
+      previewOverride.manualPaymentAmount = options.paymentAmount;
+    }
     if (options.paymentStatus !== 'paid') {
       previewOverride.allowPendingPayment = true;
     }
@@ -771,6 +809,11 @@ class MembershipService {
         options.flowType === 'manual_change'
           ? 'Auto-recorded from manual plan change.'
           : 'Auto-recorded from membership assignment.',
+      );
+      await this.ensureReceiptForMembership(
+        membership,
+        adminId,
+        assignmentPreview.paymentSummary.expectedAmount,
       );
     }
     
@@ -1009,6 +1052,13 @@ class MembershipService {
           },
         },
       );
+      if (membership.paymentStatus === 'paid') {
+        await this.ensureReceiptForMembership(
+          membership,
+          adminId,
+          decisionPreview.paymentSummary.expectedAmount,
+        );
+      }
 
       await this.logAudit(gymId, request.memberId, 'member_membership', membership._id, 'created', adminId, {
         templateName: template?.name,

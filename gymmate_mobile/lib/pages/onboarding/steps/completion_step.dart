@@ -109,35 +109,11 @@ class _CompletionContentState extends State<_CompletionContent> {
         ),
         OnboardingStepLayout(
           eyebrow: 'Ready',
-          title: 'Your GymMate space is ready to open.',
-          subtitle:
-              'You’ve set the basics, your focus, and your training rhythm. Save it once and step into your first dashboard.',
+          title: 'Your GymMate space is ready.',
+          subtitle: 'Save once, then step into your first dashboard.',
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              EditorialBlurImage(
-                height: 190,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    const Positioned(
-                      left: 18,
-                      top: 18,
-                      child: EditorialKicker('Ready to train'),
-                    ),
-                    Positioned(
-                      left: 20,
-                      right: 20,
-                      bottom: 22,
-                      child: Text(
-                        'A calmer plan, cleaner progress, and a more personal dashboard are waiting on the other side.',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
               Wrap(
                 spacing: 12,
                 runSpacing: 12,

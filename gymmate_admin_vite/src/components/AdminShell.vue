@@ -7,13 +7,11 @@
         'admin-shell--drawer-open': drawerOpen,
       }"
     >
-      <button
-        v-if="drawerOpen"
-        class="admin-shell__scrim"
-        type="button"
-        aria-label="Close navigation"
-        @click="drawerOpen = false"
-      />
+        <div
+          v-if="drawerOpen"
+          class="admin-shell__scrim"
+          @click="drawerOpen = false"
+        />
       <aside class="admin-shell__sidebar admin-surface">
         <AdminBrand
           compact

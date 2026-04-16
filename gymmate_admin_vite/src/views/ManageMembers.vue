@@ -86,13 +86,24 @@
           </template>
 
           <template #item.membership="{ item }">
-            <v-chip
-              :color="membershipTone((item.raw || item).membership?.status)"
-              variant="tonal"
-              size="small"
-            >
-              {{ membershipLabel((item.raw || item).membership) }}
-            </v-chip>
+            <div class="membership-cell">
+              <v-chip
+                :color="membershipTone((item.raw || item).membership?.status)"
+                variant="tonal"
+                size="small"
+              >
+                {{ membershipLabel((item.raw || item).membership) }}
+              </v-chip>
+              <v-chip
+                v-if="renewalTone((item.raw || item).membership)"
+                :color="renewalTone((item.raw || item).membership)"
+                variant="flat"
+                size="x-small"
+                class="renewal-badge"
+              >
+                {{ renewalLabel((item.raw || item).membership) }}
+              </v-chip>
+            </div>
           </template>
 
           <template #item.pendingRequestCount="{ item }">
@@ -382,7 +393,9 @@ const visibleMembers = computed(() => {
       : filterMode.value === "inactive"
         ? members.value.filter((member) => member.activeState === "inactive")
         : filterMode.value === "expiring"
-          ? members.value.filter((member) => member.membership?.status === "expiring")
+          ? members.value.filter((member) =>
+              isRenewalDueStatus(member.membership?.status),
+            )
         : members.value;
 
   return [...scopedMembers].sort((a, b) => {
@@ -392,8 +405,8 @@ const visibleMembers = computed(() => {
       return pendingDiff;
     }
 
-    const expiringRankA = a.membership?.status === "expiring" ? 0 : 1;
-    const expiringRankB = b.membership?.status === "expiring" ? 0 : 1;
+    const expiringRankA = isRenewalDueStatus(a.membership?.status) ? 0 : 1;
+    const expiringRankB = isRenewalDueStatus(b.membership?.status) ? 0 : 1;
     if (expiringRankA !== expiringRankB) {
       return expiringRankA - expiringRankB;
     }
@@ -423,16 +436,57 @@ function membershipLabel(membership) {
   return membership.planName || membership.status || "No plan";
 }
 
+function isRenewalDueStatus(status) {
+  return status === "expiring" || status === "renewal_due";
+}
+
 function membershipTone(status) {
   if (status === "active") return "primary";
-  if (status === "expiring") return "warning";
-  if (status === "payment_pending") return "secondary";
+  if (status === "expiring" || status === "renewal_due") return "warning";
+  if (status === "payment_pending" || status === "pending_payment") {
+    return "secondary";
+  }
   return "default";
+}
+
+function renewalLabel(membership) {
+  if (!membership) return "";
+  const renewalState = getRenewalState(membership);
+  if (renewalState === "overdue") return "Overdue";
+  if (renewalState === "upcoming") return "Renewal due";
+  if (renewalState === "payment_pending") return "Payment pending";
+  return "";
+}
+
+function renewalTone(membership) {
+  if (!membership) return null;
+  const renewalState = getRenewalState(membership);
+  if (renewalState === "overdue") return "error";
+  if (renewalState === "upcoming") return "warning";
+  if (renewalState === "payment_pending") return "info";
+  return null;
+}
+
+function getRenewalState(membership) {
+  if (!membership || !membership.endDate) return null;
+  if (
+    membership.paymentStatus === "payment_pending" ||
+    membership.paymentStatus === "payment_under_review" ||
+    membership.status === "pending_payment"
+  ) {
+    return "payment_pending";
+  }
+  const now = new Date();
+  const endDate = new Date(membership.endDate);
+  const daysUntilExpiry = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+  if (daysUntilExpiry < 0) return "overdue";
+  if (daysUntilExpiry <= 7) return "upcoming";
+  return null;
 }
 
 function lastActivityLabel(item) {
   return item.lastAttendanceAt
-    ? new Date(item.lastAttendanceAt).toLocaleDateString()
+    ? new Date(item.lastAttendanceAt).toLocaleDateString("en-GB")
     : "No attendance yet";
 }
 
@@ -692,6 +746,18 @@ onMounted(fetchMembers);
 .row-actions {
   display: flex;
   justify-content: flex-start;
+}
+
+.membership-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.renewal-badge {
+  font-size: 10px;
+  height: 18px;
 }
 
 .trainer-inbox-header {

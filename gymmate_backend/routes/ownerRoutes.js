@@ -43,6 +43,7 @@ router.post('/membership-requests-new/:requestId/reject', membershipController.r
 router.get('/member-memberships', membershipController.getAllMemberMemberships);
 router.get('/members/:memberId/memberships', membershipController.getMemberMemberships);
 router.post('/members/:memberId/memberships', membershipController.assignMembership);
+router.get('/memberships/:membershipId/receipt', membershipController.getMembershipReceipt);
 router.post('/memberships/:membershipId/adjust', membershipController.adjustMembership);
 router.post('/memberships/:membershipId/unfreeze', membershipController.unfreezeMembership);
 router.post('/memberships/:membershipId/cancel', membershipController.cancelMembership);

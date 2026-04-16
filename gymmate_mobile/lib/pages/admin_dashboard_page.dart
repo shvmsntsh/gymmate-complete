@@ -112,9 +112,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 const SizedBox(height: 18),
                 DashboardHeroCard(
                   eyebrow: formattedRole,
-                  title: 'See the network clearly before you touch a thing.',
+                  title: 'See the network clearly.',
                   subtitle:
-                      'Gyms, owners, members, and invites are all visible in one place so the next decision feels simple.',
+                      'Gyms, owners, members, and invites stay in one place.',
                   metaLeft: '$gymsCount gyms',
                   metaRight: '$membersCount members',
                   actionColor: theme.colorScheme.primary,
@@ -133,7 +133,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       child: DashboardStatPanel(
                         label: 'Total Gyms',
                         value: gymsCount.toString(),
-                        caption: 'registered locations',
+                        caption: 'locations',
                         icon: Icons.domain_outlined,
                       ),
                     ),
@@ -142,7 +142,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       child: DashboardStatPanel(
                         label: 'Owners',
                         value: ownersCount.toString(),
-                        caption: 'active leaders',
+                        caption: 'leaders',
                         icon: Icons.workspace_premium_outlined,
                       ),
                     ),
@@ -155,7 +155,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       child: DashboardStatPanel(
                         label: 'Members',
                         value: membersCount.toString(),
-                        caption: 'network population',
+                        caption: 'network',
                         icon: Icons.people_alt_outlined,
                       ),
                     ),
@@ -164,7 +164,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       child: DashboardStatPanel(
                         label: 'Invites',
                         value: invitesCount.toString(),
-                        caption: 'open access links',
+                        caption: 'open',
                         icon: Icons.confirmation_number_outlined,
                       ),
                     ),
@@ -173,7 +173,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 const SizedBox(height: 18),
                 DashboardSectionCard(
                   eyebrow: 'Network Growth',
-                  title: 'Member expansion across the last seven days.',
+                  title: 'Member growth across seven days.',
                   trailing: Text(
                     'LAST 7 DAYS',
                     style: theme.textTheme.labelMedium?.copyWith(
@@ -213,7 +213,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 const SizedBox(height: 18),
                 DashboardSectionCard(
                   eyebrow: 'Gym Partners',
-                  title: 'A quick look at the newest operators in the network.',
+                  title: 'Newest operators in the network.',
                   trailing: TextButton(
                     onPressed: () => MainNavigationScaffold.switchTab(1),
                     child: const Text('View all'),
@@ -228,7 +228,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 const SizedBox(height: 18),
                 DashboardSectionCard(
                   eyebrow: 'Network Health',
-                  title: 'A simple read on the current state of operations.',
+                  title: 'A quick read on operations.',
                   child: Column(
                     children: [
                       _healthRow(

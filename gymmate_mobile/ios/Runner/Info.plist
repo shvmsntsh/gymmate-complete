@@ -45,6 +45,10 @@
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app needs access to devices on your local network to communicate with GymMate backend.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>GymMate needs camera access to take profile photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>GymMate needs photo library access to select a profile photo.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

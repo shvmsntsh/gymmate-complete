@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api_config.dart';
 import '../providers/auth_provider.dart';
 import '../services/member_membership_service.dart';
 import '../utils/date_format.dart';
@@ -15,6 +18,7 @@ class MemberMembershipPage extends StatefulWidget {
 
 class _MemberMembershipPageState extends State<MemberMembershipPage> {
   Map<String, dynamic>? _membership;
+  Map<String, dynamic>? _receipt;
   bool _loading = true;
   String? _error;
 
@@ -36,10 +40,12 @@ class _MemberMembershipPageState extends State<MemberMembershipPage> {
 
     try {
       final membership = await MemberMembershipService.getMyMembership(token);
+      final receipt = await MemberMembershipService.getMyReceipt(token);
 
       if (!mounted) return;
       setState(() {
         _membership = membership;
+        _receipt = receipt;
         _loading = false;
       });
     } catch (e) {
@@ -144,6 +150,7 @@ class _MemberMembershipPageState extends State<MemberMembershipPage> {
     final entitlements =
         membership['entitlements'] as Map<String, dynamic>? ?? {};
     final theme = Theme.of(context);
+    final receipt = _receipt;
 
     return EditorialSurface(
       child: Column(
@@ -210,6 +217,13 @@ class _MemberMembershipPageState extends State<MemberMembershipPage> {
               label: 'Payment Ref',
               value: membership['paymentReference'].toString(),
             ),
+          if (receipt != null) ...[
+            const SizedBox(height: 12),
+            _ReceiptPanel(
+              receipt: receipt,
+              link: _receiptLink(receipt),
+            ),
+          ],
           const SizedBox(height: 16),
           if (entitlements.isNotEmpty) ...[
             Text('Your Features', style: theme.textTheme.titleSmall),
@@ -284,6 +298,82 @@ class _MemberMembershipPageState extends State<MemberMembershipPage> {
         ],
       ),
     );
+  }
+
+  String _receiptLink(Map<String, dynamic> receipt) {
+    final path = receipt['publicPath']?.toString() ?? '';
+    final token = receipt['publicToken']?.toString() ?? '';
+    if (kIsWeb && path.isNotEmpty) {
+      return '${Uri.base.origin}$path';
+    }
+    if (token.isNotEmpty) {
+      return '${ApiConfig.baseUrl}/api/receipts/$token';
+    }
+    return path;
+  }
+}
+
+class _ReceiptPanel extends StatelessWidget {
+  final Map<String, dynamic> receipt;
+  final String link;
+
+  const _ReceiptPanel({required this.receipt, required this.link});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Receipt ${receipt['receiptNumber'] ?? ''}',
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Paid ₹${NumberFormatHelper.amount(receipt['amount'])}',
+            style: theme.textTheme.bodyMedium,
+          ),
+          if (link.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SelectableText(link, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: link));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Receipt link copied.')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.copy_rounded),
+                label: const Text('Copy receipt link'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class NumberFormatHelper {
+  static String amount(dynamic value) {
+    final parsed = value is num ? value : num.tryParse(value?.toString() ?? '');
+    return (parsed ?? 0).toStringAsFixed(2);
   }
 }
 

@@ -787,13 +787,11 @@ class _LoginStateView extends StatelessWidget {
                 ],
                 AnimatedFormField(
                   controller: emailController,
-                  hintText: 'Email',
+                  hintText: 'Email or Indian phone number',
                   keyboardType: TextInputType.emailAddress,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Required';
-                    return RegExp(r'^\S+@\S+\.\S+$').hasMatch(v)
-                        ? null
-                        : 'Invalid email';
+                    return null;
                   },
                   index: 0,
                 ),

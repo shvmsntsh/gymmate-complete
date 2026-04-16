@@ -17,6 +17,37 @@ const {
 } = require('../utils/serviceCatalog');
 const { ensureCanCreateMemberInvite } = require('../utils/gymLimits');
 
+const MAX_LOGO_DATA_BYTES = 1024 * 1024;
+const LOGO_DATA_URL_PATTERN = /^data:image\/(png|jpe?g|webp);base64,/i;
+
+function validateLogoUrl(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith('data:')) {
+    if (!LOGO_DATA_URL_PATTERN.test(value)) {
+      return 'Logo must be a PNG, JPEG, or WebP image.';
+    }
+    const base64 = value.replace(LOGO_DATA_URL_PATTERN, '');
+    const sizeBytes = Buffer.byteLength(base64, 'base64');
+    if (!sizeBytes || sizeBytes > MAX_LOGO_DATA_BYTES) {
+      return 'Logo image must be smaller than 1 MB.';
+    }
+    return null;
+  }
+
+  if (!/^https?:\/\//i.test(value)) {
+    return 'Logo must be an HTTPS URL or a small image upload.';
+  }
+
+  if (value.length > 2048) {
+    return 'Logo URL is too long.';
+  }
+
+  return null;
+}
+
 router.post('/register', async (req, res) => {
 
   try {
@@ -434,6 +465,11 @@ router.put('/branding', authenticateToken, async (req, res) => {
     }
     if (secondaryColor && !hexColorPattern.test(secondaryColor)) {
       return res.status(400).json({ message: 'Secondary color must be a 6-digit hex value' });
+    }
+
+    const logoError = validateLogoUrl(logoUrl);
+    if (logoError) {
+      return res.status(400).json({ message: logoError });
     }
 
     const normalizeHex = (value, fallback) => {

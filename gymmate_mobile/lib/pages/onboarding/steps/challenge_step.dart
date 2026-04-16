@@ -15,30 +15,21 @@ class ChallengeStep extends StatelessWidget {
     final challenges = [
       (
         icon: Icons.local_fire_department_rounded,
-        title: '7-Day Kickstart',
+        title: '7-Day Check-in',
         value: '7_day_checkin',
-        description:
-            'Show up for seven straight days and set your rhythm early.',
+        description: 'Log something on 7 different days.',
       ),
       (
         icon: Icons.timer_outlined,
         title: 'First Workout',
         value: 'first_workout',
-        description:
-            'Complete your first tracked session and lock in momentum.',
+        description: 'Complete your first logged workout.',
       ),
       (
-        icon: Icons.emoji_events_outlined,
-        title: 'Goal Setting',
-        value: 'goal_setting',
-        description: 'Make your first gym target real and visible on day one.',
-      ),
-      (
-        icon: Icons.account_circle_outlined,
-        title: 'Profile Finish',
-        value: 'profile_photo',
-        description:
-            'Round out your profile and make your training space your own.',
+        icon: Icons.restaurant_menu_rounded,
+        title: 'Meal Rhythm',
+        value: 'meal_rhythm',
+        description: 'Finish your planned meals across 3 days.',
       ),
     ];
 
@@ -48,9 +39,8 @@ class ChallengeStep extends StatelessWidget {
 
         return OnboardingStepLayout(
           eyebrow: 'Challenge',
-          title: 'Give your first week a clear target.',
-          subtitle:
-              'A starter challenge makes it easier to build early momentum instead of waiting for the perfect day.',
+          title: 'Pick one starter target.',
+          subtitle: 'Choose one challenge you can track from real activity.',
           body: Column(
             children: challenges
                 .map(

@@ -23,6 +23,7 @@ router.post('/membership-requests', operationsController.createMemberMembershipR
 router.get('/assets/:assetId', operationsController.streamMediaAssetForMember);
 
 router.get('/me/membership', memberMembershipController.getMyMembership);
+router.get('/me/membership/receipt', memberMembershipController.getMyMembershipReceipt);
 router.get('/me/membership-options', memberMembershipController.getMyMembershipOptions);
 router.get('/me/membership-requests', memberMembershipController.getMyMembershipRequests);
 router.post('/me/membership-requests', memberMembershipController.createMembershipRequest);

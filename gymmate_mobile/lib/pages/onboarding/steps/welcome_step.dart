@@ -12,9 +12,8 @@ class WelcomeStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return OnboardingStepLayout(
       eyebrow: 'Welcome',
-      title: 'Let’s shape a gym flow that feels clear from the start.',
-      subtitle:
-          'These quick choices help GymMate tune your dashboard, your plan, and the pace of your weekly training.',
+      title: 'Let’s shape a clear gym flow.',
+      subtitle: 'A few quick steps will set up your plan.',
       headerTrailing: const SizedBox(
         width: 88,
         height: 88,
@@ -24,7 +23,7 @@ class WelcomeStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           EditorialBlurImage(
-            height: 210,
+            height: 164,
             child: Stack(
               fit: StackFit.expand,
               children: [
@@ -38,14 +37,14 @@ class WelcomeStep extends StatelessWidget {
                   right: 24,
                   bottom: 22,
                   child: Text(
-                    'Personal details, goals, nutrition, and your first challenge all come together here.',
+                    'Profile, goals, nutrition, and your first challenge all come together here.',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
           const Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -89,9 +88,9 @@ class WelcomeStep extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
-            'About a minute from here to your first dashboard.',
+            'About a minute to your first dashboard.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
           ),

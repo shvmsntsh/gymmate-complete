@@ -47,7 +47,9 @@
           :copy="chartLoadingCopy"
           icon="mdi-timer-sand"
         />
-        <canvas v-else ref="usageChartRef"></canvas>
+        <div v-else class="chart-canvas-wrapper">
+          <canvas ref="usageChartRef"></canvas>
+        </div>
       </section>
 
       <section
@@ -114,7 +116,7 @@
               {{ gymName || "Your gym" }} is carrying a clear identity with
               <strong>{{ brandCompletion }}% brand completion</strong>,
               <strong>{{ inviteCount }}</strong> active invites, and a member
-              roster that is ready for the next push.
+              base that is ready for the next push.
             </div>
             <div class="reach-panel__stats">
               <div class="reach-pill">
@@ -192,20 +194,20 @@
         <template v-if="isOwnerView">
           <StateBlock
             v-if="rosterError"
-            title="Could not load your roster"
+            title="Could not load your member view"
             :copy="rosterError"
             icon="mdi-account-group-outline"
             tone="error"
           />
           <StateBlock
             v-else-if="rosterLoading"
-            title="Loading your roster"
+            title="Loading your member view"
             copy="Pulling the latest member and coach names now."
             icon="mdi-timer-sand"
           />
           <StateBlock
             v-else-if="rosterItems.length === 0"
-            title="No roster yet"
+            title="No members yet"
             copy="As members and coaches join your gym, they will appear here for a quick glance."
             icon="mdi-account-off-outline"
           />
@@ -343,8 +345,8 @@ const pageEyebrow = computed(() =>
 );
 const pageDescription = computed(() =>
   isOwnerView.value
-    ? "Keep your gym brand, member roster, invites, and weekly momentum in one calm workspace."
-    : "A cleaner read on growth, active gyms, and where the network needs attention next.",
+    ? "Keep brand, members, invites, and weekly momentum in one workspace."
+    : "A cleaner read on growth, active gyms, and the next attention points.",
 );
 
 const chartEyebrow = computed(() =>
@@ -352,13 +354,13 @@ const chartEyebrow = computed(() =>
 );
 const chartTitle = computed(() =>
   isOwnerView.value
-    ? "Signups across the last seven days."
-    : "Membership expansion across the last seven days.",
+    ? "Signups across seven days."
+    : "Membership growth across seven days.",
 );
 const chartCopy = computed(() =>
   isOwnerView.value
-    ? "A clearer weekly view of when your member flow picks up and when a fresh invite push could help."
-    : "Use this to spot where the network is picking up momentum and when signups start to cool off.",
+    ? "See when member flow picks up and when a fresh invite push may help."
+    : "See where the network is gaining momentum and where it slows down.",
 );
 const chartErrorTitle = computed(() =>
   isOwnerView.value ? "Signup view unavailable" : "Growth overview unavailable",
@@ -382,7 +384,7 @@ const sideTitle = computed(() =>
 );
 const sideCopy = computed(() =>
   isOwnerView.value
-    ? "Your most recent invites are collected here so you can share them quickly with members and coaches."
+    ? "Recent invites stay here for quick sharing."
     : "A live list of the most recent gyms added to GymMate.",
 );
 const sideLoadingTitle = computed(() =>
@@ -401,7 +403,7 @@ const sideEmptyTitle = computed(() =>
 );
 const sideEmptyCopy = computed(() =>
   isOwnerView.value
-    ? "Generate your first member or coach invite and it will appear here for quick sharing."
+    ? "Generate your first member or coach invite and it will appear here."
     : "Once the first gyms come in, they will appear here with their contact details and services.",
 );
 const sideItems = computed(() =>
@@ -417,8 +419,8 @@ const lowerLeftTitle = computed(() =>
 );
 const lowerLeftCopy = computed(() =>
   isOwnerView.value
-    ? "Keep your gym name, color direction, and invite readiness clear before members ever step inside."
-    : "A simple snapshot of how many gyms, owners, and members are moving through the product today.",
+    ? "Keep your gym name, color direction, and invite readiness clear."
+    : "A quick snapshot of gyms, owners, and members in the product today.",
 );
 
 const lowerRightEyebrow = computed(() =>
@@ -429,8 +431,8 @@ const lowerRightTitle = computed(() =>
 );
 const lowerRightCopy = computed(() =>
   isOwnerView.value
-    ? "A quick look at the current people tied to your gym so follow-ups stay easy."
-    : "A quick signal on coverage, owner readiness, and member support momentum.",
+    ? "A quick look at the people tied to your gym."
+    : "A quick signal on coverage, readiness, and support momentum.",
 );
 
 function chartTextColor() {
@@ -625,7 +627,7 @@ async function fetchOwnerDashboard() {
     }
     if (!membersRes.ok) {
       throw new Error(
-        membersData.message || "We could not load your roster right now.",
+        membersData.message || "We could not load your member view right now.",
       );
     }
 
@@ -701,7 +703,7 @@ const metrics = computed(() => {
         label: "Active Members",
         value: memberCount.value,
         icon: "mdi-account-group-outline",
-        hint: "Your current member roster.",
+        hint: "Your current member base.",
       },
       {
         label: "Active Invites",

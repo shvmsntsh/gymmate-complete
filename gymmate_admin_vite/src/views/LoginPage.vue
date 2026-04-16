@@ -38,13 +38,13 @@
 
       <v-form class="stack" @submit.prevent="submit">
         <div>
-          <div class="field-label">Email</div>
+          <div class="field-label">Email or Indian phone number</div>
           <v-text-field
             v-model="form.email"
             density="comfortable"
             hide-details="auto"
-            placeholder="admin@gymmate.com"
-            type="email"
+            placeholder="admin@gymmate.com or +919876543210"
+            type="text"
             variant="outlined"
             required
           />

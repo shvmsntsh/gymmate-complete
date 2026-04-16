@@ -3,6 +3,7 @@ const Gym = require('../models/Gym');
 const User = require('../models/User');
 const { hasRole } = require('../utils/roles');
 const { ensureCanCreateMemberInvite } = require('../utils/gymLimits');
+const { normalizeIndianPhone, indianPhoneVariants } = require('../utils/phone');
 
 function formatDateLabel(dateValue) {
   if (!dateValue) return null;
@@ -32,7 +33,25 @@ function normalizeEmail(value) {
 }
 
 function normalizePhone(value) {
-  return String(value || '').trim();
+  return normalizeIndianPhone(value) || String(value || '').trim();
+}
+
+function idsEqual(first, second) {
+  if (!first || !second) {
+    return false;
+  }
+  return String(first) === String(second);
+}
+
+function isValidEmail(value) {
+  return /^\S+@\S+\.\S+$/.test(String(value || '').trim());
+}
+
+function phoneLookup(value) {
+  const variants = indianPhoneVariants(value);
+  return variants.length
+    ? { phone_number: { $in: variants } }
+    : { phone_number: String(value || '').trim() };
 }
 
 function inviteePayload(invite) {
@@ -172,7 +191,9 @@ exports.listInviteCodes = async (req, res) => {
 exports.generateInviteCode = async (req, res) => {
   try {
     const { role } = req.body;
-    const phone_number = normalizePhone(req.body.phone_number);
+    const phone_number = normalizePhone(
+      req.body.phone_number || req.body.phoneNumber || req.body.phone,
+    );
     const name = String(req.body.name || '').trim();
     const email = normalizeEmail(req.body.email);
     const currentUser = req.user;
@@ -212,15 +233,39 @@ exports.generateInviteCode = async (req, res) => {
 
     if (normalizedRole === 'gym_member') {
       await ensureCanCreateMemberInvite(gymId);
+      if (!name) {
+        return res.status(400).json({ message: 'Name is required for members.' });
+      }
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ message: 'A valid email is required for members.' });
+      }
+      if (!normalizeIndianPhone(phone_number)) {
+        return res.status(400).json({ message: 'A valid Indian phone number is required for members.' });
+      }
     }
 
     if (phone_number) {
       if (!name || !email) {
         return res.status(400).json({ message: 'Name and email are required when providing a phone number.' });
       }
-      const existingRegistered = await User.findOne({ phone_number, role: normalizedRole, gymId, registered: true });
+      const existingRegistered = await User.findOne({
+        ...phoneLookup(phone_number),
+        role: normalizedRole,
+        gymId,
+        registered: true,
+      });
       if (existingRegistered) {
         return res.status(409).json({ message: 'User with this phone number already exists.' });
+      }
+      const existingEmailUser = await User.findOne({ email });
+      if (
+        existingEmailUser &&
+        (existingEmailUser.registered ||
+          existingEmailUser.role !== normalizedRole ||
+          !idsEqual(existingEmailUser.gymId, gymId) ||
+          !indianPhoneVariants(phone_number).includes(existingEmailUser.phone_number))
+      ) {
+        return res.status(409).json({ message: 'User with this email already exists.' });
       }
     }
 
@@ -240,7 +285,11 @@ exports.generateInviteCode = async (req, res) => {
     await invite.save();
 
     if (phone_number) {
-      let placeholder = await User.findOne({ phone_number, role: normalizedRole, gymId });
+      let placeholder = await User.findOne({
+        role: normalizedRole,
+        gymId,
+        $or: [phoneLookup(phone_number), { email }],
+      });
       if (!placeholder) {
         placeholder = new User({
           name,
