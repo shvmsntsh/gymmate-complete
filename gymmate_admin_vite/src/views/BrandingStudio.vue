@@ -127,7 +127,7 @@ import { useRouter } from "vue-router";
 import AdminShell from "../components/AdminShell.vue";
 import StateBlock from "../components/StateBlock.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
-import { apiFetch, clearAdminSession } from "../lib/api";
+import { apiFetch, clearAdminSession, getAdminSession, setAdminSession } from "../lib/api";
 
 const router = useRouter();
 const { isDark, toggleTheme } = useAdminTheme();
@@ -142,6 +142,7 @@ const form = ref({
   gymName: "",
   logoUrl: "",
 });
+const BRANDING_UPDATED_EVENT = "gymmate-branding-updated";
 const maxLogoBytes = 1024 * 1024;
 const allowedLogoExtensions = new Set([
   "png",
@@ -264,8 +265,29 @@ async function saveBranding() {
       throw new Error(data.message || "We could not save branding right now.");
     }
 
+    const branding = data.branding || {};
+    form.value = {
+      gymName: branding.gymName || form.value.gymName.trim(),
+      logoUrl: branding.logoUrl || "",
+    };
+
+    const session = getAdminSession();
+    if (session?.user) {
+      setAdminSession({
+        ...session,
+        user: {
+          ...session.user,
+          gymName: form.value.gymName,
+          name: session.user.name || form.value.gymName,
+          branding,
+        },
+      });
+    }
+
+    window.dispatchEvent(
+      new CustomEvent(BRANDING_UPDATED_EVENT, { detail: { branding } }),
+    );
     showMessage("Branding updated successfully.");
-    await fetchBranding();
   } catch (err) {
     showMessage(
       err?.message || "We could not save branding right now.",

@@ -94,7 +94,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminBrand from "./AdminBrand.vue";
 import AdminThemeToggle from "./AdminThemeToggle.vue";
@@ -129,6 +129,7 @@ const sidebarBrandName = ref("");
 const sidebarLogoUrl = ref("");
 const sidebarCollapsed = ref(false);
 const drawerOpen = ref(false);
+const BRANDING_UPDATED_EVENT = "gymmate-branding-updated";
 const sidebarDisplayName = computed(() =>
   sidebarLogoUrl.value ? sidebarBrandName.value : "GymMate",
 );
@@ -208,5 +209,10 @@ async function loadGymBranding() {
 
 onMounted(() => {
   loadGymBranding();
+  window.addEventListener(BRANDING_UPDATED_EVENT, loadGymBranding);
+});
+
+onUnmounted(() => {
+  window.removeEventListener(BRANDING_UPDATED_EVENT, loadGymBranding);
 });
 </script>

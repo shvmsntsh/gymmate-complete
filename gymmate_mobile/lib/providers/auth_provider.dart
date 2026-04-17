@@ -16,6 +16,7 @@ class AuthProvider with ChangeNotifier {
   bool? _hasCompletedOnboarding;
   Map<String, dynamic>? _userData;
   String? _avatarPath;
+  bool _mustSetPassword = false;
   Map<String, dynamic> _branding = normalizeBranding(null);
 
   final _storage = const FlutterSecureStorage();
@@ -31,6 +32,7 @@ class AuthProvider with ChangeNotifier {
   bool get hasCompletedOnboarding => _hasCompletedOnboarding ?? false;
   Map<String, dynamic>? get userData => _userData;
   String? get avatarPath => _avatarPath;
+  bool get mustSetPassword => _mustSetPassword;
   Map<String, dynamic> get branding => _branding;
 
   String _resolvedAvatarPath(dynamic candidate, String? role) {
@@ -75,6 +77,7 @@ class AuthProvider with ChangeNotifier {
       _gymName = user['gymName'];
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
       _avatarPath = _resolvedAvatarPath(user['avatarPath'], _userRole);
+      _mustSetPassword = false;
       await _loadBrandingForGym(user['gymId']);
 
       await _storage.write(key: 'user_token', value: _token);
@@ -90,6 +93,7 @@ class AuthProvider with ChangeNotifier {
       );
       await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
       await _storage.write(key: 'branding_data', value: json.encode(_branding));
+      await _storage.write(key: 'must_set_password', value: 'false');
 
       notifyListeners();
       return true;
@@ -104,7 +108,10 @@ class AuthProvider with ChangeNotifier {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'phone_number': phoneNumber, 'accessCode': accessCode}),
+        body: json.encode({
+          'phone_number': phoneNumber,
+          'accessCode': accessCode,
+        }),
       );
 
       final responseData = json.decode(response.body);
@@ -129,6 +136,9 @@ class AuthProvider with ChangeNotifier {
       _gymName = user['gymName'];
       _hasCompletedOnboarding = user['hasCompletedOnboarding'] ?? false;
       _avatarPath = _resolvedAvatarPath(user['avatarPath'], _userRole);
+      _mustSetPassword =
+          user['hasPassword'] != true ||
+          responseData['requiresPasswordSetup'] == true;
       await _loadBrandingForGym(user['gymId']);
 
       await _storage.write(key: 'user_token', value: _token);
@@ -144,6 +154,10 @@ class AuthProvider with ChangeNotifier {
       );
       await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
       await _storage.write(key: 'branding_data', value: json.encode(_branding));
+      await _storage.write(
+        key: 'must_set_password',
+        value: _mustSetPassword.toString(),
+      );
 
       notifyListeners();
       return true;
@@ -213,6 +227,9 @@ class AuthProvider with ChangeNotifier {
     _gymName = await _storage.read(key: 'gym_name');
     _hasCompletedOnboarding =
         (await _storage.read(key: 'has_completed_onboarding')) == 'true';
+    _mustSetPassword =
+        (await _storage.read(key: 'must_set_password')) == 'true' ||
+        _userData?['hasPassword'] == false;
     _avatarPath = _resolvedAvatarPath(
       await _storage.read(key: 'avatar_path'),
       _userRole,
@@ -238,6 +255,7 @@ class AuthProvider with ChangeNotifier {
     _hasCompletedOnboarding = null;
     _userData = null;
     _avatarPath = null;
+    _mustSetPassword = false;
     _branding = normalizeBranding(null);
     // Clear secure storage first
     await _storage.deleteAll();
@@ -304,6 +322,9 @@ class AuthProvider with ChangeNotifier {
           user['avatarPath'] ?? await _storage.read(key: 'avatar_path'),
           _userRole,
         );
+        if (user['hasPassword'] == true) {
+          _mustSetPassword = false;
+        }
         await _loadBrandingForGym(user['gymId']);
         await _storage.write(key: 'user_data', value: json.encode(_userData));
         await _storage.write(key: 'user_id', value: _userId);
@@ -319,6 +340,10 @@ class AuthProvider with ChangeNotifier {
         await _storage.write(
           key: 'branding_data',
           value: json.encode(_branding),
+        );
+        await _storage.write(
+          key: 'must_set_password',
+          value: _mustSetPassword.toString(),
         );
         notifyListeners();
       }
@@ -352,6 +377,9 @@ class AuthProvider with ChangeNotifier {
       user['avatarPath'] ?? _avatarPath,
       _userRole,
     );
+    if (user['hasPassword'] == true) {
+      _mustSetPassword = false;
+    }
     await _loadBrandingForGym(user['gymId'] ?? _userData?['gymId']);
 
     if (_token != null) {
@@ -369,6 +397,10 @@ class AuthProvider with ChangeNotifier {
     );
     await _storage.write(key: 'avatar_path', value: _avatarPath ?? '');
     await _storage.write(key: 'branding_data', value: json.encode(_branding));
+    await _storage.write(
+      key: 'must_set_password',
+      value: _mustSetPassword.toString(),
+    );
     notifyListeners();
   }
 
@@ -410,6 +442,18 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> refreshBranding() async {
     await _loadBrandingForGym(_userData?['gymId']);
+    _gymName = _branding['gymName']?.toString() ?? _gymName;
+    if (_userData != null) {
+      _userData = {..._userData!, 'gymName': _gymName};
+      await _storage.write(key: 'user_data', value: json.encode(_userData));
+    }
+    await _storage.write(key: 'gym_name', value: _gymName);
+    await _storage.write(key: 'branding_data', value: json.encode(_branding));
+    notifyListeners();
+  }
+
+  Future<void> applyBrandingUpdate(Map<String, dynamic> branding) async {
+    _branding = normalizeBranding(branding);
     _gymName = _branding['gymName']?.toString() ?? _gymName;
     if (_userData != null) {
       _userData = {..._userData!, 'gymName': _gymName};

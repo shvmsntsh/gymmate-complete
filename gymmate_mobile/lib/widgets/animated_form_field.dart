@@ -13,6 +13,7 @@ class AnimatedFormField extends StatefulWidget {
   final int? maxLength;
   final ValueChanged<String>? onChanged;
   final TextCapitalization textCapitalization;
+  final bool showValidationIcon;
 
   const AnimatedFormField({
     super.key,
@@ -27,6 +28,7 @@ class AnimatedFormField extends StatefulWidget {
     this.maxLength,
     this.onChanged,
     this.textCapitalization = TextCapitalization.none,
+    this.showValidationIcon = false,
   });
 
   @override
@@ -45,7 +47,7 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> {
   }
 
   void _validate() {
-    if (widget.validator == null) return;
+    if (!widget.showValidationIcon || widget.validator == null) return;
 
     // Only validate if the field has been interacted with (not empty)
     if (widget.controller.text.isNotEmpty) {
@@ -89,7 +91,7 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> {
         color: widget.isValid! ? Colors.green : Colors.red,
         size: 20,
       );
-    } else if (_isValid != null) {
+    } else if (widget.showValidationIcon && _isValid != null) {
       suffix = Icon(
         _isValid! ? Icons.check_circle : Icons.cancel,
         color: _isValid! ? Colors.green : Colors.red,

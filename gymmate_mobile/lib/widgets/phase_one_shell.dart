@@ -24,13 +24,12 @@ class PhaseOneScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final overlayStyle = (isDark
-            ? SystemUiOverlayStyle.light
-            : SystemUiOverlayStyle.dark)
-        .copyWith(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: Colors.transparent,
-        );
+    final overlayStyle =
+        (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+            .copyWith(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: Colors.transparent,
+            );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
@@ -334,23 +333,28 @@ class PhaseOnePrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final enabled = onTap != null && !loading;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        onTap: loading ? null : onTap,
+        onTap: enabled ? onTap : null,
         child: Ink(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient(),
+            gradient: enabled ? AppColors.primaryGradient() : null,
+            color: enabled
+                ? null
+                : theme.colorScheme.onSurface.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
-              BoxShadow(
-                color: theme.colorScheme.primary.withValues(alpha: 0.26),
-                blurRadius: 24,
-                offset: const Offset(0, 14),
-              ),
+              if (enabled)
+                BoxShadow(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.26),
+                  blurRadius: 24,
+                  offset: const Offset(0, 14),
+                ),
             ],
           ),
           child: Center(
@@ -369,12 +373,23 @@ class PhaseOnePrimaryButton extends StatelessWidget {
                       Text(
                         label,
                         style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppColors.textOnAccent,
+                          color: enabled
+                              ? AppColors.textOnAccent
+                              : theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.42,
+                                ),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Icon(trailingIcon, color: AppColors.textOnAccent),
+                      Icon(
+                        trailingIcon,
+                        color: enabled
+                            ? AppColors.textOnAccent
+                            : theme.colorScheme.onSurface.withValues(
+                                alpha: 0.38,
+                              ),
+                      ),
                     ],
                   ),
           ),

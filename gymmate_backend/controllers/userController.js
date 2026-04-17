@@ -466,6 +466,7 @@ exports.quickLogin = async (req, res) => {
 
   return res.json({
     token,
+    requiresPasswordSetup: !user.password,
     user: buildUserPayload(user, gymName),
   });
 };

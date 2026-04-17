@@ -153,7 +153,12 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
         throw Exception(payload['message'] ?? 'Failed to update branding');
       }
 
-      await authProvider.refreshBranding();
+      final branding = payload['branding'];
+      if (branding is Map<String, dynamic>) {
+        await authProvider.applyBrandingUpdate(branding);
+      } else {
+        await authProvider.refreshBranding();
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -230,10 +235,7 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
     );
   }
 
-  Widget _sectionCard({
-    required ThemeData theme,
-    required Widget child,
-  }) {
+  Widget _sectionCard({required ThemeData theme, required Widget child}) {
     final panelColor = _panelColor(theme);
     final borderColor = _panelBorderColor(theme);
     return Container(
@@ -330,19 +332,19 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
               ),
               border: Border.all(color: borderColor),
             ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'BRAND STUDIO',
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: primary,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.3,
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'BRAND STUDIO',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: primary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.3,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
+                ),
+                const SizedBox(height: 12),
+                Text(
                   widget.isRequiredSetup
                       ? 'Set the look members will recognize.'
                       : 'Refresh how your gym shows up.',
@@ -377,7 +379,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                       Text(
                         'This is the name members will see across your gym experience.',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.74),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.74,
+                          ),
                           height: 1.45,
                         ),
                       ),
@@ -385,7 +389,10 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                       TextField(
                         controller: _gymNameController,
                         onChanged: (_) => setState(() {}),
-                        decoration: _fieldDecoration(theme, 'Enter your gym name'),
+                        decoration: _fieldDecoration(
+                          theme,
+                          'Enter your gym name',
+                        ),
                       ),
                     ],
                   ),
@@ -406,7 +413,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                       Text(
                         'PNG, JPG, JPEG, JFIF, or WebP up to 5 MB. Square, portrait, and landscape logos all work.',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.75,
+                          ),
                           height: 1.45,
                         ),
                       ),
@@ -423,7 +432,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(
-                                alpha: theme.brightness == Brightness.dark ? 0.18 : 0.06,
+                                alpha: theme.brightness == Brightness.dark
+                                    ? 0.18
+                                    : 0.06,
                               ),
                               blurRadius: 22,
                               offset: const Offset(0, 10),
@@ -470,7 +481,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                                       ),
                                     )
                                   : const Icon(Icons.upload_rounded),
-                              label: Text(hasLogo ? 'Replace Logo' : 'Upload Logo'),
+                              label: Text(
+                                hasLogo ? 'Replace Logo' : 'Upload Logo',
+                              ),
                             ),
                           ),
                           if (hasLogo)
@@ -507,7 +520,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                       Text(
                         'Choose a clean initials logo while your full logo is getting ready.',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.75,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -532,7 +547,8 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                                       height: 124,
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: theme.brightness == Brightness.dark
+                                        color:
+                                            theme.brightness == Brightness.dark
                                             ? const Color(0xFF1D1A12)
                                             : const Color(0xFFFFFCF7),
                                         borderRadius: BorderRadius.circular(20),
@@ -547,7 +563,9 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                                         boxShadow: _logoSource == option
                                             ? [
                                                 BoxShadow(
-                                                  color: primary.withValues(alpha: 0.18),
+                                                  color: primary.withValues(
+                                                    alpha: 0.18,
+                                                  ),
                                                   blurRadius: 16,
                                                   offset: const Offset(0, 8),
                                                 ),
@@ -563,11 +581,24 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                                               scale: 1,
                                               offsetX: 0,
                                               offsetY: 0,
-                                              borderRadius: BorderRadius.circular(14),
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
                                               fallback: Center(
                                                 child: Text(
-                                                  gymName.isEmpty ? 'GM' : gymName.substring(0, gymName.length >= 2 ? 2 : 1).toUpperCase(),
-                                                  style: theme.textTheme.headlineSmall,
+                                                  gymName.isEmpty
+                                                      ? 'GM'
+                                                      : gymName
+                                                            .substring(
+                                                              0,
+                                                              gymName.length >=
+                                                                      2
+                                                                  ? 2
+                                                                  : 1,
+                                                            )
+                                                            .toUpperCase(),
+                                                  style: theme
+                                                      .textTheme
+                                                      .headlineSmall,
                                                 ),
                                               ),
                                             ),
@@ -577,20 +608,30 @@ class _BrandingSettingsPageState extends State<BrandingSettingsPage> {
                                               top: 6,
                                               right: 6,
                                               child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
                                                 decoration: BoxDecoration(
                                                   color: primary,
-                                                  borderRadius: BorderRadius.circular(999),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        999,
+                                                      ),
                                                 ),
                                                 child: Text(
                                                   'Selected',
-                                                  style: theme.textTheme.labelSmall?.copyWith(
-                                                    color: theme.colorScheme.onPrimary,
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
+                                                  style: theme
+                                                      .textTheme
+                                                      .labelSmall
+                                                      ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onPrimary,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                      ),
                                                 ),
                                               ),
                                             ),

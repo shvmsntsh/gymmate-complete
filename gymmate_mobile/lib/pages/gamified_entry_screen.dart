@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/api/api_config.dart';
 import 'package:gymmate_mobile/main.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
+import 'package:gymmate_mobile/utils/auth_input.dart';
 import 'package:gymmate_mobile/widgets/animated_form_field.dart';
 import 'package:gymmate_mobile/widgets/confetti_success.dart';
 import 'package:gymmate_mobile/widgets/phase_one_shell.dart';
@@ -17,7 +18,16 @@ import 'package:gymmate_mobile/widgets/role_card.dart';
 
 import 'quick_join_screen.dart';
 
-enum EntryState { entry, login, chooseRole, register, quickJoin, forgotPassword }
+enum EntryState {
+  entry,
+  login,
+  chooseRole,
+  register,
+  quickJoin,
+  forgotPassword,
+}
+
+enum LoginMethod { email, phone }
 
 class GamifiedEntryScreen extends StatefulWidget {
   final EntryState initialState;
@@ -36,6 +46,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
   double _progress = 0.0;
   String? _registerError;
   String? _loginError;
+  LoginMethod _loginMethod = LoginMethod.email;
 
   final _loginEmailController = TextEditingController();
   final _loginPasswordController = TextEditingController();
@@ -48,6 +59,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
   bool _resetCodeSent = false;
   String? _resetMessage;
   String? _resetError;
+  String _resetCodeEmail = '';
 
   final _regNameController = TextEditingController();
   final _regEmailController = TextEditingController();
@@ -70,12 +82,24 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
     super.initState();
     _state = widget.initialState;
     _regCodeController.addListener(_scheduleInviteVerification);
+    _loginEmailController.addListener(_handleAuthInputChanged);
+    _loginPasswordController.addListener(_handleAuthInputChanged);
+    _resetEmailController.addListener(_handleAuthInputChanged);
+    _resetCodeController.addListener(_handleAuthInputChanged);
+    _resetPasswordController.addListener(_handleAuthInputChanged);
+    _resetConfirmController.addListener(_handleAuthInputChanged);
   }
 
   @override
   void dispose() {
     _inviteDebounce?.cancel();
     _regCodeController.removeListener(_scheduleInviteVerification);
+    _loginEmailController.removeListener(_handleAuthInputChanged);
+    _loginPasswordController.removeListener(_handleAuthInputChanged);
+    _resetEmailController.removeListener(_handleAuthInputChanged);
+    _resetCodeController.removeListener(_handleAuthInputChanged);
+    _resetPasswordController.removeListener(_handleAuthInputChanged);
+    _resetConfirmController.removeListener(_handleAuthInputChanged);
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
     _resetEmailController.dispose();
@@ -96,11 +120,70 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
   void _showJoin() => setState(() => _state = EntryState.chooseRole);
   void _showQuickJoin() => setState(() => _state = EntryState.quickJoin);
   void _showForgotPassword() {
-    _resetEmailController.text = _loginEmailController.text.trim();
+    final loginText = _loginEmailController.text.trim();
+    _resetEmailController.text =
+        _loginMethod == LoginMethod.email && isValidEmail(loginText)
+        ? loginText
+        : '';
     setState(() {
       _state = EntryState.forgotPassword;
       _resetError = null;
       _resetMessage = null;
+      _resetCodeSent = false;
+      _resetCodeEmail = '';
+    });
+  }
+
+  bool get _canLogin {
+    final identifier = _loginEmailController.text.trim();
+    final hasIdentifier = _loginMethod == LoginMethod.email
+        ? isValidEmail(identifier)
+        : canonicalIndianPhone(identifier) != null;
+    return hasIdentifier &&
+        validatePassword(_loginPasswordController.text.trim()) == null &&
+        !_loginLoading;
+  }
+
+  bool get _canRequestResetCode {
+    return isValidEmail(_resetEmailController.text) && !_resetLoading;
+  }
+
+  bool get _canCompleteReset {
+    return isValidEmail(_resetEmailController.text) &&
+        _resetCodeController.text.trim().isNotEmpty &&
+        validatePassword(_resetPasswordController.text) == null &&
+        _resetPasswordController.text == _resetConfirmController.text &&
+        !_resetLoading;
+  }
+
+  void _handleAuthInputChanged() {
+    if (!mounted) return;
+    if (_state != EntryState.login && _state != EntryState.forgotPassword) {
+      return;
+    }
+    setState(() {
+      if (_state == EntryState.login) {
+        _loginError = null;
+      } else {
+        _resetError = null;
+        _resetMessage = null;
+        if (_resetCodeSent &&
+            _resetEmailController.text.trim().toLowerCase() !=
+                _resetCodeEmail) {
+          _resetCodeSent = false;
+          _resetCodeEmail = '';
+        }
+      }
+    });
+  }
+
+  void _setLoginMethod(LoginMethod method) {
+    if (_loginMethod == method) return;
+    _loginEmailController.clear();
+    _loginPasswordController.clear();
+    setState(() {
+      _loginMethod = method;
+      _loginError = null;
     });
   }
 
@@ -172,16 +255,36 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
   }
 
   Future<void> _onLogin() async {
+    final identifier = _loginEmailController.text.trim();
+    final password = _loginPasswordController.text.trim();
+    String loginIdentifier = identifier;
+    if (_loginMethod == LoginMethod.email) {
+      final error = validateEmail(identifier);
+      if (error != null) {
+        setState(() => _loginError = error);
+        return;
+      }
+    } else {
+      final phone = canonicalIndianPhone(identifier);
+      if (phone == null) {
+        setState(() => _loginError = 'Enter a valid phone number.');
+        return;
+      }
+      loginIdentifier = phone;
+    }
+    final passwordError = validatePassword(password);
+    if (passwordError != null) {
+      setState(() => _loginError = passwordError);
+      return;
+    }
+
     setState(() {
       _loginLoading = true;
       _loginError = null;
     });
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.login(
-        _loginEmailController.text.trim(),
-        _loginPasswordController.text.trim(),
-      );
+      await authProvider.login(loginIdentifier, password);
     } catch (e) {
       setState(() => _loginError = _friendlyEntryError(e.toString()));
     } finally {
@@ -192,6 +295,12 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
   }
 
   Future<void> _requestPasswordReset() async {
+    final emailError = validateEmail(_resetEmailController.text);
+    if (emailError != null) {
+      setState(() => _resetError = emailError);
+      return;
+    }
+
     setState(() {
       _resetLoading = true;
       _resetError = null;
@@ -205,6 +314,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
       );
       setState(() {
         _resetCodeSent = true;
+        _resetCodeEmail = _resetEmailController.text.trim().toLowerCase();
         _resetMessage = message;
       });
     } catch (e) {
@@ -219,8 +329,18 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
   Future<void> _completePasswordReset() async {
     final password = _resetPasswordController.text;
     final confirm = _resetConfirmController.text;
-    if (password.length < 6) {
-      setState(() => _resetError = 'Password must be at least 6 characters.');
+    final emailError = validateEmail(_resetEmailController.text);
+    if (emailError != null) {
+      setState(() => _resetError = emailError);
+      return;
+    }
+    if (_resetCodeController.text.trim().isEmpty) {
+      setState(() => _resetError = 'Enter the reset code.');
+      return;
+    }
+    final passwordError = validatePassword(password);
+    if (passwordError != null) {
+      setState(() => _resetError = passwordError);
       return;
     }
     if (password != confirm) {
@@ -247,6 +367,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
         _state = EntryState.login;
         _loginError = message;
         _resetCodeSent = false;
+        _resetCodeEmail = '';
         _resetCodeController.clear();
         _resetPasswordController.clear();
         _resetConfirmController.clear();
@@ -336,9 +457,15 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
         final inviteeName = invitee['name']?.toString().trim() ?? '';
         final inviteeEmail = invitee['email']?.toString().trim() ?? '';
         final inviteePhone = invitee['phone_number']?.toString().trim() ?? '';
-        if (inviteeName.isNotEmpty) _regNameController.text = inviteeName;
-        if (inviteeEmail.isNotEmpty) _regEmailController.text = inviteeEmail;
-        if (inviteePhone.isNotEmpty) _regPhoneNumberController.text = inviteePhone;
+        if (inviteeName.isNotEmpty) {
+          _regNameController.text = inviteeName;
+        }
+        if (inviteeEmail.isNotEmpty) {
+          _regEmailController.text = inviteeEmail;
+        }
+        if (inviteePhone.isNotEmpty) {
+          _regPhoneNumberController.text = inviteePhone;
+        }
         setState(() {
           _backendRole = data['role'];
           _backendGymId = data['gymId'];
@@ -378,15 +505,12 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
     final confirm = _regConfirmController.text;
     final code = _regCodeController.text.trim().toUpperCase();
     final gymName = _regGymNameController.text.trim();
-    final phoneNumber = _regPhoneNumberController.text.trim();
+    final phoneNumber = canonicalIndianPhone(_regPhoneNumberController.text);
     final role = _selectedRole?.toLowerCase() ?? '';
 
     if (name.isEmpty) errors.add('Name is required');
-    if (email.isEmpty) {
-      errors.add('Email is required');
-    } else if (!RegExp(r'^\S+@\S+\.\S+$').hasMatch(email)) {
-      errors.add('Invalid email format');
-    }
+    final emailError = validateEmail(email);
+    if (emailError != null) errors.add(emailError);
     if (password.isEmpty) {
       errors.add('Password is required');
     } else if (password.length < 6) {
@@ -398,7 +522,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
       errors.add('Passwords do not match');
     }
     if (code.isEmpty) errors.add('Invite code is required');
-    if (phoneNumber.isEmpty) errors.add('Phone number is required');
+    if (phoneNumber == null) errors.add('Enter a valid phone number');
     if ((role == 'owner' || _isSuperadmin || _backendRole == 'gym_owner') &&
         gymName.isEmpty) {
       errors.add('Gym name is required');
@@ -408,6 +532,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
       setState(() => _registerError = errors.first);
       return;
     }
+    final canonicalPhone = phoneNumber!;
 
     if (!_isSuperadmin && (_backendRole == null || code != _lastVerifiedCode)) {
       await _verifyInviteCode(code);
@@ -427,7 +552,7 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
         'name': name,
         'email': email,
         'password': password,
-        'phone_number': phoneNumber,
+        'phone_number': canonicalPhone,
       };
 
       if (_isSuperadmin) {
@@ -545,8 +670,11 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
                       key: const ValueKey('login'),
                       emailController: _loginEmailController,
                       passwordController: _loginPasswordController,
+                      loginMethod: _loginMethod,
                       loading: _loginLoading,
                       error: _loginError,
+                      canLogin: _canLogin,
+                      onLoginMethodChanged: _setLoginMethod,
                       onLogin: _onLogin,
                       onBack: _backToEntry,
                       onForgot: _showForgotPassword,
@@ -561,6 +689,8 @@ class _GamifiedEntryScreenState extends State<GamifiedEntryScreen> {
                       loading: _resetLoading,
                       message: _resetMessage,
                       error: _resetError,
+                      canRequestCode: _canRequestResetCode,
+                      canCompleteReset: _canCompleteReset,
                       onRequestCode: _requestPasswordReset,
                       onCompleteReset: _completePasswordReset,
                       onBack: _showLogin,
@@ -743,8 +873,11 @@ class _MetricChip extends StatelessWidget {
 class _LoginStateView extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
+  final LoginMethod loginMethod;
   final bool loading;
   final String? error;
+  final bool canLogin;
+  final ValueChanged<LoginMethod> onLoginMethodChanged;
   final VoidCallback onLogin;
   final VoidCallback onBack;
   final VoidCallback onForgot;
@@ -753,8 +886,11 @@ class _LoginStateView extends StatelessWidget {
     super.key,
     required this.emailController,
     required this.passwordController,
+    required this.loginMethod,
     required this.loading,
     required this.error,
+    required this.canLogin,
+    required this.onLoginMethodChanged,
     required this.onLogin,
     required this.onBack,
     required this.onForgot,
@@ -785,14 +921,35 @@ class _LoginStateView extends StatelessWidget {
                   PhaseOneStatusBanner(message: error!),
                   const SizedBox(height: 14),
                 ],
+                SegmentedButton<LoginMethod>(
+                  segments: const [
+                    ButtonSegment<LoginMethod>(
+                      value: LoginMethod.email,
+                      label: Text('Email'),
+                    ),
+                    ButtonSegment<LoginMethod>(
+                      value: LoginMethod.phone,
+                      label: Text('Phone'),
+                    ),
+                  ],
+                  selected: {loginMethod},
+                  showSelectedIcon: false,
+                  onSelectionChanged: loading
+                      ? null
+                      : (selection) => onLoginMethodChanged(selection.first),
+                ),
+                const SizedBox(height: 12),
                 AnimatedFormField(
                   controller: emailController,
-                  hintText: 'Email or Indian phone number',
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    return null;
-                  },
+                  hintText: loginMethod == LoginMethod.email
+                      ? 'Email'
+                      : 'Phone number',
+                  keyboardType: loginMethod == LoginMethod.email
+                      ? TextInputType.emailAddress
+                      : TextInputType.phone,
+                  validator: loginMethod == LoginMethod.email
+                      ? validateEmail
+                      : validatePhone,
                   index: 0,
                 ),
                 const SizedBox(height: 12),
@@ -800,10 +957,7 @@ class _LoginStateView extends StatelessWidget {
                   controller: passwordController,
                   hintText: 'Password',
                   isPassword: true,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    return v.length >= 6 ? null : 'Min 6 chars';
-                  },
+                  validator: validatePassword,
                   index: 1,
                 ),
                 const SizedBox(height: 6),
@@ -817,7 +971,7 @@ class _LoginStateView extends StatelessWidget {
                 const SizedBox(height: 10),
                 PhaseOnePrimaryButton(
                   label: 'Log In',
-                  onTap: onLogin,
+                  onTap: canLogin ? onLogin : null,
                   loading: loading,
                 ),
               ],
@@ -839,6 +993,8 @@ class _ForgotPasswordView extends StatelessWidget {
   final bool loading;
   final String? message;
   final String? error;
+  final bool canRequestCode;
+  final bool canCompleteReset;
   final VoidCallback onRequestCode;
   final VoidCallback onCompleteReset;
   final VoidCallback onBack;
@@ -853,6 +1009,8 @@ class _ForgotPasswordView extends StatelessWidget {
     required this.loading,
     required this.message,
     required this.error,
+    required this.canRequestCode,
+    required this.canCompleteReset,
     required this.onRequestCode,
     required this.onCompleteReset,
     required this.onBack,
@@ -877,7 +1035,7 @@ class _ForgotPasswordView extends StatelessWidget {
                   eyebrow: 'Account Recovery',
                   title: 'Reset your password.',
                   subtitle:
-                      'Use your account email and the code from your inbox.',
+                      'Use the email on your account and the code from your inbox.',
                 ),
                 const SizedBox(height: 18),
                 if (error != null) ...[
@@ -888,8 +1046,8 @@ class _ForgotPasswordView extends StatelessWidget {
                   Text(
                     message!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(height: 14),
                 ],
@@ -897,12 +1055,7 @@ class _ForgotPasswordView extends StatelessWidget {
                   controller: emailController,
                   hintText: 'Email',
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    return RegExp(r'^\S+@\S+\.\S+$').hasMatch(v)
-                        ? null
-                        : 'Invalid email';
-                  },
+                  validator: validateEmail,
                   index: 0,
                 ),
                 if (codeSent) ...[
@@ -911,6 +1064,9 @@ class _ForgotPasswordView extends StatelessWidget {
                     controller: codeController,
                     hintText: 'Reset Code',
                     keyboardType: TextInputType.number,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Reset code is required'
+                        : null,
                     index: 1,
                   ),
                   const SizedBox(height: 12),
@@ -918,6 +1074,7 @@ class _ForgotPasswordView extends StatelessWidget {
                     controller: passwordController,
                     hintText: 'New Password',
                     isPassword: true,
+                    validator: validatePassword,
                     index: 2,
                   ),
                   const SizedBox(height: 12),
@@ -925,13 +1082,23 @@ class _ForgotPasswordView extends StatelessWidget {
                     controller: confirmController,
                     hintText: 'Confirm New Password',
                     isPassword: true,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) {
+                        return 'Confirm password is required';
+                      }
+                      return v == passwordController.text
+                          ? null
+                          : 'Passwords do not match';
+                    },
                     index: 3,
                   ),
                 ],
                 const SizedBox(height: 18),
                 PhaseOnePrimaryButton(
                   label: codeSent ? 'Reset Password' : 'Send Reset Code',
-                  onTap: codeSent ? onCompleteReset : onRequestCode,
+                  onTap: codeSent
+                      ? (canCompleteReset ? onCompleteReset : null)
+                      : (canRequestCode ? onRequestCode : null),
                   loading: loading,
                 ),
                 if (codeSent) ...[
@@ -939,7 +1106,9 @@ class _ForgotPasswordView extends StatelessWidget {
                   Align(
                     alignment: Alignment.center,
                     child: TextButton(
-                      onPressed: loading ? null : onRequestCode,
+                      onPressed: loading || !canRequestCode
+                          ? null
+                          : onRequestCode,
                       child: const Text('Send code again'),
                     ),
                   ),
@@ -1275,18 +1444,15 @@ class _RegistrationView extends StatelessWidget {
         controller: emailController,
         hintText: 'Email',
         keyboardType: TextInputType.emailAddress,
-        validator: (v) {
-          if (v == null || v.trim().isEmpty) return 'Required';
-          return RegExp(r'^\S+@\S+\.\S+$').hasMatch(v) ? null : 'Invalid email';
-        },
+        validator: validateEmail,
         index: 1,
       ),
       const SizedBox(height: 12),
       AnimatedFormField(
         controller: phoneNumberController,
-        hintText: 'Phone Number',
+        hintText: 'Phone number',
         keyboardType: TextInputType.phone,
-        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+        validator: validatePhone,
         index: 2,
       ),
       const SizedBox(height: 12),
@@ -1317,10 +1483,7 @@ class _RegistrationView extends StatelessWidget {
         controller: passwordController,
         hintText: 'Password',
         isPassword: true,
-        validator: (v) {
-          if (v == null || v.isEmpty) return 'Required';
-          return v.length >= 6 ? null : 'Min 6 chars';
-        },
+        validator: validatePassword,
         index: showGymName ? 5 : 4,
       ),
       const SizedBox(height: 12),
@@ -1358,21 +1521,16 @@ class _RegistrationView extends StatelessWidget {
           controller: emailController,
           hintText: 'Email',
           keyboardType: TextInputType.emailAddress,
-          validator: (v) {
-            if (v == null || v.trim().isEmpty) return 'Required';
-            return RegExp(r'^\S+@\S+\.\S+$').hasMatch(v)
-                ? null
-                : 'Invalid email';
-          },
+          validator: validateEmail,
           index: 1,
         ),
       ),
       fieldBox(
         AnimatedFormField(
           controller: phoneNumberController,
-          hintText: 'Phone Number',
+          hintText: 'Phone number',
           keyboardType: TextInputType.phone,
-          validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+          validator: validatePhone,
           index: 2,
         ),
       ),
@@ -1406,10 +1564,7 @@ class _RegistrationView extends StatelessWidget {
           controller: passwordController,
           hintText: 'Password',
           isPassword: true,
-          validator: (v) {
-            if (v == null || v.isEmpty) return 'Required';
-            return v.length >= 6 ? null : 'Min 6 chars';
-          },
+          validator: validatePassword,
           index: showGymName ? 5 : 4,
         ),
       ),

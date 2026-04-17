@@ -435,7 +435,7 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final brandingReady = isBrandingComplete(authProvider.branding);
     final hasPassword = authProvider.userData?['hasPassword'] == true;
 
-    if (!hasPassword) {
+    if (authProvider.mustSetPassword || !hasPassword) {
       return const RequiredPasswordSetupPage();
     }
 

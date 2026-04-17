@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
+import 'package:gymmate_mobile/utils/auth_input.dart';
 import 'package:gymmate_mobile/widgets/animated_form_field.dart';
 import 'package:gymmate_mobile/widgets/phase_one_shell.dart';
 
@@ -19,7 +20,23 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
   bool _loading = false;
   String? _error;
 
+  bool get _canSubmit =>
+      canonicalIndianPhone(_phoneController.text) != null &&
+      _accessCodeController.text.trim().isNotEmpty &&
+      !_loading;
+
   Future<void> _onQuickLogin() async {
+    final phone = canonicalIndianPhone(_phoneController.text);
+    if (phone == null) {
+      setState(() => _error = 'Enter a valid phone number.');
+      return;
+    }
+    final accessCode = _accessCodeController.text.trim();
+    if (accessCode.isEmpty) {
+      setState(() => _error = 'Enter your invite code.');
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
@@ -27,10 +44,7 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.quickLogin(
-        _phoneController.text.trim(),
-        _accessCodeController.text.trim(),
-      );
+      await authProvider.quickLogin(phone, accessCode);
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -75,12 +89,10 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
                 ],
                 AnimatedFormField(
                   controller: _phoneController,
-                  hintText: 'Phone Number',
+                  hintText: 'Phone number',
                   keyboardType: TextInputType.phone,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
-                    return v.trim().length >= 8 ? null : 'Invalid number';
-                  },
+                  validator: validatePhone,
+                  onChanged: (_) => setState(() => _error = null),
                   index: 0,
                 ),
                 const SizedBox(height: 14),
@@ -90,9 +102,13 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
                   keyboardType: TextInputType.text,
                   textCapitalization: TextCapitalization.characters,
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Required';
+                    if (v == null || v.isEmpty) {
+                      return 'Invite code is required';
+                    }
                     return v.trim().length >= 4 ? null : 'Enter invite code';
                   },
+                  onChanged: (_) => setState(() => _error = null),
+                  showValidationIcon: false,
                   index: 1,
                 ),
                 const SizedBox(height: 8),
@@ -103,7 +119,7 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
                 const SizedBox(height: 22),
                 PhaseOnePrimaryButton(
                   label: 'Claim Invite',
-                  onTap: _onQuickLogin,
+                  onTap: _canSubmit ? _onQuickLogin : null,
                   loading: _loading,
                 ),
               ],
