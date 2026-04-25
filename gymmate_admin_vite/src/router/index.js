@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import {
   canAccessAdminRoute,
   getAdminRole,
+  getAdminSession,
   hasWorkspaceAccess,
   isAdminAuthenticated,
 } from "../lib/api";
@@ -35,8 +36,50 @@ const routes = [
   {
     path: "/dashboard",
     name: "AdminDashboard",
-    component: () => import("../views/AdminDashboard.vue"),
+    component: () => import("../views/WorkspaceDashboard.vue"),
     meta: { protected: true, routeAccess: "AdminDashboard" },
+  },
+  {
+    path: "/crm",
+    name: "CrmWorkspace",
+    component: () => import("../views/WorkspaceModule.vue"),
+    props: { moduleKey: "crm" },
+    meta: { protected: true, routeAccess: "CrmWorkspace" },
+  },
+  {
+    path: "/members",
+    name: "MemberWorkspace",
+    component: () => import("../views/WorkspaceModule.vue"),
+    props: { moduleKey: "members" },
+    meta: { protected: true, routeAccess: "MemberWorkspace" },
+  },
+  {
+    path: "/payments",
+    name: "PaymentWorkspace",
+    component: () => import("../views/WorkspaceModule.vue"),
+    props: { moduleKey: "payments" },
+    meta: { protected: true, routeAccess: "PaymentWorkspace" },
+  },
+  {
+    path: "/attendance",
+    name: "AttendanceWorkspace",
+    component: () => import("../views/WorkspaceModule.vue"),
+    props: { moduleKey: "attendance" },
+    meta: { protected: true, routeAccess: "AttendanceWorkspace" },
+  },
+  {
+    path: "/classes",
+    name: "ClassesWorkspace",
+    component: () => import("../views/WorkspaceModule.vue"),
+    props: { moduleKey: "classes" },
+    meta: { protected: true, routeAccess: "ClassesWorkspace" },
+  },
+  {
+    path: "/staff",
+    name: "StaffWorkspace",
+    component: () => import("../views/WorkspaceModule.vue"),
+    props: { moduleKey: "staff" },
+    meta: { protected: true, routeAccess: "StaffWorkspace" },
   },
   {
     path: "/manage-members",
@@ -102,6 +145,7 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authenticated = isAdminAuthenticated();
   const role = getAdminRole();
+  const session = getAdminSession();
 
   if (
     (to.name === "Home" || to.name === "Login") &&
@@ -117,7 +161,7 @@ router.beforeEach((to, _from, next) => {
     return;
   }
 
-  if (to.meta?.routeAccess && !canAccessAdminRoute(to.meta.routeAccess, role)) {
+  if (to.meta?.routeAccess && !canAccessAdminRoute(to.meta.routeAccess, session?.user ? session : role)) {
     next({ name: "AdminDashboard" });
     return;
   }

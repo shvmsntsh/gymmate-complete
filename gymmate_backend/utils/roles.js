@@ -13,16 +13,23 @@ const ROLE_ALIASES = {
 
 const STAFF_PERMISSIONS = new Set([
   'workspace.access',
+  'members.view',
   'members.manage',
   'announcements.manage',
   'membership.requests.manage',
   'payments.manage',
+  'receipts.view',
 ]);
 
 const OWNER_PERMISSIONS = new Set([
   ...STAFF_PERMISSIONS,
   'membership.plans.manage',
   'biometric.manage',
+  'staff.manage',
+  'campaigns.manage',
+  'settings.manage',
+  'inventory.manage',
+  'ai.insights.view',
 ]);
 
 const ADMIN_PERMISSIONS = new Set([
@@ -77,6 +84,9 @@ function getPermissions(subject) {
 
   if (subjectRole === 'staff') {
     STAFF_PERMISSIONS.forEach((permission) => permissions.add(permission));
+    getExplicitStaffPermissions(subject).forEach((permission) =>
+      permissions.add(permission),
+    );
   }
 
   if (subjectRole === 'trainer') {

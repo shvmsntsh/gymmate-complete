@@ -28,13 +28,29 @@ export const normalizeRole = (role) => {
 
 const STAFF_PERMISSIONS = [
   "workspace.access",
+  "members.view",
   "members.manage",
   "announcements.manage",
   "membership.requests.manage",
   "payments.manage",
+  "receipts.view",
 ];
 
-const OWNER_PERMISSIONS = [...STAFF_PERMISSIONS, "membership.plans.manage"];
+const OWNER_PERMISSIONS = [
+  ...STAFF_PERMISSIONS,
+  "billing.manage",
+  "attendance.manage",
+  "leads.manage",
+  "classes.manage",
+  "reports.view",
+  "membership.plans.manage",
+  "biometric.manage",
+  "staff.manage",
+  "campaigns.manage",
+  "settings.manage",
+  "inventory.manage",
+  "ai.insights.view",
+];
 const ADMIN_PERMISSIONS = [...OWNER_PERMISSIONS, "gyms.manage"];
 
 const ROLE_PERMISSIONS = {
@@ -45,16 +61,46 @@ const ROLE_PERMISSIONS = {
 
 const ADMIN_ROUTE_RULES = {
   AdminDashboard: {
-    nav: { icon: "mdi-view-dashboard-outline", label: "Dashboard", to: "/dashboard" },
+    nav: { icon: "mdi-view-dashboard-outline", label: "Command", to: "/dashboard" },
     roles: ["admin", "owner", "staff"],
+  },
+  CrmWorkspace: {
+    nav: { icon: "mdi-account-search-outline", label: "CRM", to: "/crm" },
+    roles: ["admin", "owner", "staff"],
+    permissions: ["leads.manage"],
+  },
+  MemberWorkspace: {
+    nav: { icon: "mdi-account-group-outline", label: "Members", to: "/members" },
+    roles: ["admin", "owner", "staff"],
+    permissions: ["members.view", "members.manage"],
+  },
+  PaymentWorkspace: {
+    nav: { icon: "mdi-cash-register", label: "Payments", to: "/payments" },
+    roles: ["admin", "owner", "staff"],
+    permissions: ["billing.manage", "payments.manage"],
+  },
+  AttendanceWorkspace: {
+    nav: { icon: "mdi-calendar-check-outline", label: "Attendance", to: "/attendance" },
+    roles: ["admin", "owner", "staff"],
+    permissions: ["attendance.manage"],
+  },
+  ClassesWorkspace: {
+    nav: { icon: "mdi-calendar-clock", label: "Classes/PT", to: "/classes" },
+    roles: ["admin", "owner", "staff"],
+    permissions: ["classes.manage"],
+  },
+  StaffWorkspace: {
+    nav: { icon: "mdi-badge-account-horizontal-outline", label: "Staff", to: "/staff" },
+    roles: ["admin", "owner"],
+    permissions: ["staff.manage"],
   },
   NetworkControl: {
     nav: { icon: "mdi-domain", label: "Network", to: "/network" },
     roles: ["admin"],
   },
   ManageMembers: {
-    nav: { icon: "mdi-account-group-outline", label: "Members", to: "/manage-members" },
     roles: ["admin", "owner", "staff"],
+    permissions: ["members.manage"],
   },
   Announcements: {
     nav: { icon: "mdi-bullhorn-outline", label: "Announcements", to: "/announcements" },
@@ -63,10 +109,12 @@ const ADMIN_ROUTE_RULES = {
   MembershipOps: {
     nav: { icon: "mdi-card-account-details-outline", label: "Membership", to: "/membership" },
     roles: ["admin", "owner", "staff"],
+    permissions: ["membership.requests.manage", "membership.plans.manage"],
   },
   Membership: {
     nav: { icon: "mdi-card-account-details-outline", label: "Membership", to: "/membership" },
     roles: ["admin", "owner", "staff"],
+    permissions: ["membership.requests.manage", "membership.plans.manage"],
   },
   Invites: {
     nav: { icon: "mdi-ticket-confirmation-outline", label: "Invites", to: "/invites" },
@@ -117,13 +165,19 @@ export function getAdminRole() {
 }
 
 export function getAdminPermissions(input = null) {
+  const session = input || getAdminSession();
   const role =
     typeof input === "string"
       ? normalizeRole(input)
       : normalizeRole(input?.user?.normalizedRole || input?.user?.role) ||
         (input ? null : getAdminRole());
 
-  return ROLE_PERMISSIONS[role] || [];
+  const basePermissions = ROLE_PERMISSIONS[role] || [];
+  const explicit = Object.entries(session?.user?.staffCapabilities || {})
+    .filter(([, enabled]) => Boolean(enabled))
+    .map(([permission]) => permission);
+
+  return Array.from(new Set([...basePermissions, ...explicit]));
 }
 
 export function hasAdminPermission(permission, input = null) {
@@ -146,13 +200,16 @@ export function canAccessAdminRoute(routeName, input = null) {
   const rule = ADMIN_ROUTE_RULES[routeName];
   if (!rule) return true;
 
+  const permissions = getAdminPermissions(input);
   const role =
     typeof input === "string"
       ? normalizeRole(input)
       : normalizeRole(input?.user?.normalizedRole || input?.user?.role) ||
         (input ? null : getAdminRole());
 
-  return rule.roles.includes(role);
+  if (!rule.roles.includes(role)) return false;
+  if (!rule.permissions?.length || role === "admin" || role === "owner") return true;
+  return rule.permissions.some((permission) => permissions.includes(permission));
 }
 
 export function getAdminNavItems(currentPath, input = null) {

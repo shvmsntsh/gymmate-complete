@@ -172,7 +172,7 @@ const sidebarCopy = computed(() =>
 );
 
 const navItems = computed(() => {
-  return getAdminNavItems(route.path, sessionRole.value);
+  return getAdminNavItems(route.path, session.value);
 });
 
 function goTo(path) {
