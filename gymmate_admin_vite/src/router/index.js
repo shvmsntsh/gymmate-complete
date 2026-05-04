@@ -94,6 +94,18 @@ const routes = [
     meta: { protected: true, routeAccess: "NetworkControl" },
   },
   {
+    path: "/system-health",
+    name: "SystemHealth",
+    component: () => import("../views/SystemHealthView.vue"),
+    meta: { protected: true, routeAccess: "SystemHealth" },
+  },
+  {
+    path: "/settings",
+    name: "Settings",
+    component: () => import("../views/SettingsView.vue"),
+    meta: { protected: true, routeAccess: "Settings" },
+  },
+  {
     path: "/announcements",
     name: "Announcements",
     component: () => import("../views/AnnouncementsView.vue"),

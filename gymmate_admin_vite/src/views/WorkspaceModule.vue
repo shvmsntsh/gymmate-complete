@@ -160,13 +160,22 @@
       </div>
 
       <section v-if="selectedRow" class="workspace-panel workspace-detail">
-        <div class="workspace-section-head">
-          <div>
-            <div class="table-overline">Selected Record</div>
-            <h2 class="section-title">{{ selectedTitle }}</h2>
+          <div class="workspace-section-head">
+            <div>
+              <div class="table-overline">Selected Record</div>
+              <h2 class="section-title">{{ selectedTitle }}</h2>
+            </div>
+            <v-btn
+              v-if="moduleKey === 'members'"
+              color="primary"
+              variant="tonal"
+              @click="router.push({ path: '/membership', query: { memberId: selectedRow.id || selectedRow.member?.id } })"
+            >
+              <v-icon start icon="mdi-card-account-details-outline" />
+              Manage membership
+            </v-btn>
+            <v-btn icon="mdi-close" variant="text" @click="selectedRow = null" />
           </div>
-          <v-btn icon="mdi-close" variant="text" @click="selectedRow = null" />
-        </div>
         <pre class="workspace-json">{{ JSON.stringify(selectedRow, null, 2) }}</pre>
       </section>
     </template>
@@ -545,8 +554,13 @@ async function submitForm() {
       throw new Error(payload.message || "Could not save workspace change.");
     }
     formMessage.value = "Saved.";
+    const createdLead = moduleKey.value === "crm" ? payload.lead : null;
     resetForm();
     await fetchData();
+    if (createdLead?.id) {
+      const freshLead = tableRows.value.find((row) => row.id === createdLead.id) || createdLead;
+      selectedRow.value = freshLead;
+    }
   } catch (err) {
     formError.value = err?.message || "Could not save workspace change.";
   } finally {

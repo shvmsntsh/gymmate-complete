@@ -8,7 +8,21 @@
 
         <template v-else-if="receipt">
           <div class="receipt-header">
-            <div>
+            <div class="receipt-brand-line">
+              <div class="receipt-logo-frame">
+                <img
+                  v-if="receipt.gym?.branding?.logoUrl"
+                  :src="receipt.gym.branding.logoUrl"
+                  :alt="`${receipt.gym?.name || 'Gym'} logo`"
+                />
+                <span v-else>{{ initials(receipt.gym?.name || "GM") }}</span>
+              </div>
+              <div>
+                <div class="receipt-value">{{ receipt.gym?.name || "GymMate Gym" }}</div>
+                <div class="receipt-muted">{{ receipt.gym?.address || "Official payment receipt" }}</div>
+              </div>
+            </div>
+            <div class="receipt-title-block">
               <div class="receipt-kicker">GymMate Receipt</div>
               <h1>{{ receipt.receiptNumber }}</h1>
             </div>
@@ -38,6 +52,11 @@
                 {{ receipt.paymentMethod || "Payment" }}
                 <span v-if="receipt.paymentReference"> · {{ receipt.paymentReference }}</span>
               </div>
+            </div>
+            <div>
+              <div class="receipt-label">Status</div>
+              <div class="receipt-value">{{ receipt.status || "Paid" }}</div>
+              <div class="receipt-muted">Thank you for your payment.</div>
             </div>
           </div>
 
@@ -74,6 +93,15 @@ function formatDate(value) {
   });
 }
 
+function initials(value) {
+  return String(value || "GM")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "GM";
+}
+
 function printReceipt() {
   window.print();
 }
@@ -98,19 +126,19 @@ onMounted(async () => {
 .receipt-page {
   min-height: 100vh;
   padding: 32px 18px;
-  background: #f4efe6;
-  color: #201a15;
+  background: #fdf8f6;
+  color: #2c2c2e;
   display: grid;
   place-items: start center;
 }
 
 .receipt-card {
-  width: min(760px, 100%);
-  background: #fffaf3;
-  border: 1px solid rgba(113, 88, 56, 0.18);
-  border-radius: 8px;
-  padding: 28px;
-  box-shadow: 0 24px 70px rgba(34, 22, 10, 0.12);
+  width: min(860px, 100%);
+  background: #ffffff;
+  border: 1px solid #e7d9d4;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 24px 70px rgba(43, 26, 17, 0.1);
 }
 
 .receipt-center {
@@ -121,10 +149,40 @@ onMounted(async () => {
 
 .receipt-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 18px;
   margin-bottom: 28px;
+}
+
+.receipt-brand-line {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.receipt-logo-frame {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid #e7d9d4;
+  border-radius: 14px;
+  background: #f4f0ef;
+  color: #ff5200;
+  font-weight: 900;
+  overflow: hidden;
+}
+
+.receipt-logo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.receipt-title-block {
+  text-align: right;
 }
 
 .receipt-kicker,
@@ -138,7 +196,7 @@ onMounted(async () => {
 
 h1 {
   margin: 8px 0 0;
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 4vw, 2rem);
 }
 
 .receipt-grid {
@@ -164,7 +222,7 @@ h1 {
   align-items: center;
   margin-top: 30px;
   padding-top: 20px;
-  border-top: 1px solid rgba(113, 88, 56, 0.18);
+  border-top: 1px solid #e7d9d4;
   font-size: 1.2rem;
 }
 
@@ -173,6 +231,15 @@ h1 {
 }
 
 @media (max-width: 640px) {
+  .receipt-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .receipt-title-block {
+    text-align: left;
+  }
+
   .receipt-card {
     padding: 22px;
   }

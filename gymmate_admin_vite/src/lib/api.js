@@ -57,11 +57,12 @@ const ROLE_PERMISSIONS = {
   admin: ADMIN_PERMISSIONS,
   owner: OWNER_PERMISSIONS,
   staff: STAFF_PERMISSIONS,
+  trainer: ["workspace.access", "members.view", "classes.manage"],
 };
 
 const ADMIN_ROUTE_RULES = {
   AdminDashboard: {
-    nav: { icon: "mdi-view-dashboard-outline", label: "Command", to: "/dashboard" },
+    nav: { icon: "mdi-view-dashboard-outline", label: "Dashboard", to: "/dashboard" },
     roles: ["admin", "owner", "staff"],
   },
   CrmWorkspace: {
@@ -95,7 +96,7 @@ const ADMIN_ROUTE_RULES = {
     permissions: ["staff.manage"],
   },
   NetworkControl: {
-    nav: { icon: "mdi-domain", label: "Network", to: "/network" },
+    nav: { icon: "mdi-domain", label: "Gyms & Users", to: "/network" },
     roles: ["admin"],
   },
   ManageMembers: {
@@ -131,6 +132,14 @@ const ADMIN_ROUTE_RULES = {
   RegisterGym: {
     nav: { icon: "mdi-domain-plus", label: "Register Gym", to: "/register-gym" },
     roles: ["admin"],
+  },
+  SystemHealth: {
+    nav: { icon: "mdi-heart-pulse", label: "System Health", to: "/system-health" },
+    roles: ["admin"],
+  },
+  Settings: {
+    nav: { icon: "mdi-cog-outline", label: "Settings", to: "/settings" },
+    roles: ["admin", "owner", "staff", "trainer"],
   },
   GymDetails: {
     roles: ["admin"],
@@ -214,9 +223,18 @@ export function canAccessAdminRoute(routeName, input = null) {
 
 export function getAdminNavItems(currentPath, input = null) {
   const seenTargets = new Set();
+  const role =
+    typeof input === "string"
+      ? normalizeRole(input)
+      : normalizeRole(input?.user?.normalizedRole || input?.user?.role) ||
+        (input ? null : getAdminRole());
 
   return Object.entries(ADMIN_ROUTE_RULES)
     .filter(([routeName, rule]) => rule.nav && canAccessAdminRoute(routeName, input))
+    .filter(([routeName]) => {
+      if (role !== "admin") return true;
+      return ["AdminDashboard", "NetworkControl", "Invites", "SystemHealth", "Settings", "RegisterGym"].includes(routeName);
+    })
     .filter(([, rule]) => {
       if (seenTargets.has(rule.nav.to)) return false;
       seenTargets.add(rule.nav.to);

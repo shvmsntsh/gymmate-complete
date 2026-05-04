@@ -269,12 +269,12 @@ class _ProfilePageState extends State<ProfilePage> {
       case 'trainer':
         return const [('Trainer M', 'assets/avatars/t_m_1.png'), ('Trainer F', 'assets/avatars/t_f_1.png')];
       case 'member':
-        return const [('Member M', 'assets/avatars/m_m_1.png'), ('Member F', 'assets/avatars/m_f_1.png')];
+        return const [('Member M', 'assets/avatars/m_m_1.png'), ('Member F', 'assets/avatars/m_m_1.png')];
       case 'staff':
       case 'admin':
         return const [('Staff M', 'assets/avatars/staff_m_1.png'), ('Staff F', 'assets/avatars/staff_f_1.png')];
       default:
-        return const [('Member M', 'assets/avatars/m_m_1.png'), ('Member F', 'assets/avatars/m_f_1.png')];
+        return const [('Member M', 'assets/avatars/m_m_1.png'), ('Member F', 'assets/avatars/m_m_1.png')];
     }
   }
 

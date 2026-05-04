@@ -3,10 +3,10 @@
     <template #hero>
       <div class="stack">
         <div>
-          <div class="eyebrow">GymMate For Gym Owners</div>
-          <h1 class="display-headline">Run your gym clearly.</h1>
+          <div class="eyebrow">GymMate for gym teams</div>
+          <h1 class="display-headline">Simple admin for real gym work.</h1>
           <p class="lead-copy">
-            Members, plans, staff, and daily operations in one focused workspace.
+            A clean workspace for owners, staff, trainers, payments, attendance, and members.
           </p>
         </div>
 
@@ -28,24 +28,11 @@
     </template>
 
     <div class="stack">
-      <div class="landing-media">
-        <img
-          :src="heroImage"
-          alt="Modern gym interior with strength and cardio equipment"
-        />
-        <div class="landing-media__caption">
-          <div class="landing-media__caption-title">A gym owners actually recognize</div>
-          <div class="landing-media__caption-copy">
-            Premium, familiar, and grounded in the kind of space owners run every day.
-          </div>
-        </div>
-      </div>
-
       <div>
-        <div class="eyebrow">Owner Dashboard</div>
-        <h2 class="section-title">Everything you need to run your gym.</h2>
+        <div class="eyebrow">Admin Portal</div>
+        <h2 class="section-title">Choose where to start.</h2>
         <p class="section-copy">
-          Set up the gym, manage members, and keep the front desk moving.
+          Sign in to manage an existing gym or register a new gym workspace.
         </p>
       </div>
 
@@ -62,5 +49,4 @@ import PublicAuthShell from '../components/PublicAuthShell.vue'
 import { useAdminTheme } from '../composables/useAdminTheme'
 
 const { isDark, toggleTheme } = useAdminTheme()
-const heroImage = `${import.meta.env.BASE_URL}images/login-hero-gym.jpg`
 </script>

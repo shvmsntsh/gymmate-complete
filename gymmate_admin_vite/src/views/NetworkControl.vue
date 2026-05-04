@@ -41,6 +41,75 @@
       />
 
       <template v-else>
+        <div class="network-selector">
+          <div class="workspace-section-head">
+            <div>
+              <div class="table-overline">Select a gym</div>
+              <h2 class="section-title">Choose what you are editing</h2>
+              <p class="section-copy">
+                Pick one gym first. The selected gym stays visible while you update plan, status, people, and access.
+              </p>
+            </div>
+            <v-text-field
+              v-model="gymSearch"
+              class="network-search"
+              density="comfortable"
+              hide-details
+              placeholder="Search gyms or owners"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+            />
+          </div>
+
+          <div class="network-gym-grid">
+            <button
+              v-for="gym in filteredGyms"
+              :key="gym.id"
+              type="button"
+              class="network-gym-card"
+              :class="{ 'network-gym-card--selected': selectedGym?.id === gym.id }"
+              @click="selectGym(gym)"
+            >
+              <span>
+                <strong>{{ gym.gymName }}</strong>
+                <small>{{ gym.owner?.name || gym.owner?.email || "No owner assigned" }}</small>
+              </span>
+              <v-chip :color="gym.status === 'active' ? 'success' : 'error'" size="small" variant="tonal">
+                {{ selectedGym?.id === gym.id ? "Selected" : gym.status }}
+              </v-chip>
+            </button>
+          </div>
+
+          <div v-if="selectedGym" class="network-context-bar">
+            <div>
+              <div class="table-overline">Selected gym</div>
+              <h3>{{ selectedGym.gymName }}</h3>
+              <p>{{ selectedGym.owner?.email || selectedGym.email || "No owner email" }} · {{ usageLabel(selectedGym) }}</p>
+            </div>
+            <div class="network-context-actions">
+              <v-select
+                :items="planTiers"
+                item-title="name"
+                item-value="key"
+                :model-value="selectedGym.platformPlan"
+                density="comfortable"
+                hide-details
+                label="Plan"
+                variant="outlined"
+                @update:model-value="(value) => updateGymPlan(selectedGym, value)"
+              />
+              <v-btn
+                :color="selectedGym.status === 'active' ? 'error' : 'primary'"
+                variant="tonal"
+                :loading="busyKey === `gym-${selectedGym.id}`"
+                @click="toggleGymStatus(selectedGym)"
+              >
+                {{ selectedGym.status === "active" ? "Deactivate gym" : "Activate gym" }}
+              </v-btn>
+            </div>
+          </div>
+        </div>
+
         <v-tabs v-model="tab" class="network-tabs">
           <v-tab value="gyms">Gyms</v-tab>
           <v-tab value="people">People</v-tab>
@@ -240,6 +309,8 @@ const tab = ref("gyms");
 const loading = ref(false);
 const error = ref("");
 const busyKey = ref("");
+const gymSearch = ref("");
+const selectedGym = ref(null);
 const snackbar = ref(false);
 const snackbarText = ref("");
 const snackbarColor = ref("success");
@@ -312,6 +383,16 @@ const metrics = computed(() => [
   },
 ]);
 
+const filteredGyms = computed(() => {
+  const query = gymSearch.value.trim().toLowerCase();
+  if (!query) return gyms.value;
+  return gyms.value.filter((gym) =>
+    [gym.gymName, gym.name, gym.email, gym.owner?.name, gym.owner?.email]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query)),
+  );
+});
+
 function showMessage(message, color = "success") {
   snackbarText.value = message;
   snackbarColor.value = color;
@@ -335,6 +416,11 @@ function usageLabel(gym) {
   const used = Number(gym.usage?.usedSeats || 0);
   const cap = Number(gym.memberCap || gym.usage?.memberCap || 0);
   return `${used}/${cap} seats`;
+}
+
+function selectGym(gym) {
+  selectedGym.value = gym;
+  tab.value = "gyms";
 }
 
 async function loadAll() {
@@ -372,6 +458,11 @@ async function loadAll() {
     invites.value = invitesData.invites || [];
     services.value = servicesData.services || [];
     planTiers.value = gymsData.planTiers || overviewData.planTiers || [];
+    if (!selectedGym.value && gyms.value.length) {
+      selectedGym.value = gyms.value[0];
+    } else if (selectedGym.value) {
+      selectedGym.value = gyms.value.find((gym) => gym.id === selectedGym.value.id) || gyms.value[0] || null;
+    }
   } catch (err) {
     error.value = err?.message || "Could not load network control.";
   } finally {
@@ -389,6 +480,9 @@ async function patchGym(gym, body) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || "Could not update gym.");
     gyms.value = gyms.value.map((row) => (row.id === gym.id ? data.gym : row));
+    if (selectedGym.value?.id === gym.id) {
+      selectedGym.value = data.gym;
+    }
     showMessage("Gym updated.");
   } catch (err) {
     showMessage(err?.message || "Could not update gym.", "error");
@@ -463,6 +557,80 @@ onMounted(loadAll);
   margin-top: 20px;
 }
 
+.network-selector {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.network-search {
+  max-width: 340px;
+}
+
+.network-gym-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.network-gym-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 96px;
+  padding: 16px;
+  border: 1px solid var(--gm-border);
+  border-radius: 16px;
+  background: var(--gm-surface-muted);
+  color: var(--gm-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.network-gym-card--selected {
+  border-color: var(--gm-primary);
+  background: color-mix(in srgb, var(--gm-primary) 12%, var(--gm-surface-strong));
+  box-shadow: 0 16px 38px rgba(255, 82, 0, 0.12);
+}
+
+.network-gym-card strong,
+.network-gym-card small {
+  display: block;
+}
+
+.network-gym-card small {
+  margin-top: 5px;
+  color: var(--gm-text-soft);
+}
+
+.network-context-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid var(--gm-border-strong);
+  border-radius: 18px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--gm-primary) 10%, var(--gm-surface-strong)), var(--gm-surface-strong));
+}
+
+.network-context-bar h3,
+.network-context-bar p {
+  margin: 0;
+}
+
+.network-context-bar p {
+  color: var(--gm-text-soft);
+}
+
+.network-context-actions {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
 .network-tabs {
   margin-top: 12px;
 }
@@ -495,7 +663,7 @@ onMounted(loadAll);
 }
 
 .usage-card__copy {
-  color: var(--gm-text-muted);
+  color: var(--gm-text-soft);
   margin-top: 4px;
 }
 
@@ -515,6 +683,16 @@ onMounted(loadAll);
 }
 
 @media (max-width: 760px) {
+  .network-gym-grid,
+  .network-context-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .network-context-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .network-inline-control {
     grid-template-columns: 1fr;
     min-width: 220px;

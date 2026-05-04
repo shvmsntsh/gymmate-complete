@@ -1157,7 +1157,16 @@ exports.getMemberMembershipSummary = async (req, res) => {
 
   try {
     const [membership, plans, requests] = await Promise.all([
-      MemberMembership.findOne({ memberId: req.user._id }).lean(),
+      MemberMembership.findOne({
+        memberId: req.user._id,
+        $or: [
+          { isActiveBaseMembership: true },
+          { status: { $in: ['active', 'renewal_due', 'scheduled'] }, paymentStatus: { $in: ['paid', 'waived'] } },
+        ],
+      })
+        .sort({ isActiveBaseMembership: -1, activatedAt: -1, updatedAt: -1 })
+        .populate('membershipTemplateId', 'name category price')
+        .lean(),
       MembershipPlanCatalog.find({ gymId: req.user.gymId, active: true })
         .sort({ name: 1 })
         .lean(),

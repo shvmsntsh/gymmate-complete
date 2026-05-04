@@ -33,6 +33,18 @@ export function useAdminTheme() {
     }
   }
 
+  const setSystemTheme = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(THEME_KEY)
+    }
+    const systemTheme =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+    setTheme(systemTheme, { persist: false })
+  }
+
   const toggleTheme = () => {
     setTheme(isDark.value ? 'light' : 'dark')
   }
@@ -73,6 +85,7 @@ export function useAdminTheme() {
 
   return {
     isDark,
+    setSystemTheme,
     setTheme,
     themeName,
     toggleTheme,

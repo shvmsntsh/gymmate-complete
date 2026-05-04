@@ -1,9 +1,6 @@
 <template>
   <v-app :theme="isDark ? 'dark' : 'light'">
     <div class="public-shell">
-      <div class="public-shell__bg public-shell__bg--primary"></div>
-      <div class="public-shell__bg public-shell__bg--secondary"></div>
-
       <v-container class="public-shell__container">
         <header class="public-shell__nav">
           <button class="public-shell__home" type="button" @click="router.push('/')">
@@ -48,9 +45,9 @@
           <section class="public-shell__hero admin-surface admin-surface--hero">
             <div class="eyebrow">GymMate Admin</div>
             <slot name="hero">
-              <h1 class="display-headline">A calmer, clearer way to run the business side of your gym.</h1>
+              <h1 class="display-headline">Run your gym clearly.</h1>
               <p class="lead-copy">
-                Keep your gym details, member visibility, and daily operations together in one easy place.
+                Members, plans, staff, and daily operations in one focused workspace.
               </p>
             </slot>
             <slot name="hero-meta"></slot>

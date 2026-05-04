@@ -1,30 +1,12 @@
 <template>
   <PublicAuthShell :is-dark="isDark" @toggle-theme="toggleTheme">
     <template #hero>
-      <div class="auth-hero-clean">
-        <div>
-          <div class="eyebrow">Owner & Admin Login</div>
-          <h1 class="display-headline">
-            Sign in to GymMate Admin.
-          </h1>
-          <p class="lead-copy">
-            Manage members, payments, attendance, staff, and daily gym operations from one clean workspace.
-          </p>
-        </div>
-
-        <div class="auth-hero-points">
-          <div>
-            <span>01</span>
-            <strong>Front desk ready</strong>
-            <p>Fast access to members, dues, check-ins, and class work.</p>
-          </div>
-          <div>
-            <span>02</span>
-            <strong>Owner friendly</strong>
-            <p>Clear dashboards and actions without technical clutter.</p>
-          </div>
-        </div>
-      </div>
+      <h1 class="display-headline">
+        Sign in to GymMate Admin.
+      </h1>
+      <p class="lead-copy">
+        Manage members, payments, attendance, staff, and daily gym operations from one clean workspace.
+      </p>
     </template>
 
     <div class="stack">

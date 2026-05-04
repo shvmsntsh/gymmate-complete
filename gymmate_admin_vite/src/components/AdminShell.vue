@@ -48,8 +48,21 @@
         <div
           class="admin-shell__sidebar-footer admin-surface admin-surface--muted"
         >
-          <div class="sidebar-callout__title">{{ sidebarTitle }}</div>
-          <div class="sidebar-callout__copy">{{ sidebarCopy }}</div>
+          <div class="admin-shell__profile">
+            <div class="admin-shell__avatar">{{ userInitials }}</div>
+            <div class="admin-shell__profile-copy">
+              <div class="sidebar-callout__title">{{ userName }}</div>
+              <div class="sidebar-callout__copy">{{ userRoleLabel }}</div>
+            </div>
+            <button
+              type="button"
+              class="admin-shell__logout-icon"
+              aria-label="Logout"
+              @click="$emit('logout')"
+            >
+              <v-icon icon="mdi-logout" />
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -70,10 +83,6 @@
 
           <div class="admin-shell__actions">
             <slot name="header-actions"></slot>
-            <AdminThemeToggle
-              :is-dark="isDark"
-              @toggle="$emit('toggle-theme')"
-            />
             <v-btn
               class="admin-logout-btn"
               variant="tonal"
@@ -97,7 +106,6 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminBrand from "./AdminBrand.vue";
-import AdminThemeToggle from "./AdminThemeToggle.vue";
 import { apiFetch, getAdminNavItems, getAdminRole, getAdminSession } from "../lib/api";
 
 const props = defineProps({
@@ -155,20 +163,23 @@ const workspaceLabel = computed(() =>
       : "Management Suite",
 );
 
-const sidebarTitle = computed(() =>
+const userName = computed(() => session.value?.user?.name || sidebarBrandName.value || "GymMate User");
+const userRoleLabel = computed(() =>
   sessionRole.value === "admin"
-    ? "Network Control"
+    ? "Superadmin"
     : sessionRole.value === "owner"
-      ? "Gym Studio"
-      : "Your Fitness HQ",
+      ? "Gym Owner"
+      : sessionRole.value === "staff"
+        ? "Staff"
+        : "Workspace User",
 );
-
-const sidebarCopy = computed(() =>
-  sessionRole.value === "admin"
-    ? "Manage gyms, owner access, invites, and shared operations from one clear control room."
-    : sessionRole.value === "owner"
-    ? "Keep your brand, invites, members, and daily gym rhythm in one focused workspace."
-    : "Keep your gyms, members, invites, and day-to-day operations in one calm control room.",
+const userInitials = computed(() =>
+  userName.value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "GM",
 );
 
 const navItems = computed(() => {
