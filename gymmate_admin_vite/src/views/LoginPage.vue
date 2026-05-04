@@ -1,27 +1,27 @@
 <template>
   <PublicAuthShell :is-dark="isDark" @toggle-theme="toggleTheme">
     <template #hero>
-      <div class="stack">
+      <div class="auth-hero-clean">
         <div>
           <div class="eyebrow">Owner & Admin Login</div>
           <h1 class="display-headline">
-            Step into your gym workspace.
+            Sign in to GymMate Admin.
           </h1>
           <p class="lead-copy">
-            Sign in to manage members, staff, plans, and day-to-day operations.
+            Manage members, payments, attendance, staff, and daily gym operations from one clean workspace.
           </p>
         </div>
 
-        <div class="landing-media">
-          <img
-            :src="heroImage"
-            alt="Premium gym floor with strength training equipment"
-          />
-          <div class="landing-media__caption">
-            <div class="landing-media__caption-title">Built for real gym operations</div>
-            <div class="landing-media__caption-copy">
-              A cleaner front desk workspace for memberships, team activity, and member support.
-            </div>
+        <div class="auth-hero-points">
+          <div>
+            <span>01</span>
+            <strong>Front desk ready</strong>
+            <p>Fast access to members, dues, check-ins, and class work.</p>
+          </div>
+          <div>
+            <span>02</span>
+            <strong>Owner friendly</strong>
+            <p>Clear dashboards and actions without technical clutter.</p>
           </div>
         </div>
       </div>
@@ -110,7 +110,6 @@ const snackbarText = ref("");
 const snackbarColor = ref("");
 const submitting = ref(false);
 const { isDark, toggleTheme } = useAdminTheme();
-const heroImage = `${import.meta.env.BASE_URL}images/login-hero-gym.jpg`;
 
 function showMessage(message, color = "success") {
   snackbarText.value = message;

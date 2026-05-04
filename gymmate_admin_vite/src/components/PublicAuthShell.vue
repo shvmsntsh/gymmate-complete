@@ -22,7 +22,6 @@
               <v-btn class="admin-nav-link" variant="text" @click="router.push('/register-gym')">Register Gym</v-btn>
             </div>
             <div class="public-shell__nav-tools">
-              <AdminThemeToggle :is-dark="isDark" @toggle="emit('toggle-theme')" />
               <v-menu location="bottom end">
                 <template #activator="{ props: menuProps }">
                   <v-btn
@@ -42,6 +41,10 @@
         </header>
 
         <div class="public-shell__grid">
+          <section class="public-shell__panel admin-surface admin-surface--panel">
+            <slot></slot>
+          </section>
+
           <section class="public-shell__hero admin-surface admin-surface--hero">
             <div class="eyebrow">GymMate Admin</div>
             <slot name="hero">
@@ -51,10 +54,6 @@
               </p>
             </slot>
             <slot name="hero-meta"></slot>
-          </section>
-
-          <section class="public-shell__panel admin-surface admin-surface--panel">
-            <slot></slot>
           </section>
         </div>
       </v-container>
@@ -66,7 +65,6 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminBrand from './AdminBrand.vue'
-import AdminThemeToggle from './AdminThemeToggle.vue'
 
 const props = defineProps({
   isDark: {
@@ -75,7 +73,6 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['toggle-theme'])
 const router = useRouter()
 const assetBase = import.meta.env.BASE_URL
 const brandWordmark = computed(() =>
