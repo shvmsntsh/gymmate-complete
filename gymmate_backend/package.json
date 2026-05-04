@@ -9,6 +9,7 @@
     "seed:qa": "node scripts/seed-qa-data.js",
     "serve": "node index.js",
     "start": "node index.js",
+    "test": "node --test \"test/**/*.test.js\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

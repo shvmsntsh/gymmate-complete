@@ -11,6 +11,7 @@ const MembershipRequest = require('../models/MembershipRequest');
 const MembershipTemplate = require('../models/MembershipTemplate');
 const PaymentEntry = require('../models/PaymentEntry');
 const User = require('../models/User');
+const { serializeActiveMembershipSummary } = require('../utils/membershipSummary');
 const { hasPermission, hasRole } = require('../utils/roles');
 
 const BIOMETRIC_PROVIDERS = [
@@ -69,58 +70,6 @@ function parseObjectIdStrings(values) {
   return Array.isArray(values)
     ? values.map((value) => String(value || '').trim()).filter(Boolean)
     : [];
-}
-
-function serializeMembership(membership, plan = null) {
-  if (!membership) {
-    return {
-      id: null,
-      planId: null,
-      planName: 'No active plan',
-      status: 'inactive',
-      paymentStatus: 'none',
-      startDate: null,
-      endDate: null,
-      renewalDueDate: null,
-      addOns: { training: false, diet: false },
-      notes: '',
-    };
-  }
-
-  return {
-    id: membership._id,
-    planId:
-      plan?._id ||
-      membership.planId ||
-      membership.membershipTemplateId?._id ||
-      membership.membershipTemplateId ||
-      null,
-    planName:
-      plan?.name ||
-      membership.planName ||
-      membership.membershipTemplateId?.name ||
-      'No active plan',
-    status: membership.status || 'inactive',
-    paymentStatus: membership.paymentStatus || 'none',
-    startDate: membership.startDate || null,
-    endDate: membership.endDate || null,
-    renewalDueDate:
-      membership.renewalDueDate ||
-      membership.nextRenewalDate ||
-      membership.endDate ||
-      null,
-    addOns: {
-      training: Boolean(
-        membership.addOns?.training ||
-          membership.entitlementsSnapshot?.personalTraining,
-      ),
-      diet: Boolean(
-        membership.addOns?.diet ||
-          membership.entitlementsSnapshot?.dietPlan,
-      ),
-    },
-    notes: membership.notes || '',
-  };
 }
 
 async function fetchPlanMap(gymId) {
@@ -383,7 +332,7 @@ exports.getMemberWorkspace = async (req, res) => {
     const rows = members
       .map((member) => {
         const membership = membershipMap[String(member._id)] || null;
-        const serializedMembership = serializeMembership(membership);
+        const serializedMembership = serializeActiveMembershipSummary(membership);
         return {
           id: member._id,
           name: member.name,
@@ -508,7 +457,7 @@ exports.assignMemberMembership = async (req, res) => {
 
     return res.status(200).json({
       message: 'Membership updated successfully.',
-      membership: serializeMembership(membership, plan),
+      membership: serializeActiveMembershipSummary(membership, plan),
     });
   } catch (error) {
     console.error('Error assigning membership:', error);
@@ -832,7 +781,7 @@ exports.getMembershipRequest = async (req, res) => {
             }
           : null,
       },
-      memberMembership: memberMembership ? serializeMembership(memberMembership) : null,
+      memberMembership: memberMembership ? serializeActiveMembershipSummary(memberMembership) : null,
     });
   } catch (error) {
     console.error('Error fetching membership request:', error);
@@ -942,7 +891,7 @@ exports.recordPayment = async (req, res) => {
     return res.status(201).json({
       message: 'Payment recorded successfully.',
       payment,
-      membership: membership ? serializeMembership(membership) : null,
+      membership: membership ? serializeActiveMembershipSummary(membership) : null,
     });
   } catch (error) {
     console.error('Error recording payment:', error);
@@ -1183,7 +1132,7 @@ exports.getMemberMembershipSummary = async (req, res) => {
     }, {});
 
     return res.status(200).json({
-      membership: serializeMembership(
+      membership: serializeActiveMembershipSummary(
         membership,
         membership?.planId ? planMap[String(membership.planId)] : null,
       ),
