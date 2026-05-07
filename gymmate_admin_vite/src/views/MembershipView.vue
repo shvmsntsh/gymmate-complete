@@ -2,15 +2,15 @@
   <AdminShell
     :is-dark="isDark"
     title="Membership"
-    eyebrow="Members, Plans, Legacy Requests"
-    description="Manage membership plans, review requests, and member memberships."
+    :eyebrow="membershipEyebrow"
+    :description="membershipDescription"
     @toggle-theme="toggleTheme"
     @logout="logout"
   >
     <v-tabs v-model="activeTab" color="primary" class="mb-6">
       <v-tab value="memberships">Members</v-tab>
       <v-tab value="plans">Plans</v-tab>
-      <v-tab value="requests">Legacy Requests</v-tab>
+      <v-tab v-if="hasLegacyRequests" value="requests">Requests</v-tab>
     </v-tabs>
 
     <StateBlock
@@ -47,7 +47,7 @@
         />
       </v-window-item>
 
-      <v-window-item value="requests">
+      <v-window-item v-if="hasLegacyRequests" value="requests">
         <RequestsSection
           :requests="requests"
           :loading="loadingRequests"
@@ -584,6 +584,15 @@ const templates = ref([]);
 const memberships = ref([]);
 const members = ref([]);
 const requests = ref([]);
+const hasLegacyRequests = computed(() => requests.value.length > 0);
+const membershipEyebrow = computed(() =>
+  hasLegacyRequests.value ? "Plans, Members, Requests" : "Plans and Members",
+);
+const membershipDescription = computed(() =>
+  hasLegacyRequests.value
+    ? "Manage member memberships, plan setup, and any existing request queue."
+    : "Create plans, assign them to members, and record payment status.",
+);
 
 const loadingTemplates = ref(false);
 const loadingMemberships = ref(false);
@@ -887,6 +896,9 @@ async function fetchAll() {
         "Failed to load membership requests",
       );
       requests.value = requestsData.requests || [];
+      if (!requests.value.length && activeTab.value === "requests") {
+        activeTab.value = "memberships";
+      }
     } catch (err) {
       requests.value = [];
       endpointErrors.push(err.message);

@@ -29,7 +29,7 @@
   --gm-text: #e5e2e3;
   --gm-text-soft: #c8c6c8;
   --gm-primary: #ffb59d;
-  --gm-primary-strong: #ff8c66;
+  --gm-primary-strong: #ff5711;
   --gm-secondary: #e5e2e3;
   --gm-accent: #ff5200;
   --gm-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
@@ -134,7 +134,7 @@ a {
 .admin-brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.9rem;
+  gap: 0.75rem;
   text-align: left;
   min-width: 0;
 }
@@ -177,9 +177,9 @@ a {
 }
 
 .admin-brand--compact .admin-brand__glyph {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
 }
 
 .admin-brand--has-wordmark .admin-brand__glyph {
@@ -190,6 +190,13 @@ a {
 .admin-nav-link,
 .admin-logout-btn {
   border-radius: 999px !important;
+}
+
+.v-btn.bg-primary,
+.v-btn.text-primary.bg-primary {
+  background: linear-gradient(135deg, #ffb59d 0%, #ff5711 100%) !important;
+  color: #390c00 !important;
+  box-shadow: 0 14px 32px rgba(255, 87, 17, 0.18) !important;
 }
 
 .admin-table-link {
@@ -293,6 +300,65 @@ a {
   line-height: 1.4;
 }
 
+.pilot-checklist {
+  margin-top: 20px;
+}
+
+.pilot-checklist__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.pilot-checklist__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  min-height: 104px;
+  padding: 14px;
+  border: 1px solid var(--gm-border);
+  border-radius: 12px;
+  background: var(--gm-surface-muted);
+  color: var(--gm-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.pilot-checklist__item:hover {
+  border-color: var(--gm-primary);
+  transform: translateY(-1px);
+}
+
+.pilot-checklist__item .v-icon {
+  color: var(--gm-primary-strong);
+}
+
+.pilot-checklist__item strong,
+.pilot-checklist__item small {
+  display: block;
+}
+
+.pilot-checklist__item strong {
+  font-family: "Manrope", sans-serif;
+  font-size: 0.95rem;
+}
+
+.pilot-checklist__item small {
+  margin-top: 6px;
+  color: var(--gm-text-soft);
+  line-height: 1.35;
+}
+
+.pilot-checklist__item--done {
+  border-color: color-mix(in srgb, var(--gm-primary) 42%, var(--gm-border));
+  background: color-mix(in srgb, var(--gm-primary) 10%, var(--gm-surface-muted));
+}
+
 .workspace-stack {
   display: grid;
   gap: 10px;
@@ -365,6 +431,10 @@ a {
   border-radius: 8px;
 }
 
+.workspace-checks--disabled {
+  opacity: 0.62;
+}
+
 .workspace-detail {
   margin-top: 20px;
 }
@@ -395,6 +465,7 @@ a {
   }
 
   .workspace-action-grid,
+  .pilot-checklist__grid,
   .workspace-band--three {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -409,6 +480,10 @@ a {
   .workspace-action-grid {
     grid-template-columns: 1fr;
   }
+
+  .pilot-checklist__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -418,6 +493,10 @@ a {
 
   .workspace-panel {
     padding: 16px;
+  }
+
+  .pilot-checklist__grid {
+    grid-template-columns: 1fr;
   }
 
   .workspace-section-head {
@@ -581,6 +660,7 @@ a {
 }
 
 .admin-shell--collapsed .admin-shell__eyebrow,
+.admin-shell--collapsed .admin-shell__nav-group-label,
 .admin-shell--collapsed .admin-shell__nav-label,
 .admin-shell--collapsed .admin-shell__sidebar-footer,
 .admin-shell--collapsed .admin-shell__sidebar .admin-brand__copy {
@@ -602,7 +682,22 @@ a {
 
 .admin-shell__nav {
   display: grid;
-  gap: 0.75rem;
+  gap: 1rem;
+}
+
+.admin-shell__nav-group {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-shell__nav-group-label {
+  padding: 0 0.75rem;
+  color: var(--gm-text-soft);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0.72;
 }
 
 .admin-shell__nav-item {
@@ -1291,6 +1386,7 @@ a {
   }
 
   .admin-shell__eyebrow,
+  .admin-shell__nav-group-label,
   .admin-shell__nav-label,
   .admin-shell__sidebar-footer,
   .admin-shell__sidebar .admin-brand__copy {
@@ -1298,6 +1394,7 @@ a {
   }
 
   .admin-shell--collapsed .admin-shell__eyebrow,
+  .admin-shell--collapsed .admin-shell__nav-group-label,
   .admin-shell--collapsed .admin-shell__nav-label,
   .admin-shell--collapsed .admin-shell__sidebar-footer,
   .admin-shell--collapsed .admin-shell__sidebar .admin-brand__copy {
@@ -1440,6 +1537,7 @@ a {
   }
 
   .admin-shell .admin-shell__eyebrow,
+  .admin-shell .admin-shell__nav-group-label,
   .admin-shell .admin-shell__nav-label,
   .admin-shell .admin-shell__sidebar-footer,
   .admin-shell .admin-shell__sidebar .admin-brand__copy {
@@ -1554,6 +1652,145 @@ a {
   display: none !important;
 }
 
+.public-shell--login {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 22% 78%, rgba(255, 82, 0, 0.24), transparent 34%),
+    radial-gradient(circle at 78% 18%, rgba(255, 181, 157, 0.16), transparent 30%),
+    linear-gradient(135deg, #0d0d0e 0%, #171415 45%, #251813 100%);
+}
+
+.public-shell--login::before,
+.public-shell--login::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.public-shell--login::before {
+  z-index: -2;
+  background:
+    linear-gradient(90deg, rgba(13, 13, 14, 0.88) 0%, rgba(13, 13, 14, 0.54) 46%, rgba(13, 13, 14, 0.82) 100%),
+    linear-gradient(180deg, rgba(13, 13, 14, 0.42) 0%, rgba(13, 13, 14, 0.2) 45%, rgba(13, 13, 14, 0.9) 100%),
+    url("/images/login-hero-gym.jpg") center / cover no-repeat;
+  filter: saturate(1.04) contrast(1.04);
+}
+
+.public-shell--login::after {
+  z-index: -1;
+  background:
+    radial-gradient(circle at 30% 65%, rgba(255, 87, 17, 0.26), transparent 26%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.26) 100%);
+}
+
+.public-shell--login .public-shell__container {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.public-shell--login .public-shell__nav {
+  margin-bottom: clamp(36px, 8vh, 88px);
+}
+
+.public-shell--login,
+.public-shell--login .admin-nav-link,
+.public-shell--login .field-label,
+.public-shell--login .section-title {
+  color: #fff8f0;
+}
+
+.public-shell--login .section-copy,
+.public-shell--login .v-field__input,
+.public-shell--login .v-field__append-inner,
+.public-shell--login .v-label {
+  color: rgba(255, 248, 240, 0.74);
+}
+
+.public-shell--login .v-field__input::placeholder {
+  color: rgba(255, 248, 240, 0.42);
+  opacity: 1;
+}
+
+.public-shell--login .login-helper-row .v-btn {
+  color: rgba(255, 248, 240, 0.88);
+}
+
+.public-shell--login .public-shell__grid {
+  flex: 1;
+  grid-template-columns: minmax(330px, 0.78fr) minmax(360px, 1fr);
+  gap: clamp(34px, 7vw, 92px);
+  align-items: center;
+}
+
+.public-shell--login .public-shell__panel {
+  max-width: 500px;
+  border: 1px solid rgba(255, 181, 157, 0.32);
+  background:
+    linear-gradient(145deg, rgba(32, 31, 32, 0.86), rgba(32, 31, 32, 0.68));
+  box-shadow: 0 34px 92px rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(18px);
+}
+
+.public-shell--login .public-shell__hero {
+  max-width: 620px;
+  min-height: auto;
+  padding-inline: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: 0 10px 34px rgba(0, 0, 0, 0.44);
+}
+
+.public-shell--login .public-shell__hero .display-headline {
+  max-width: 11ch;
+  color: #fffaf7;
+}
+
+.public-shell--login .public-shell__hero .lead-copy {
+  max-width: 560px;
+  color: rgba(255, 248, 240, 0.82);
+}
+
+.public-shell--login .v-field {
+  background: rgba(19, 19, 20, 0.42);
+}
+
+.public-shell--login .cta-row .v-btn {
+  min-height: 52px;
+  letter-spacing: 0.13em;
+}
+
+.public-shell--login .cta-row .v-btn:not(.bg-primary) {
+  border: 1px solid rgba(255, 181, 157, 0.18);
+  background: rgba(255, 248, 240, 0.1) !important;
+  color: #fff8f0 !important;
+}
+
+.login-hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+
+.login-hero-chips span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 181, 157, 0.28);
+  border-radius: 999px;
+  background: rgba(19, 19, 20, 0.44);
+  color: rgba(255, 248, 240, 0.86);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+}
+
 .admin-shell {
   grid-template-columns: 264px minmax(0, 1fr);
   gap: 0;
@@ -1577,11 +1814,30 @@ a {
   position: sticky;
   top: 0;
   z-index: 10;
-  align-items: center;
+  align-items: flex-start;
   min-height: 72px;
+  padding-right: 28px;
   border-width: 0 0 1px;
   border-radius: 0;
   box-shadow: none;
+}
+
+.admin-shell__header > div:not(.admin-shell__actions) {
+  min-width: 0;
+}
+
+.admin-shell__actions {
+  margin-left: auto;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding-top: 2px;
+}
+
+.admin-logout-btn {
+  min-height: 38px !important;
+  padding-inline: 18px !important;
+  background: color-mix(in srgb, var(--gm-surface-muted) 88%, var(--gm-primary) 12%) !important;
+  color: var(--gm-text) !important;
 }
 
 .admin-shell__content {
@@ -1726,6 +1982,11 @@ a {
 }
 
 @media (max-width: 1180px) {
+  .admin-shell__header {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
   .admin-shell__content {
     width: min(100% - 32px, 1180px);
   }
@@ -1741,6 +2002,37 @@ a {
   .public-shell__panel {
     justify-self: stretch;
     max-width: none;
+  }
+
+  .public-shell--login::before {
+    background:
+      linear-gradient(180deg, rgba(13, 13, 14, 0.78) 0%, rgba(13, 13, 14, 0.58) 45%, rgba(13, 13, 14, 0.92) 100%),
+      url("/images/login-hero-gym.jpg") center / cover no-repeat;
+  }
+
+  .public-shell--login .public-shell__container {
+    width: min(100% - 28px, 720px);
+  }
+
+  .public-shell--login .public-shell__grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .public-shell--login .public-shell__panel {
+    justify-self: stretch;
+    max-width: none;
+  }
+
+  .public-shell--login .public-shell__hero {
+    order: 2;
+    max-width: none;
+    padding: 4px 2px 24px;
+  }
+
+  .public-shell--login .public-shell__hero .display-headline {
+    max-width: 12ch;
+    font-size: clamp(2.15rem, 9vw, 3.6rem);
   }
 }
 
@@ -1760,6 +2052,22 @@ a {
   }
 
   .admin-shell__actions .admin-logout-btn {
+    display: none;
+  }
+
+  .public-shell--login .public-shell__nav {
+    margin-bottom: 28px;
+  }
+
+  .public-shell--login .public-shell__panel {
+    padding: 22px;
+  }
+
+  .public-shell--login .public-shell__hero .lead-copy {
+    font-size: 0.98rem;
+  }
+
+  .login-hero-chips {
     display: none;
   }
 }

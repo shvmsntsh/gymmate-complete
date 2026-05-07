@@ -120,19 +120,46 @@
             </template>
 
             <template v-else-if="moduleKey === 'staff'">
-              <v-select v-model="form.userId" :items="staffOptions" item-title="label" item-value="value" label="Staff member" density="comfortable" variant="outlined" hide-details="auto" />
-              <v-select v-model="form.preset" :items="presetOptions" item-title="label" item-value="value" label="Preset" density="comfortable" variant="outlined" hide-details="auto" />
-              <div class="workspace-checks">
-                <v-checkbox
-                  v-for="permission in availablePermissions"
-                  :key="permission"
-                  v-model="selectedCapabilities"
-                  :label="permission"
-                  :value="permission"
-                  density="compact"
-                  hide-details
+              <StateBlock
+                v-if="editableStaffRows.length === 0"
+                title="No editable staff yet"
+                copy="Invite a staff member or trainer first. Owners are shown for context, but their permissions are not edited here."
+                icon="mdi-account-plus-outline"
+              />
+              <template v-else>
+                <v-select
+                  v-model="form.userId"
+                  :items="staffOptions"
+                  item-title="label"
+                  item-value="value"
+                  label="Staff member"
+                  density="comfortable"
+                  variant="outlined"
+                  hide-details="auto"
                 />
-              </div>
+                <v-select
+                  v-model="form.preset"
+                  :items="presetOptions"
+                  item-title="label"
+                  item-value="value"
+                  label="Preset"
+                  density="comfortable"
+                  variant="outlined"
+                  hide-details="auto"
+                />
+                <div class="workspace-checks" :class="{ 'workspace-checks--disabled': !form.userId }">
+                  <v-checkbox
+                    v-for="permission in availablePermissions"
+                    :key="permission"
+                    v-model="selectedCapabilities"
+                    :label="permission"
+                    :value="permission"
+                    density="compact"
+                    hide-details
+                    :disabled="!form.userId"
+                  />
+                </div>
+              </template>
             </template>
 
             <template v-else>
@@ -151,6 +178,7 @@
               color="primary"
               type="submit"
               :loading="submitting"
+              :disabled="!canSubmitCurrentForm"
             >
               <v-icon start :icon="config.submitIcon" />
               {{ config.submitLabel }}
@@ -235,12 +263,12 @@ const availablePermissions = [
 
 const configs = {
   crm: {
-    title: "CRM",
-    eyebrow: "Leads and Trials",
-    description: "Capture enquiries, follow up, and convert prospects into members.",
+    title: "Leads",
+    eyebrow: "Growth",
+    description: "Capture enquiries, follow up, and turn trials into members.",
     loadingCopy: "Loading leads and follow-up queue.",
     primaryOverline: "Pipeline",
-    primaryTitle: "Lead queue",
+    primaryTitle: "People to follow up",
     formOverline: "New lead",
     formTitle: "Capture enquiry",
     icon: "mdi-account-search-outline",
@@ -250,7 +278,7 @@ const configs = {
     submitLabel: "Create lead",
     submitIcon: "mdi-plus",
     emptyTitle: "No leads yet",
-    emptyCopy: "New enquiries will appear here once captured.",
+    emptyCopy: "Add walk-ins, WhatsApp enquiries, Instagram leads, or referral prospects here.",
     columns: [
       { key: "name", label: "Name", action: true },
       { key: "status", label: "Status" },
@@ -261,11 +289,11 @@ const configs = {
   },
   members: {
     title: "Members",
-    eyebrow: "Member 360",
-    description: "Scan membership, trainer, payment, and attendance status from one workspace.",
+    eyebrow: "Front Desk",
+    description: "Find members, check plan status, and open their latest activity.",
     loadingCopy: "Loading active member records.",
     primaryOverline: "Roster",
-    primaryTitle: "Member operating view",
+    primaryTitle: "Member list",
     formOverline: "Actions",
     formTitle: "Member detail",
     icon: "mdi-account-group-outline",
@@ -273,7 +301,7 @@ const configs = {
     rowsKey: "members",
     canSubmit: false,
     emptyTitle: "No members found",
-    emptyCopy: "Members will appear here after invite or registration.",
+    emptyCopy: "Invite or add your first member, then assign a plan from Plans & Memberships.",
     columns: [
       { key: "name", label: "Member", action: true },
       { key: "membership.plan.name", label: "Plan" },
@@ -285,8 +313,8 @@ const configs = {
   },
   payments: {
     title: "Payments",
-    eyebrow: "Billing Desk",
-    description: "Record collections, filter payment modes, and prepare invoice metadata.",
+    eyebrow: "Front Desk",
+    description: "Record cash, UPI, card, or manual payment collections.",
     loadingCopy: "Loading payment ledger.",
     primaryOverline: "Ledger",
     primaryTitle: "Recent payments",
@@ -299,7 +327,7 @@ const configs = {
     submitLabel: "Record payment",
     submitIcon: "mdi-cash-plus",
     emptyTitle: "No payments yet",
-    emptyCopy: "Manual and membership payments will appear here.",
+    emptyCopy: "Record your first cash or UPI payment after assigning a member plan.",
     columns: [
       { key: "member.name", label: "Member", action: true },
       { key: "amount", label: "Amount", type: "money" },
@@ -310,8 +338,8 @@ const configs = {
   },
   attendance: {
     title: "Attendance",
-    eyebrow: "Check-ins",
-    description: "Track manual and biometric attendance with duplicate check-in handling.",
+    eyebrow: "Front Desk",
+    description: "Record manual check-ins now; connect biometric sync only when needed.",
     loadingCopy: "Loading attendance events.",
     primaryOverline: "Today",
     primaryTitle: "Attendance events",
@@ -324,7 +352,7 @@ const configs = {
     submitLabel: "Record attendance",
     submitIcon: "mdi-calendar-plus",
     emptyTitle: "No attendance yet",
-    emptyCopy: "Today’s check-ins and check-outs will appear here.",
+    emptyCopy: "Use manual check-in for the first pilot day. Today’s visits will appear here.",
     columns: [
       { key: "member.name", label: "Member", action: true },
       { key: "eventType", label: "Event" },
@@ -333,9 +361,9 @@ const configs = {
     ],
   },
   classes: {
-    title: "Classes/PT",
+    title: "Classes & PT",
     eyebrow: "Schedule",
-    description: "Manage group classes, PT offerings, capacity, and booking rosters.",
+    description: "Manage group classes, PT offerings, trainers, capacity, and rosters.",
     loadingCopy: "Loading class catalog and upcoming sessions.",
     primaryOverline: "Upcoming",
     primaryTitle: "Sessions",
@@ -348,7 +376,7 @@ const configs = {
     submitLabel: "Create template",
     submitIcon: "mdi-calendar-plus",
     emptyTitle: "No sessions yet",
-    emptyCopy: "Create templates first, then add sessions from the API or next UI slice.",
+    emptyCopy: "Create a class or PT template first, then add dated sessions for the gym floor.",
     columns: [
       { key: "template.name", label: "Session", action: true },
       { key: "trainer.name", label: "Trainer" },
@@ -360,13 +388,13 @@ const configs = {
   },
   staff: {
     title: "Staff",
-    eyebrow: "Roles and Permissions",
-    description: "Review trainers and staff, then apply operational permission presets.",
+    eyebrow: "Setup",
+    description: "Invite staff or trainers first, then choose what they can access.",
     loadingCopy: "Loading staff, trainers, and recent activity.",
     primaryOverline: "Team",
-    primaryTitle: "Workspace access",
+    primaryTitle: "People with web access",
     formOverline: "Permissions",
-    formTitle: "Apply preset",
+    formTitle: "Choose access",
     icon: "mdi-badge-account-horizontal-outline",
     endpoint: "/api/workspace/staff",
     rowsKey: "staff",
@@ -374,7 +402,7 @@ const configs = {
     submitLabel: "Update permissions",
     submitIcon: "mdi-shield-check-outline",
     emptyTitle: "No staff found",
-    emptyCopy: "Staff and trainers will appear here after invite registration.",
+    emptyCopy: "Invite staff before setting permissions. Owners appear only for context.",
     columns: [
       { key: "name", label: "Name", action: true },
       { key: "role", label: "Role" },
@@ -406,7 +434,7 @@ const templateOptions = computed(() =>
   })),
 );
 const staffOptions = computed(() =>
-  (data.value.staff || []).map((user) => ({ label: `${user.name} · ${user.role}`, value: user.id })),
+  editableStaffRows.value.map((user) => ({ label: `${user.name} · ${user.role}`, value: user.id })),
 );
 const presetOptions = computed(() =>
   Object.keys(data.value.presets || {}).map((key) => ({
@@ -415,6 +443,17 @@ const presetOptions = computed(() =>
   })),
 );
 const selectedTitle = computed(() => selectedRow.value?.name || selectedRow.value?.member?.name || selectedRow.value?.template?.name || "Record detail");
+const editableStaffRows = computed(() =>
+  (data.value.staff || []).filter((user) => {
+    const role = String(user.role || "").toLowerCase();
+    return role.includes("staff") || role.includes("trainer");
+  }),
+);
+const canSubmitCurrentForm = computed(() => {
+  if (!config.value.canSubmit) return false;
+  if (moduleKey.value === "staff") return Boolean(form.userId) && editableStaffRows.value.length > 0;
+  return true;
+});
 
 watch(
   () => props.moduleKey,
@@ -515,6 +554,19 @@ async function selectRow(row) {
     return;
   }
   selectedRow.value = row;
+  if (moduleKey.value === "staff") {
+    const isEditable = editableStaffRows.value.some((user) => user.id === row.id);
+    form.userId = isEditable ? row.id : null;
+    selectedCapabilities.value = Object.entries(row.staffCapabilities || {})
+      .filter(([, enabled]) => Boolean(enabled))
+      .map(([permission]) => permission);
+    if (!isEditable) {
+      formMessage.value = "";
+      formError.value = "Owners are not edited here. Select a staff member or trainer.";
+    } else {
+      formError.value = "";
+    }
+  }
 }
 
 function payloadForSubmit() {
@@ -543,6 +595,9 @@ async function submitForm() {
   formMessage.value = "";
   submitting.value = true;
   try {
+    if (!canSubmitCurrentForm.value) {
+      throw new Error(moduleKey.value === "staff" ? "Select a staff member or trainer first." : "This form is not ready to submit.");
+    }
     const url = submitUrl();
     if (!url) return;
     const res = await apiFetch(url, {

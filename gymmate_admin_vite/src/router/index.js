@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import {
   canAccessAdminRoute,
+  getAdminDefaultRoute,
   getAdminRole,
   getAdminSession,
   hasWorkspaceAccess,
@@ -164,7 +165,7 @@ router.beforeEach((to, _from, next) => {
     authenticated &&
     hasWorkspaceAccess()
   ) {
-    next({ name: "AdminDashboard" });
+    next(getAdminDefaultRoute(session?.user ? session : role));
     return;
   }
 
@@ -174,7 +175,12 @@ router.beforeEach((to, _from, next) => {
   }
 
   if (to.meta?.routeAccess && !canAccessAdminRoute(to.meta.routeAccess, session?.user ? session : role)) {
-    next({ name: "AdminDashboard" });
+    const fallback = getAdminDefaultRoute(session?.user ? session : role);
+    if (fallback !== to.path) {
+      next(fallback);
+      return;
+    }
+    next({ name: "Login" });
     return;
   }
 

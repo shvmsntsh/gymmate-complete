@@ -1,12 +1,19 @@
 <template>
-  <PublicAuthShell :is-dark="isDark" @toggle-theme="toggleTheme">
+  <PublicAuthShell :is-dark="isDark" variant="login" @toggle-theme="toggleTheme">
     <template #hero>
       <h1 class="display-headline">
-        Sign in to GymMate Admin.
+        Run every gym day clearly.
       </h1>
       <p class="lead-copy">
-        Manage members, payments, attendance, staff, and daily gym operations from one clean workspace.
+        Front desk, memberships, payments, attendance, staff, and classes in one workspace.
       </p>
+    </template>
+    <template #hero-meta>
+      <div class="login-hero-chips" aria-label="GymMate admin focus areas">
+        <span>Front desk</span>
+        <span>Memberships</span>
+        <span>Payments</span>
+      </div>
     </template>
 
     <div class="stack">
@@ -81,7 +88,7 @@ import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import PublicAuthShell from "../components/PublicAuthShell.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
-import { apiFetch, hasWorkspaceAccess, normalizeRole, setAdminSession } from "../lib/api";
+import { apiFetch, getAdminDefaultRoute, hasWorkspaceAccess, setAdminSession } from "../lib/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -111,10 +118,7 @@ async function submit() {
     const data = await res.json();
 
     if (res.ok) {
-      const normalizedRole = normalizeRole(
-        data.user?.normalizedRole || data.user?.role,
-      );
-      if (!hasWorkspaceAccess(normalizedRole)) {
+      if (!hasWorkspaceAccess(data)) {
         showMessage(
           "This login does not have access to the web workspace.",
           "error",
@@ -124,7 +128,7 @@ async function submit() {
 
       setAdminSession(data);
       showMessage("Login successful");
-      router.push("/dashboard");
+      router.push(getAdminDefaultRoute(data));
     } else {
       showMessage(data.message || "Login failed", "error");
     }

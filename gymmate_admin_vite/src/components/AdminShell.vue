@@ -19,6 +19,7 @@
           :logo-url="sidebarLogoUrl"
           :mark-image-url="sidebarMarkUrl"
           :wordmark-url="sidebarWordmarkUrl"
+          :hide-glyph="!sidebarCollapsed && Boolean(sidebarWordmarkUrl)"
         />
         <div class="admin-shell__eyebrow">{{ workspaceLabel }}</div>
         <button
@@ -30,19 +31,26 @@
         </button>
 
         <nav class="admin-shell__nav">
-          <button
-            v-for="item in navItems"
-            :key="item.to"
-            type="button"
-            class="admin-shell__nav-item"
-            :class="{ 'admin-shell__nav-item--active': item.active }"
-            @click="goTo(item.to)"
+          <div
+            v-for="group in navGroups"
+            :key="group.label"
+            class="admin-shell__nav-group"
           >
-            <span class="admin-shell__nav-icon"
-              ><v-icon :icon="item.icon"
-            /></span>
-            <span class="admin-shell__nav-label">{{ item.label }}</span>
-          </button>
+            <div class="admin-shell__nav-group-label">{{ group.label }}</div>
+            <button
+              v-for="item in group.items"
+              :key="item.to"
+              type="button"
+              class="admin-shell__nav-item"
+              :class="{ 'admin-shell__nav-item--active': item.active }"
+              @click="goTo(item.to)"
+            >
+              <span class="admin-shell__nav-icon"
+                ><v-icon :icon="item.icon"
+              /></span>
+              <span class="admin-shell__nav-label">{{ item.label }}</span>
+            </button>
+          </div>
         </nav>
 
         <div
@@ -83,14 +91,6 @@
 
           <div class="admin-shell__actions">
             <slot name="header-actions"></slot>
-            <v-btn
-              class="admin-logout-btn"
-              variant="tonal"
-              @click="$emit('logout')"
-            >
-              <v-icon start icon="mdi-logout" />
-              Logout
-            </v-btn>
           </div>
         </header>
 
@@ -106,7 +106,7 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminBrand from "./AdminBrand.vue";
-import { apiFetch, getAdminNavItems, getAdminRole, getAdminSession } from "../lib/api";
+import { apiFetch, getAdminRole, getAdminSession, getGroupedAdminNavItems } from "../lib/api";
 
 const props = defineProps({
   description: {
@@ -171,6 +171,8 @@ const userRoleLabel = computed(() =>
       ? "Gym Owner"
       : sessionRole.value === "staff"
         ? "Staff"
+      : sessionRole.value === "trainer"
+        ? "Trainer"
         : "Workspace User",
 );
 const userInitials = computed(() =>
@@ -182,8 +184,8 @@ const userInitials = computed(() =>
     .join("") || "GM",
 );
 
-const navItems = computed(() => {
-  return getAdminNavItems(route.path, session.value);
+const navGroups = computed(() => {
+  return getGroupedAdminNavItems(route.path, session.value);
 });
 
 function goTo(path) {

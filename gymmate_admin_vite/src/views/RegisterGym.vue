@@ -87,7 +87,7 @@
         </div>
       </div>
 
-      <v-form class="stack" @submit.prevent="submit">
+      <v-form v-if="!createdGym" class="stack" @submit.prevent="submit">
         <div class="form-grid">
           <div>
             <div class="field-label">Gym Name</div>
@@ -353,6 +353,7 @@ onMounted(loadServiceOptions);
 }
 
 .registration-pill {
+  min-width: 0;
   padding: 16px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.02);
@@ -372,6 +373,8 @@ onMounted(loadServiceOptions);
   display: block;
   margin-top: 8px;
   font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media (max-width: 960px) {

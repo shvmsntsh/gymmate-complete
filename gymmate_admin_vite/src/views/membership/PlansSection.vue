@@ -3,9 +3,9 @@
     <div class="section-header mb-6">
       <div class="d-flex justify-space-between align-center">
         <div>
-          <div class="table-overline">Membership Plans</div>
-          <h2 class="section-title">Plan Catalog</h2>
-          <p class="section-copy">Create and manage membership plans for your gym.</p>
+          <div class="table-overline">Setup</div>
+          <h2 class="section-title">Plans members can buy</h2>
+          <p class="section-copy">Start with simple gym plans like Monthly, Quarterly, or PT add-on.</p>
         </div>
         <v-btn color="primary" @click="showEditor = true">
           <v-icon start>mdi-plus</v-icon>
@@ -22,11 +22,13 @@
 
     <v-card v-else-if="templates.length === 0" class="pa-8" flat>
       <div class="text-center">
-        <v-icon size="64" color="grey">mdi-package-variant</v-icon>
-        <h3 class="text-h6 mt-4">No plans yet</h3>
-        <p class="text-body-2 text-grey mt-2">Create your first membership plan to get started.</p>
+        <v-icon size="64" color="primary">mdi-card-account-details-outline</v-icon>
+        <h3 class="text-h6 mt-4">Create your first plan</h3>
+        <p class="text-body-2 text-medium-emphasis mt-2">
+          Add a Monthly, Quarterly, or PT add-on plan so staff can assign it to members.
+        </p>
         <v-btn color="primary" class="mt-4" @click="showEditor = true">
-          Create Plan
+          Create First Plan
         </v-btn>
       </div>
     </v-card>

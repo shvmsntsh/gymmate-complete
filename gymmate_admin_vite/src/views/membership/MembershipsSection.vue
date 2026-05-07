@@ -3,9 +3,9 @@
     <div class="section-header mb-6">
       <div class="d-flex justify-space-between align-center">
         <div>
-          <div class="table-overline">Member Memberships</div>
-          <h2 class="section-title">Manual Membership Desk</h2>
-          <p class="section-copy">Take cash or UPI, renew plans, extend dates, freeze, unfreeze, and cancel from one place.</p>
+          <div class="table-overline">Front Desk</div>
+          <h2 class="section-title">Member plans</h2>
+          <p class="section-copy">Assign plans, mark cash or UPI payments, renew, freeze, or cancel from one place.</p>
         </div>
         <v-btn
           color="primary"
@@ -38,8 +38,19 @@
 
     <v-card v-else-if="filteredMemberships.length === 0" class="pa-8" flat>
       <div class="text-center">
-        <v-icon size="64" color="grey">mdi-account-group</v-icon>
-        <h3 class="text-h6 mt-4">No memberships found</h3>
+        <v-icon size="64" color="primary">mdi-account-group-outline</v-icon>
+        <h3 class="text-h6 mt-4">No member plans yet</h3>
+        <p class="text-body-2 text-medium-emphasis mt-2">
+          Invite or add your first member, create a plan, then assign it here.
+        </p>
+        <v-btn
+          color="primary"
+          class="mt-4"
+          :disabled="assignableMemberCount === 0"
+          @click="$emit('assign')"
+        >
+          Assign Plan
+        </v-btn>
       </div>
     </v-card>
 

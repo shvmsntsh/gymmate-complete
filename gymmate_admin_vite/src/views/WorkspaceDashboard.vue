@@ -32,6 +32,35 @@
         />
       </div>
 
+      <section v-if="!isSuperadmin" class="workspace-panel pilot-checklist">
+        <div class="workspace-section-head">
+          <div>
+            <div class="table-overline">Pilot Setup</div>
+            <h2 class="section-title">Get ready for your first gym test</h2>
+          </div>
+          <v-chip color="primary" variant="tonal">
+            {{ completedSetupCount }}/{{ setupChecklist.length }} done
+          </v-chip>
+        </div>
+
+        <div class="pilot-checklist__grid">
+          <button
+            v-for="item in setupChecklist"
+            :key="item.title"
+            class="pilot-checklist__item"
+            :class="{ 'pilot-checklist__item--done': item.done }"
+            type="button"
+            @click="router.push(item.to)"
+          >
+            <v-icon :icon="item.done ? 'mdi-check-circle' : item.icon" />
+            <span>
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.copy }}</small>
+            </span>
+          </button>
+        </div>
+      </section>
+
       <div class="workspace-band workspace-band--split">
         <section class="workspace-panel workspace-panel--wide">
           <div class="workspace-section-head">
@@ -93,7 +122,7 @@
             <StateBlock
               v-if="classQueue.length === 0"
               title="No classes today"
-              copy="Create class sessions from the Classes/PT workspace."
+              copy="Add classes or PT sessions when your pilot gym is ready for scheduling."
               icon="mdi-calendar-clock"
             />
           </div>
@@ -104,7 +133,7 @@
         <section class="workspace-panel">
           <div class="workspace-section-head">
             <div>
-              <div class="table-overline">{{ isSuperadmin ? 'Gyms' : 'CRM' }}</div>
+              <div class="table-overline">{{ isSuperadmin ? 'Gyms' : 'Leads' }}</div>
               <h2 class="section-title">{{ isSuperadmin ? 'Recent gyms' : 'Fresh leads' }}</h2>
             </div>
             <v-btn icon="mdi-arrow-right" variant="text" @click="router.push(isSuperadmin ? '/network' : '/crm')" />
@@ -146,17 +175,22 @@
         <section class="workspace-panel">
           <div class="workspace-section-head">
             <div>
-              <div class="table-overline">{{ isSuperadmin ? 'Admin' : 'Roadmap' }}</div>
-              <h2 class="section-title">{{ isSuperadmin ? 'Platform tools' : 'Next modules' }}</h2>
+              <div class="table-overline">{{ isSuperadmin ? 'Admin' : 'Setup' }}</div>
+              <h2 class="section-title">{{ isSuperadmin ? 'Platform tools' : 'Useful setup' }}</h2>
             </div>
           </div>
           <div class="workspace-stack">
             <div
-              v-for="item in roadmap"
-              :key="item"
+              v-for="item in setupShortcuts"
+              :key="item.title"
               class="workspace-row workspace-row--plain"
+              role="button"
+              tabindex="0"
+              @click="router.push(item.to)"
+              @keydown.enter="router.push(item.to)"
             >
-              <span>{{ item }}</span>
+              <span>{{ item.title }}</span>
+              <b>{{ item.label }}</b>
             </div>
           </div>
         </section>
@@ -171,7 +205,7 @@ import { useRouter } from "vue-router";
 import AdminShell from "../components/AdminShell.vue";
 import StateBlock from "../components/StateBlock.vue";
 import StatCard from "../components/StatCard.vue";
-import { API_BASE_URL, apiFetch, clearAdminSession, getAdminRole } from "../lib/api";
+import { API_BASE_URL, apiFetch, canAccessAdminRoute, clearAdminSession, getAdminRole, getAdminSession } from "../lib/api";
 import { formatDateTimeUs } from "../lib/date";
 import { useAdminTheme } from "../composables/useAdminTheme";
 
@@ -180,7 +214,9 @@ const { isDark, toggleTheme } = useAdminTheme();
 const loading = ref(true);
 const error = ref("");
 const dashboard = ref({ kpis: {}, queues: {} });
+const planCount = ref(0);
 const isSuperadmin = computed(() => getAdminRole() === "admin");
+const session = computed(() => getAdminSession());
 
 function money(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -254,20 +290,67 @@ const actions = computed(() => [
         { title: `${dashboard.value.kpis?.openLeads || 0} leads`, copy: "Call, qualify, or schedule a trial.", icon: "mdi-account-search-outline", to: "/crm" },
         { title: `${dashboard.value.kpis?.dues || 0} dues`, copy: "Review payment status and receipts.", icon: "mdi-cash-register", to: "/payments" },
         { title: `${dashboard.value.kpis?.expiringMemberships || 0} renewals`, copy: "Memberships ending in the next 14 days.", icon: "mdi-card-account-details-outline", to: "/membership" },
-        { title: `${dashboard.value.kpis?.staffCount || 0} staff`, copy: "Review workload and permissions.", icon: "mdi-badge-account-horizontal-outline", to: "/staff" },
+        { title: `${dashboard.value.kpis?.staffCount || 0} staff`, copy: "Invite staff, then set access.", icon: "mdi-badge-account-horizontal-outline", to: "/staff" },
       ]),
 ]);
 
 const leadQueue = computed(() => dashboard.value.queues?.leads || []);
 const paymentQueue = computed(() => dashboard.value.queues?.payments || []);
 const classQueue = computed(() => dashboard.value.queues?.classes || []);
-const roadmap = [
-  "WhatsApp automation",
-  "Campaign segments",
-  "AI business insights",
-  "Inventory and POS",
-  "Rewards and referrals",
-];
+const setupChecklist = computed(() => {
+  const kpis = dashboard.value.kpis || {};
+  return [
+    {
+      title: "Create first plan",
+      copy: planCount.value > 0 ? `${planCount.value} plan ready` : "Start with Monthly, Quarterly, or PT add-on.",
+      icon: "mdi-card-account-details-outline",
+      to: "/membership",
+      route: "MembershipOps",
+      done: planCount.value > 0,
+    },
+    {
+      title: "Invite staff",
+      copy: Number(kpis.staffCount || 0) > 0 ? `${kpis.staffCount} staff added` : "Bring front desk or trainers into the workspace.",
+      icon: "mdi-ticket-confirmation-outline",
+      to: "/invites",
+      route: "Invites",
+      done: Number(kpis.staffCount || 0) > 0,
+    },
+    {
+      title: "Add members",
+      copy: Number(kpis.activeMembers || 0) > 0 ? `${kpis.activeMembers} active members` : "Invite or add the first pilot members.",
+      icon: "mdi-account-group-outline",
+      to: "/members",
+      route: "MemberWorkspace",
+      done: Number(kpis.activeMembers || 0) > 0,
+    },
+    {
+      title: "Record first payment",
+      copy: Number(kpis.paymentsToday || kpis.revenueToday || 0) > 0 ? "Payment flow tested" : "Test cash or UPI collection once.",
+      icon: "mdi-cash-register",
+      to: "/payments",
+      route: "PaymentWorkspace",
+      done: Number(kpis.paymentsToday || kpis.revenueToday || 0) > 0,
+    },
+    {
+      title: "Set attendance method",
+      copy: Number(kpis.todayCheckIns || 0) > 0 ? "Attendance has activity" : "Use manual check-in first; biometric can wait.",
+      icon: "mdi-calendar-check-outline",
+      to: "/attendance",
+      route: "AttendanceWorkspace",
+      done: Number(kpis.todayCheckIns || 0) > 0,
+    },
+  ].filter((item) => canAccessAdminRoute(item.route, session.value));
+});
+const completedSetupCount = computed(() => setupChecklist.value.filter((item) => item.done).length);
+const setupShortcuts = computed(() =>
+  [
+    { title: "Plans & Memberships", label: "Setup", to: "/membership", route: "MembershipOps" },
+    { title: "Invites", label: "Add people", to: "/invites", route: "Invites" },
+    { title: "Branding", label: "Identity", to: "/branding", route: "BrandingStudio" },
+    { title: "Settings", label: "Preferences", to: "/settings", route: "Settings" },
+  ].filter((item) => canAccessAdminRoute(item.route, session.value)),
+);
 
 async function fetchDashboard() {
   loading.value = true;
@@ -321,10 +404,24 @@ async function fetchDashboard() {
       throw new Error(data.message || "Could not load workspace dashboard.");
     }
     dashboard.value = data;
+    await fetchPilotSetup();
   } catch (err) {
     error.value = err?.message || "Could not load workspace dashboard.";
   } finally {
     loading.value = false;
+  }
+}
+
+async function fetchPilotSetup() {
+  if (isSuperadmin.value) return;
+  try {
+    const res = await apiFetch("/api/owner/membership-templates");
+    const data = await res.json();
+    if (res.ok) {
+      planCount.value = (data.templates || data.plans || []).length;
+    }
+  } catch {
+    planCount.value = 0;
   }
 }
 

@@ -151,7 +151,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, toRaw, watch } from "vue";
 
 const props = defineProps({
   template: { type: Object, default: null },
@@ -237,7 +237,11 @@ const defaultForm = {
   },
 };
 
-const form = ref(structuredClone(defaultForm));
+function clonePlain(value) {
+  return JSON.parse(JSON.stringify(toRaw(value)));
+}
+
+const form = ref(clonePlain(defaultForm));
 const formError = ref("");
 
 function toTextNumber(value) {
@@ -254,7 +258,7 @@ function toNumber(value, label, { min = 0, max = Number.MAX_SAFE_INTEGER } = {})
 }
 
 function normalizeForm(input) {
-  const next = structuredClone(input);
+  const next = clonePlain(input);
   next.name = next.name.trim();
   if (!next.name) throw new Error("Plan name is required.");
   next.durationDays = toNumber(next.durationDays, "Duration days", { min: 1, max: 730 });
@@ -273,7 +277,7 @@ watch(
   (template) => {
     const merged = template
       ? {
-          ...structuredClone(defaultForm),
+          ...clonePlain(defaultForm),
           ...template,
           durationDays: String(template.durationDays ?? defaultForm.durationDays),
           price: String(template.price ?? defaultForm.price),
@@ -282,18 +286,18 @@ watch(
           sortOrder: String(template.sortOrder ?? defaultForm.sortOrder),
           upgradeRank: String(template.upgradeRank ?? defaultForm.upgradeRank),
           includedFeatures: {
-            ...structuredClone(defaultForm.includedFeatures),
+            ...clonePlain(defaultForm.includedFeatures),
             ...template.includedFeatures,
             guestPasses: String(template.includedFeatures?.guestPasses ?? defaultForm.includedFeatures.guestPasses),
           },
-          availableAddOns: { ...structuredClone(defaultForm.availableAddOns), ...template.availableAddOns },
+          availableAddOns: { ...clonePlain(defaultForm.availableAddOns), ...template.availableAddOns },
           rules: {
-            ...structuredClone(defaultForm.rules),
+            ...clonePlain(defaultForm.rules),
             ...template.rules,
             freezeLimitDays: String(template.rules?.freezeLimitDays ?? defaultForm.rules.freezeLimitDays),
           },
         }
-      : structuredClone(defaultForm);
+      : clonePlain(defaultForm);
     form.value = merged;
     formError.value = "";
   },

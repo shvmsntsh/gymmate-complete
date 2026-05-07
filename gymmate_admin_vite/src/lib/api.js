@@ -56,47 +56,59 @@ const ADMIN_PERMISSIONS = [...OWNER_PERMISSIONS, "gyms.manage"];
 const ROLE_PERMISSIONS = {
   admin: ADMIN_PERMISSIONS,
   owner: OWNER_PERMISSIONS,
-  staff: STAFF_PERMISSIONS,
-  trainer: ["workspace.access", "members.view", "classes.manage"],
+  staff: [],
+  trainer: [],
 };
+
+function flattenCapabilityEntries(source, prefix = "") {
+  if (!source || typeof source !== "object") return [];
+
+  return Object.entries(source).flatMap(([key, value]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === "object") {
+      return flattenCapabilityEntries(value, path);
+    }
+    return value ? [path] : [];
+  });
+}
 
 const ADMIN_ROUTE_RULES = {
   AdminDashboard: {
-    nav: { icon: "mdi-view-dashboard-outline", label: "Dashboard", to: "/dashboard" },
+    nav: { icon: "mdi-view-dashboard-outline", label: "Dashboard", to: "/dashboard", group: "Today" },
     roles: ["admin", "owner", "staff"],
   },
   CrmWorkspace: {
-    nav: { icon: "mdi-account-search-outline", label: "CRM", to: "/crm" },
+    nav: { icon: "mdi-account-search-outline", label: "Leads", to: "/crm", group: "Growth" },
     roles: ["admin", "owner", "staff"],
     permissions: ["leads.manage"],
   },
   MemberWorkspace: {
-    nav: { icon: "mdi-account-group-outline", label: "Members", to: "/members" },
+    nav: { icon: "mdi-account-group-outline", label: "Members", to: "/members", group: "Front Desk" },
     roles: ["admin", "owner", "staff"],
     permissions: ["members.view", "members.manage"],
   },
   PaymentWorkspace: {
-    nav: { icon: "mdi-cash-register", label: "Payments", to: "/payments" },
+    nav: { icon: "mdi-cash-register", label: "Payments", to: "/payments", group: "Front Desk" },
     roles: ["admin", "owner", "staff"],
     permissions: ["billing.manage", "payments.manage"],
   },
   AttendanceWorkspace: {
-    nav: { icon: "mdi-calendar-check-outline", label: "Attendance", to: "/attendance" },
+    nav: { icon: "mdi-calendar-check-outline", label: "Attendance", to: "/attendance", group: "Front Desk" },
     roles: ["admin", "owner", "staff"],
     permissions: ["attendance.manage"],
   },
   ClassesWorkspace: {
-    nav: { icon: "mdi-calendar-clock", label: "Classes/PT", to: "/classes" },
-    roles: ["admin", "owner", "staff"],
+    nav: { icon: "mdi-calendar-clock", label: "Classes & PT", to: "/classes", group: "Front Desk" },
+    roles: ["admin", "owner", "staff", "trainer"],
     permissions: ["classes.manage"],
   },
   StaffWorkspace: {
-    nav: { icon: "mdi-badge-account-horizontal-outline", label: "Staff", to: "/staff" },
+    nav: { icon: "mdi-badge-account-horizontal-outline", label: "Staff", to: "/staff", group: "Setup" },
     roles: ["admin", "owner"],
     permissions: ["staff.manage"],
   },
   NetworkControl: {
-    nav: { icon: "mdi-domain", label: "Gyms & Users", to: "/network" },
+    nav: { icon: "mdi-domain", label: "Gyms & Users", to: "/network", group: "Platform" },
     roles: ["admin"],
   },
   ManageMembers: {
@@ -104,41 +116,41 @@ const ADMIN_ROUTE_RULES = {
     permissions: ["members.manage"],
   },
   Announcements: {
-    nav: { icon: "mdi-bullhorn-outline", label: "Announcements", to: "/announcements" },
+    nav: { icon: "mdi-bullhorn-outline", label: "Announcements", to: "/announcements", group: "Growth" },
     roles: ["admin", "owner", "staff"],
   },
   MembershipOps: {
-    nav: { icon: "mdi-card-account-details-outline", label: "Membership", to: "/membership" },
+    nav: { icon: "mdi-card-account-details-outline", label: "Plans & Memberships", to: "/membership", group: "Setup" },
     roles: ["admin", "owner", "staff"],
     permissions: ["membership.requests.manage", "membership.plans.manage"],
   },
   Membership: {
-    nav: { icon: "mdi-card-account-details-outline", label: "Membership", to: "/membership" },
+    nav: { icon: "mdi-card-account-details-outline", label: "Plans & Memberships", to: "/membership", group: "Setup" },
     roles: ["admin", "owner", "staff"],
     permissions: ["membership.requests.manage", "membership.plans.manage"],
   },
   Invites: {
-    nav: { icon: "mdi-ticket-confirmation-outline", label: "Invites", to: "/invites" },
+    nav: { icon: "mdi-ticket-confirmation-outline", label: "Invites", to: "/invites", group: "Growth" },
     roles: ["admin", "owner"],
   },
   BrandingStudio: {
-    nav: { icon: "mdi-palette-outline", label: "Branding", to: "/branding" },
+    nav: { icon: "mdi-palette-outline", label: "Branding", to: "/branding", group: "Setup" },
     roles: ["owner"],
   },
   BiometricOps: {
-    nav: { icon: "mdi-fingerprint", label: "Biometric", to: "/biometric" },
+    nav: { icon: "mdi-fingerprint", label: "Biometric Setup", to: "/biometric", group: "Setup" },
     roles: ["owner"],
   },
   RegisterGym: {
-    nav: { icon: "mdi-domain-plus", label: "Register Gym", to: "/register-gym" },
+    nav: { icon: "mdi-domain-plus", label: "Register Gym", to: "/register-gym", group: "Platform" },
     roles: ["admin"],
   },
   SystemHealth: {
-    nav: { icon: "mdi-heart-pulse", label: "System Health", to: "/system-health" },
+    nav: { icon: "mdi-heart-pulse", label: "System Health", to: "/system-health", group: "Platform" },
     roles: ["admin"],
   },
   Settings: {
-    nav: { icon: "mdi-cog-outline", label: "Settings", to: "/settings" },
+    nav: { icon: "mdi-cog-outline", label: "Settings", to: "/settings", group: "Setup" },
     roles: ["admin", "owner", "staff", "trainer"],
   },
   GymDetails: {
@@ -182,9 +194,7 @@ export function getAdminPermissions(input = null) {
         (input ? null : getAdminRole());
 
   const basePermissions = ROLE_PERMISSIONS[role] || [];
-  const explicit = Object.entries(session?.user?.staffCapabilities || {})
-    .filter(([, enabled]) => Boolean(enabled))
-    .map(([permission]) => permission);
+  const explicit = flattenCapabilityEntries(session?.user?.staffCapabilities || {});
 
   return Array.from(new Set([...basePermissions, ...explicit]));
 }
@@ -242,10 +252,58 @@ export function getAdminNavItems(currentPath, input = null) {
     })
     .map(([, rule]) => ({
       ...rule.nav,
+      group:
+        role === "admin" && rule.nav.to !== "/settings"
+          ? "Platform"
+          : rule.nav.group,
       active:
         currentPath === rule.nav.to ||
         (rule.nav.to === "/membership" && currentPath === "/membership-new"),
     }));
+}
+
+export function getGroupedAdminNavItems(currentPath, input = null) {
+  const role =
+    typeof input === "string"
+      ? normalizeRole(input)
+      : normalizeRole(input?.user?.normalizedRole || input?.user?.role) ||
+        (input ? null : getAdminRole());
+  const groupOrder = role === "admin"
+    ? ["Platform", "Setup"]
+    : ["Today", "Front Desk", "Growth", "Setup"];
+  const fallbackGroup = role === "admin" ? "Platform" : "More";
+  const groups = new Map();
+
+  getAdminNavItems(currentPath, input).forEach((item) => {
+    const groupName = item.group || fallbackGroup;
+    if (!groups.has(groupName)) {
+      groups.set(groupName, []);
+    }
+    groups.get(groupName).push(item);
+  });
+
+  return Array.from(groups.entries())
+    .sort(([a], [b]) => {
+      const aIndex = groupOrder.indexOf(a);
+      const bIndex = groupOrder.indexOf(b);
+      return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
+    })
+    .map(([label, items]) => ({ label, items }));
+}
+
+export function getAdminDefaultRoute(input = null) {
+  const role =
+    typeof input === "string"
+      ? normalizeRole(input)
+      : normalizeRole(input?.user?.normalizedRole || input?.user?.role) ||
+        (input ? null : getAdminRole());
+  const firstAllowed = getAdminNavItems("", input)[0]?.to;
+
+  if (role === "trainer" && canAccessAdminRoute("ClassesWorkspace", input)) {
+    return "/classes";
+  }
+
+  return firstAllowed || "/settings";
 }
 
 export function setAdminSession(payload) {

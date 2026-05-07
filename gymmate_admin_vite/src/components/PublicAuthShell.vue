@@ -1,6 +1,6 @@
 <template>
   <v-app :theme="isDark ? 'dark' : 'light'">
-    <div class="public-shell">
+    <div :class="['public-shell', `public-shell--${variant}`]">
       <v-container class="public-shell__container">
         <header class="public-shell__nav">
           <button class="public-shell__home" type="button" @click="router.push('/')">
@@ -67,6 +67,10 @@ const props = defineProps({
   isDark: {
     type: Boolean,
     default: false,
+  },
+  variant: {
+    type: String,
+    default: 'standard',
   },
 })
 
