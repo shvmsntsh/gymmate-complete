@@ -14,8 +14,8 @@
             <div class="table-overline">Create Invite</div>
             <h2 class="section-title">Share the next access code quickly</h2>
             <p class="section-copy">
-              Pick the role, add contact details if you have them, and GymMate
-              will create a clean code ready to share right away.
+              Invite members and trainers only. Staff are added directly from
+              the Staff screen by the owner.
             </p>
           </div>
         </div>
@@ -262,8 +262,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import AdminShell from "../components/AdminShell.vue";
 import StateBlock from "../components/StateBlock.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
@@ -275,6 +275,7 @@ import {
 } from "../lib/api";
 
 const router = useRouter();
+const route = useRoute();
 const { isDark, toggleTheme } = useAdminTheme();
 const role = computed(() => getAdminRole());
 const loading = ref(false);
@@ -308,7 +309,7 @@ const pageEyebrow = computed(() =>
 );
 const pageDescription = computed(() =>
   role.value === "owner"
-    ? "Create member and trainer invites, keep open codes visible, and see which joins have already landed."
+    ? "Invite members and trainers, keep open codes visible, and see which joins have already landed."
     : "Create owner invites for new gyms and keep the network access flow easy to scan.",
 );
 
@@ -320,6 +321,14 @@ function showMessage(message, color = "success") {
   snackbarText.value = message;
   snackbarColor.value = color;
   snackbar.value = true;
+}
+
+function applyRoutePrefill() {
+  if (role.value !== "owner") return;
+  const requestedRole = String(route.query.role || "").trim();
+  if (["gym_member", "gym_trainer"].includes(requestedRole)) {
+    form.value.role = requestedRole;
+  }
 }
 
 function formatRole(roleValue) {
@@ -450,7 +459,15 @@ function logout() {
   router.push("/login");
 }
 
-onMounted(fetchInvites);
+watch(
+  () => route.query.role,
+  () => applyRoutePrefill(),
+);
+
+onMounted(() => {
+  applyRoutePrefill();
+  fetchInvites();
+});
 </script>
 
 <style scoped>

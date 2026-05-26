@@ -175,7 +175,12 @@ function openEditor(template) {
   showEditor.value = true;
 }
 
-defineExpose({ openEditor });
+function openCreate() {
+  editingTemplate.value = null;
+  showEditor.value = true;
+}
+
+defineExpose({ openEditor, openCreate });
 </script>
 
 <style scoped>

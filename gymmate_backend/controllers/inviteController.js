@@ -207,10 +207,10 @@ exports.generateInviteCode = async (req, res) => {
       return res.status(403).json({ message: 'Superadmin can only generate codes for gym_owner' });
     }
 
-    // Gym owner can only create gym_member, gym_trainer, or gym_staff codes
+    // Gym owner can invite members/trainers only. Staff accounts are added directly by owners.
     const normalizedRole = typeof role === 'string' ? role.trim().toLowerCase() : '';
-    if (hasRole(currentUser, ['owner']) && !['gym_member', 'gym_trainer', 'gym_staff'].includes(normalizedRole)) {
-      return res.status(403).json({ message: 'Gym owner can only generate codes for gym_member, gym_trainer, or gym_staff' });
+    if (hasRole(currentUser, ['owner']) && !['gym_member', 'gym_trainer'].includes(normalizedRole)) {
+      return res.status(403).json({ message: 'Gym owner can only invite members or trainers. Add staff from the Staff screen.' });
     }
     
     // For a gym_owner creating an invite, we need their gymId

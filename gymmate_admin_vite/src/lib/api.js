@@ -102,11 +102,6 @@ const ADMIN_ROUTE_RULES = {
     roles: ["admin", "owner", "staff", "trainer"],
     permissions: ["classes.manage"],
   },
-  StaffWorkspace: {
-    nav: { icon: "mdi-badge-account-horizontal-outline", label: "Staff", to: "/staff", group: "Setup" },
-    roles: ["admin", "owner"],
-    permissions: ["staff.manage"],
-  },
   NetworkControl: {
     nav: { icon: "mdi-domain", label: "Gyms & Users", to: "/network", group: "Platform" },
     roles: ["admin"],
@@ -128,6 +123,11 @@ const ADMIN_ROUTE_RULES = {
     nav: { icon: "mdi-card-account-details-outline", label: "Plans & Memberships", to: "/membership", group: "Setup" },
     roles: ["admin", "owner", "staff"],
     permissions: ["membership.requests.manage", "membership.plans.manage"],
+  },
+  StaffWorkspace: {
+    nav: { icon: "mdi-badge-account-horizontal-outline", label: "Staff", to: "/staff", group: "Setup" },
+    roles: ["admin", "owner"],
+    permissions: ["staff.manage"],
   },
   Invites: {
     nav: { icon: "mdi-ticket-confirmation-outline", label: "Invites", to: "/invites", group: "Growth" },

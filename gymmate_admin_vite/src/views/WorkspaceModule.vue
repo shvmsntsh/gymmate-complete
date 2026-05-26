@@ -32,6 +32,14 @@
               <v-icon start icon="mdi-refresh" />
               Refresh
             </v-btn>
+            <v-btn
+              v-if="moduleKey === 'staff'"
+              color="primary"
+              @click="openAddStaffForm"
+            >
+              <v-icon start icon="mdi-account-plus-outline" />
+              Add Staff
+            </v-btn>
           </div>
 
           <div class="workspace-table-wrap">
@@ -120,10 +128,38 @@
             </template>
 
             <template v-else-if="moduleKey === 'staff'">
+              <div v-if="addStaffMode" class="workspace-form workspace-form--nested">
+                <StateBlock
+                  title="Add staff"
+                  copy="Create a front desk staff login directly. Members and trainers still join by invite."
+                  icon="mdi-account-plus-outline"
+                />
+                <v-text-field v-model="addStaffForm.name" label="Name" density="comfortable" variant="outlined" hide-details="auto" />
+                <v-text-field v-model="addStaffForm.email" label="Email" density="comfortable" variant="outlined" hide-details="auto" />
+                <v-text-field v-model="addStaffForm.phone_number" label="Phone (optional)" density="comfortable" variant="outlined" hide-details="auto" />
+                <v-text-field v-model="addStaffForm.password" label="Temporary password" type="password" density="comfortable" variant="outlined" hide-details="auto" />
+                <v-select
+                  v-model="addStaffForm.preset"
+                  :items="presetOptions"
+                  item-title="label"
+                  item-value="value"
+                  label="Access preset"
+                  density="comfortable"
+                  variant="outlined"
+                  hide-details="auto"
+                />
+                <div class="cta-row">
+                  <v-btn color="primary" type="button" :loading="addingStaff" :disabled="!canAddStaff" @click="submitAddStaff">
+                    <v-icon start icon="mdi-account-plus-outline" />
+                    Add staff
+                  </v-btn>
+                  <v-btn variant="tonal" type="button" @click="closeAddStaffForm">Cancel</v-btn>
+                </div>
+              </div>
               <StateBlock
-                v-if="editableStaffRows.length === 0"
+                v-else-if="editableStaffRows.length === 0"
                 title="No editable staff yet"
-                copy="Invite a staff member or trainer first. Owners are shown for context, but their permissions are not edited here."
+                copy="Add a staff member first. Owners are shown for context, but their permissions are not edited here."
                 icon="mdi-account-plus-outline"
               />
               <template v-else>
@@ -212,7 +248,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import AdminShell from "../components/AdminShell.vue";
 import StateBlock from "../components/StateBlock.vue";
 import { apiFetch, clearAdminSession } from "../lib/api";
@@ -227,6 +263,7 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const route = useRoute();
 const { isDark, toggleTheme } = useAdminTheme();
 const loading = ref(true);
 const submitting = ref(false);
@@ -237,6 +274,15 @@ const selectedRow = ref(null);
 const data = ref({});
 const selectedCapabilities = ref([]);
 const form = reactive({});
+const addStaffMode = ref(false);
+const addingStaff = ref(false);
+const addStaffForm = reactive({
+  name: "",
+  email: "",
+  phone_number: "",
+  password: "",
+  preset: "front_desk",
+});
 
 const leadSources = ["walk_in", "website", "whatsapp", "instagram", "facebook", "referral", "campaign", "manual", "other"];
 const paymentModes = ["cash", "upi", "card", "online", "manual", "waived"];
@@ -301,7 +347,7 @@ const configs = {
     rowsKey: "members",
     canSubmit: false,
     emptyTitle: "No members found",
-    emptyCopy: "Invite or add your first member, then assign a plan from Plans & Memberships.",
+    emptyCopy: "Invite your first member, then assign a plan from Plans & Memberships.",
     columns: [
       { key: "name", label: "Member", action: true },
       { key: "membership.plan.name", label: "Plan" },
@@ -454,6 +500,13 @@ const canSubmitCurrentForm = computed(() => {
   if (moduleKey.value === "staff") return Boolean(form.userId) && editableStaffRows.value.length > 0;
   return true;
 });
+const canAddStaff = computed(() =>
+  Boolean(
+    addStaffForm.name.trim() &&
+      addStaffForm.email.trim() &&
+      addStaffForm.password.length >= 6,
+  ),
+);
 
 watch(
   () => props.moduleKey,
@@ -481,6 +534,18 @@ function displayCell(row, column) {
   if (column.type === "money") return money(value);
   if (value === null || value === undefined || value === "") return "N/A";
   return value;
+}
+
+function flattenCapabilityEntries(source, prefix = "") {
+  if (!source || typeof source !== "object") return [];
+
+  return Object.entries(source).flatMap(([key, value]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === "object") {
+      return flattenCapabilityEntries(value, path);
+    }
+    return value ? [path] : [];
+  });
 }
 
 function money(value) {
@@ -541,6 +606,35 @@ function resetForm() {
   formMessage.value = "";
 }
 
+function resetAddStaffForm() {
+  addStaffForm.name = "";
+  addStaffForm.email = "";
+  addStaffForm.phone_number = "";
+  addStaffForm.password = "";
+  addStaffForm.preset = "front_desk";
+}
+
+function openAddStaffForm() {
+  formError.value = "";
+  formMessage.value = "";
+  resetAddStaffForm();
+  addStaffMode.value = true;
+}
+
+function closeAddStaffForm() {
+  addStaffMode.value = false;
+  resetAddStaffForm();
+}
+
+function applyRouteAction() {
+  if (moduleKey.value === "staff" && route.query.action === "add-staff") {
+    openAddStaffForm();
+    const nextQuery = { ...route.query };
+    delete nextQuery.action;
+    router.replace({ path: route.path, query: nextQuery });
+  }
+}
+
 async function selectRow(row) {
   if (moduleKey.value === "members") {
     selectedRow.value = row;
@@ -557,9 +651,7 @@ async function selectRow(row) {
   if (moduleKey.value === "staff") {
     const isEditable = editableStaffRows.value.some((user) => user.id === row.id);
     form.userId = isEditable ? row.id : null;
-    selectedCapabilities.value = Object.entries(row.staffCapabilities || {})
-      .filter(([, enabled]) => Boolean(enabled))
-      .map(([permission]) => permission);
+    selectedCapabilities.value = flattenCapabilityEntries(row.staffCapabilities);
     if (!isEditable) {
       formMessage.value = "";
       formError.value = "Owners are not edited here. Select a staff member or trainer.";
@@ -623,11 +715,55 @@ async function submitForm() {
   }
 }
 
+async function submitAddStaff() {
+  formError.value = "";
+  formMessage.value = "";
+  addingStaff.value = true;
+  try {
+    if (!canAddStaff.value) {
+      throw new Error("Name, email, and a 6 character temporary password are required.");
+    }
+    const res = await apiFetch("/api/workspace/staff", {
+      method: "POST",
+      body: JSON.stringify({
+        name: addStaffForm.name.trim(),
+        email: addStaffForm.email.trim(),
+        phone_number: addStaffForm.phone_number.trim() || undefined,
+        password: addStaffForm.password,
+        preset: addStaffForm.preset,
+      }),
+    });
+    const payload = await res.json();
+    if (!res.ok) {
+      throw new Error(payload.message || "Could not add staff.");
+    }
+    formMessage.value = "Staff added. Choose permissions below.";
+    closeAddStaffForm();
+    await fetchData();
+    const createdStaff = tableRows.value.find((row) => row.id === payload.staff?.id) || payload.staff;
+    if (createdStaff?.id) {
+      await selectRow(createdStaff);
+    }
+  } catch (err) {
+    formError.value = err?.message || "Could not add staff.";
+  } finally {
+    addingStaff.value = false;
+  }
+}
+
 function logout() {
   clearAdminSession();
   router.push("/login");
 }
 
 resetForm();
-onMounted(fetchData);
+watch(
+  () => route.query.action,
+  () => applyRouteAction(),
+);
+
+onMounted(async () => {
+  await fetchData();
+  applyRouteAction();
+});
 </script>

@@ -29,6 +29,7 @@ router.post('/classes/sessions/:sessionId/bookings', workspaceController.createC
 router.patch('/classes/bookings/:bookingId', workspaceController.updateClassBooking);
 
 router.get('/staff', workspaceController.listStaff);
+router.post('/staff', workspaceController.createStaff);
 router.patch('/staff/:userId/capabilities', workspaceController.updateStaffCapabilities);
 
 module.exports = router;

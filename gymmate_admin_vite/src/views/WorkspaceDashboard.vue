@@ -50,7 +50,7 @@
             class="pilot-checklist__item"
             :class="{ 'pilot-checklist__item--done': item.done }"
             type="button"
-            @click="router.push(item.to)"
+            @click="openSetupItem(item)"
           >
             <v-icon :icon="item.done ? 'mdi-check-circle' : item.icon" />
             <span>
@@ -290,7 +290,7 @@ const actions = computed(() => [
         { title: `${dashboard.value.kpis?.openLeads || 0} leads`, copy: "Call, qualify, or schedule a trial.", icon: "mdi-account-search-outline", to: "/crm" },
         { title: `${dashboard.value.kpis?.dues || 0} dues`, copy: "Review payment status and receipts.", icon: "mdi-cash-register", to: "/payments" },
         { title: `${dashboard.value.kpis?.expiringMemberships || 0} renewals`, copy: "Memberships ending in the next 14 days.", icon: "mdi-card-account-details-outline", to: "/membership" },
-        { title: `${dashboard.value.kpis?.staffCount || 0} staff`, copy: "Invite staff, then set access.", icon: "mdi-badge-account-horizontal-outline", to: "/staff" },
+        { title: `${dashboard.value.kpis?.staffCount || 0} staff`, copy: "Add staff, then set access.", icon: "mdi-badge-account-horizontal-outline", to: "/staff" },
       ]),
 ]);
 
@@ -304,24 +304,24 @@ const setupChecklist = computed(() => {
       title: "Create first plan",
       copy: planCount.value > 0 ? `${planCount.value} plan ready` : "Start with Monthly, Quarterly, or PT add-on.",
       icon: "mdi-card-account-details-outline",
-      to: "/membership",
+      to: planCount.value > 0 ? "/membership?tab=plans" : "/membership?tab=plans&action=create-plan",
       route: "MembershipOps",
       done: planCount.value > 0,
     },
     {
-      title: "Invite staff",
-      copy: Number(kpis.staffCount || 0) > 0 ? `${kpis.staffCount} staff added` : "Bring front desk or trainers into the workspace.",
-      icon: "mdi-ticket-confirmation-outline",
-      to: "/invites",
-      route: "Invites",
+      title: "Add staff",
+      copy: Number(kpis.staffCount || 0) > 0 ? `${kpis.staffCount} staff added` : "Add front desk users directly.",
+      icon: "mdi-badge-account-horizontal-outline",
+      to: "/staff?action=add-staff",
+      route: "StaffWorkspace",
       done: Number(kpis.staffCount || 0) > 0,
     },
     {
       title: "Add members",
       copy: Number(kpis.activeMembers || 0) > 0 ? `${kpis.activeMembers} active members` : "Invite or add the first pilot members.",
       icon: "mdi-account-group-outline",
-      to: "/members",
-      route: "MemberWorkspace",
+      to: "/invites?role=gym_member&focus=create",
+      route: "Invites",
       done: Number(kpis.activeMembers || 0) > 0,
     },
     {
@@ -346,11 +346,16 @@ const completedSetupCount = computed(() => setupChecklist.value.filter((item) =>
 const setupShortcuts = computed(() =>
   [
     { title: "Plans & Memberships", label: "Setup", to: "/membership", route: "MembershipOps" },
-    { title: "Invites", label: "Add people", to: "/invites", route: "Invites" },
+    { title: "Invites", label: "Members/trainers", to: "/invites", route: "Invites" },
+    { title: "Staff", label: "Add staff", to: "/staff?action=add-staff", route: "StaffWorkspace" },
     { title: "Branding", label: "Identity", to: "/branding", route: "BrandingStudio" },
     { title: "Settings", label: "Preferences", to: "/settings", route: "Settings" },
   ].filter((item) => canAccessAdminRoute(item.route, session.value)),
 );
+
+function openSetupItem(item) {
+  router.push(item.to);
+}
 
 async function fetchDashboard() {
   loading.value = true;

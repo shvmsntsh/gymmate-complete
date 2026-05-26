@@ -19,6 +19,34 @@ const { getPermissions, hasPermission, hasRole } = require('../utils/roles');
 const MEMBER_SELECT = 'name email phone_number role gymId accountStatus joinDate profile fitnessGoals dietPreferences customMealPlan customWorkoutPlan createdAt updatedAt';
 const STAFF_SELECT = 'name email phone_number role gymId accountStatus staffCapabilities createdAt updatedAt';
 const PAYMENT_MODES = new Set(['cash', 'upi', 'card', 'online', 'manual', 'waived']);
+const STAFF_PRESETS = {
+  manager: ['workspace.access', 'members.view', 'members.manage', 'leads.manage', 'billing.manage', 'attendance.manage', 'classes.manage', 'reports.view'],
+  front_desk: ['workspace.access', 'members.view', 'leads.manage', 'billing.manage', 'attendance.manage', 'classes.manage'],
+  trainer: ['workspace.access', 'members.view', 'classes.manage'],
+  billing: ['workspace.access', 'members.view', 'billing.manage', 'payments.manage', 'receipts.view', 'reports.view'],
+  marketing: ['workspace.access', 'leads.manage', 'campaigns.manage', 'announcements.manage', 'reports.view'],
+};
+const STAFF_CAPABILITY_KEYS = [
+  'workspace.access',
+  'members.view',
+  'members.manage',
+  'announcements.manage',
+  'membership.requests.manage',
+  'payments.manage',
+  'billing.manage',
+  'attendance.manage',
+  'leads.manage',
+  'classes.manage',
+  'receipts.view',
+  'reports.view',
+  'membership.plans.manage',
+  'biometric.manage',
+  'staff.manage',
+  'campaigns.manage',
+  'settings.manage',
+  'inventory.manage',
+  'ai.insights.view',
+];
 
 function clientError(message, statusCode = 400) {
   const error = new Error(message);
@@ -36,6 +64,25 @@ function canAccessWorkspace(user) {
 
 function canManage(user, permission) {
   return hasRole(user, ['admin', 'owner']) || hasPermission(user, permission);
+}
+
+function normalizeEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function normalizePhone(value) {
+  return String(value || '').replace(/\D/g, '').trim();
+}
+
+function buildStaffCapabilities({ preset, staffCapabilities }) {
+  const enabled = new Set(STAFF_PRESETS[preset] || []);
+  Object.entries(staffCapabilities || {}).forEach(([permission, value]) => {
+    if (value) enabled.add(permission);
+    else enabled.delete(permission);
+  });
+  return Object.fromEntries(
+    STAFF_CAPABILITY_KEYS.map((permission) => [permission, enabled.has(permission)]),
+  );
 }
 
 function escapeRegExp(value) {
@@ -1089,13 +1136,7 @@ exports.listStaff = async (req, res) => {
         permissions: getPermissions(user),
         clientCount: workloadMap[String(user._id)] || 0,
       })),
-      presets: {
-        manager: ['workspace.access', 'members.view', 'members.manage', 'leads.manage', 'billing.manage', 'attendance.manage', 'classes.manage', 'reports.view'],
-        front_desk: ['workspace.access', 'members.view', 'leads.manage', 'billing.manage', 'attendance.manage', 'classes.manage'],
-        trainer: ['workspace.access', 'members.view', 'classes.manage'],
-        billing: ['workspace.access', 'members.view', 'billing.manage', 'payments.manage', 'receipts.view', 'reports.view'],
-        marketing: ['workspace.access', 'leads.manage', 'campaigns.manage', 'announcements.manage', 'reports.view'],
-      },
+      presets: STAFF_PRESETS,
       activities: activities.map((activity) => ({
         id: activity._id,
         action: activity.action,
@@ -1109,6 +1150,78 @@ exports.listStaff = async (req, res) => {
   } catch (error) {
     console.error('Workspace staff failed:', error);
     return res.status(error.statusCode || 500).json({ message: error.message || 'Failed to load staff.' });
+  }
+};
+
+exports.createStaff = async (req, res) => {
+  if (!canManage(req.user, 'staff.manage')) {
+    return res.status(403).json({ message: 'Forbidden: staff management required.' });
+  }
+
+  try {
+    const scope = resolveReadScope(req);
+    if (!scope.gymId) {
+      throw clientError('Select a gym before adding staff.', 400);
+    }
+
+    const name = String(req.body.name || '').trim();
+    const email = normalizeEmail(req.body.email);
+    const phoneNumber = normalizePhone(req.body.phone_number || req.body.phoneNumber || req.body.phone);
+    const password = String(req.body.password || '');
+    const preset = String(req.body.preset || 'front_desk').trim();
+
+    if (!name) throw clientError('Name is required.');
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw clientError('A valid email is required.');
+    }
+    if (password.length < 6) {
+      throw clientError('Temporary password must be at least 6 characters.');
+    }
+
+    const duplicateQuery = [{ email }];
+    if (phoneNumber) duplicateQuery.push({ phone_number: phoneNumber });
+    const existing = await User.findOne({ $or: duplicateQuery });
+    if (existing) {
+      throw clientError(
+        existing.email === email
+          ? 'User with this email already exists.'
+          : 'User with this phone number already exists.',
+        409,
+      );
+    }
+
+    const staff = new User({
+      name,
+      email,
+      phone_number: phoneNumber || undefined,
+      password,
+      role: 'gym_staff',
+      gymId: scope.gymId,
+      registered: true,
+      invited: false,
+      registrationMethod: 'direct',
+      accountStatus: 'active',
+      staffCapabilities: buildStaffCapabilities({
+        preset,
+        staffCapabilities: req.body.staffCapabilities,
+      }),
+    });
+
+    await staff.save();
+    await logStaffActivity(staff.gymId, req.user._id, 'staff.created', { preset }, staff._id, 'user', staff._id);
+
+    return res.status(201).json({
+      message: 'Staff added successfully.',
+      staff: {
+        ...serializeUser(staff),
+        staffCapabilities: staff.staffCapabilities || {},
+        permissions: getPermissions(staff),
+        clientCount: 0,
+      },
+    });
+  } catch (error) {
+    console.error('Workspace staff create failed:', error);
+    return res.status(error.statusCode || 500).json({ message: error.message || 'Failed to add staff.' });
   }
 };
 

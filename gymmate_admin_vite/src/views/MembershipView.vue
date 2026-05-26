@@ -25,6 +25,7 @@
     <v-window v-model="activeTab">
       <v-window-item value="plans">
         <PlansSection
+          ref="plansSectionRef"
           :templates="templates"
           :loading="loadingTemplates"
           @create="createTemplate"
@@ -561,8 +562,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import AdminShell from "../components/AdminShell.vue";
 import StateBlock from "../components/StateBlock.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
@@ -574,6 +575,7 @@ import RequestsSection from "./membership/RequestsSection.vue";
 import RequestDetailCard from "./membership/RequestDetailCard.vue";
 
 const router = useRouter();
+const route = useRoute();
 const { isDark, toggleTheme } = useAdminTheme();
 
 const activeTab = ref("memberships");
@@ -581,6 +583,7 @@ const error = ref("");
 const snackbar = ref({ show: false, message: "", color: "success" });
 
 const templates = ref([]);
+const plansSectionRef = ref(null);
 const memberships = ref([]);
 const members = ref([]);
 const requests = ref([]);
@@ -959,6 +962,20 @@ async function fetchAll() {
     loadingTemplates.value = false;
     loadingMemberships.value = false;
     loadingRequests.value = false;
+  }
+}
+
+async function applyRouteAction() {
+  if (route.query.tab === "plans") {
+    activeTab.value = "plans";
+  }
+  if (route.query.action === "create-plan") {
+    activeTab.value = "plans";
+    await nextTick();
+    plansSectionRef.value?.openCreate?.();
+    const nextQuery = { ...route.query };
+    delete nextQuery.action;
+    router.replace({ path: route.path, query: nextQuery });
   }
 }
 
@@ -1426,7 +1443,17 @@ function toIsoDateFromUs(value) {
   return `${year}-${month}-${day}`;
 }
 
-onMounted(fetchAll);
+watch(
+  () => route.query,
+  () => {
+    applyRouteAction();
+  },
+);
+
+onMounted(async () => {
+  await fetchAll();
+  await applyRouteAction();
+});
 </script>
 
 <style scoped>
