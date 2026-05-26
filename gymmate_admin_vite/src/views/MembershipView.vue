@@ -778,7 +778,11 @@ const assignDialogTitle = computed(() =>
   assignForm.value.flowType === "manual_change" ? "Change Or Renew Current Plan" : "Assign New Plan",
 );
 const selectedAssignMemberLabel = computed(() => {
-  const member = members.value.find((item) => item.id === assignForm.value.memberId);
+  const member =
+    members.value.find((item) => item.id === assignForm.value.memberId) ||
+    (selectedMembershipReviewMember.value?.id === assignForm.value.memberId
+      ? selectedMembershipReviewMember.value
+      : null);
   if (!member) return "Selected member";
   return `${member.name} (${member.email})`;
 });
@@ -794,6 +798,33 @@ const adjustSummaryCopy = computed(() => {
   }
   return `Start ${adjustForm.value.startDate || "--"} • End ${adjustForm.value.endDate || "--"} • Renewal ${adjustForm.value.nextRenewalDate || "--"}`;
 });
+
+function normalizeId(value) {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  return value.id || value._id || value.$oid || null;
+}
+
+function resolveMembershipMember(membership) {
+  return membership?.member || selectedMembershipReviewMember.value || null;
+}
+
+function resolveMembershipTemplateId(membership) {
+  return (
+    normalizeId(membership?.membershipTemplateId) ||
+    normalizeId(membership?.template) ||
+    normalizeId(membership?.templateId) ||
+    normalizeId(membership?.membershipTemplate) ||
+    null
+  );
+}
+
+function withReviewMemberContext(rows, member) {
+  return (rows || []).map((membership) => ({
+    ...membership,
+    member: membership.member || member || null,
+  }));
+}
 
 function showSnackbar(message, color = "success") {
   snackbar.value = { show: true, message, color };
@@ -1045,13 +1076,15 @@ function openAssignDialog() {
 }
 
 function openPlanChangeDialog(membership) {
-  if (!membership?.member?.id) {
+  const member = resolveMembershipMember(membership);
+  const memberId = normalizeId(member);
+  if (!memberId) {
     showSnackbar("Member not found for plan change", "error");
     return;
   }
   assignForm.value = {
-    memberId: membership.member.id,
-    templateId: membership.membershipTemplateId?._id || membership.membershipTemplateId || null,
+    memberId,
+    templateId: resolveMembershipTemplateId(membership),
     paymentStatus: "unpaid",
     paymentMethod: "cash",
     paymentReference: "",
@@ -1122,7 +1155,11 @@ async function confirmAssign() {
     );
     assignDialog.value = false;
     if (assignForm.value.flowType === "manual_change" && assignForm.value.memberId) {
-      const refreshedMember = members.value.find((item) => item.id === assignForm.value.memberId);
+      const refreshedMember =
+        members.value.find((item) => item.id === assignForm.value.memberId) ||
+        (selectedMembershipReviewMember.value?.id === assignForm.value.memberId
+          ? selectedMembershipReviewMember.value
+          : null);
       if (refreshedMember) {
         await openMembershipReview({ member: refreshedMember });
       }
@@ -1293,7 +1330,9 @@ async function openRequestReject(requestId) {
 }
 
 async function openMembershipReview(membership) {
-  if (!membership?.member?.id) {
+  const member = resolveMembershipMember(membership);
+  const memberId = normalizeId(member);
+  if (!memberId) {
     showSnackbar("Member not found for review", "error");
     return;
   }
@@ -1301,14 +1340,14 @@ async function openMembershipReview(membership) {
   membershipReviewDialog.value = true;
   loadingMembershipReview.value = true;
   membershipReviewError.value = "";
-  selectedMembershipReviewMember.value = membership.member;
+  selectedMembershipReviewMember.value = member;
   selectedMembershipReview.value = [];
 
   try {
-    const res = await apiFetch(`/api/owner/members/${membership.member.id}/memberships`);
+    const res = await apiFetch(`/api/owner/members/${memberId}/memberships`);
     const dataRes = await res.json();
     if (!res.ok) throw new Error(dataRes.message);
-    selectedMembershipReview.value = dataRes.memberships || [];
+    selectedMembershipReview.value = withReviewMemberContext(dataRes.memberships, member);
   } catch (err) {
     membershipReviewError.value = err.message || "Failed to load membership review";
   } finally {

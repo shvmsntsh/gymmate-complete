@@ -838,8 +838,8 @@ class MembershipService {
         templateName: template.name,
       });
     }
-    
-    return membership;
+
+    return membership.populate('membershipTemplateId');
   }
 
   static async createChangeRequest(gymId, memberId, requestData) {
