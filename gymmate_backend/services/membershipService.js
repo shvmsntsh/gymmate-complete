@@ -174,7 +174,7 @@ class MembershipService {
     templateRules,
     override = {},
   }) {
-    const amountPaid = requestPayments.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
+    const recordedAmountPaid = requestPayments.reduce((sum, entry) => sum + Number(entry.amount || 0), 0);
     const paymentWaived = this.isPaymentWaived(request);
     const creditAmount = this.computeProrationCredit(
       currentMembership,
@@ -191,6 +191,10 @@ class MembershipService {
     const expectedAmount = hasManualAmount && Number.isFinite(normalizedManualAmount)
       ? Number(Math.max(0, normalizedManualAmount).toFixed(2))
       : this.computeExpectedAmount(request, targetTemplate);
+    const assumedPaidAmount = override.assumePaymentReceived
+      ? Number(Math.max(0, expectedAmount - creditAmount).toFixed(2))
+      : 0;
+    const amountPaid = recordedAmountPaid + assumedPaidAmount;
     const remainingAmount = paymentWaived
       ? 0
       : Number(Math.max(0, expectedAmount - creditAmount - amountPaid).toFixed(2));
@@ -731,6 +735,9 @@ class MembershipService {
     const previewOverride = { ...options };
     if (options.paymentAmount !== undefined) {
       previewOverride.manualPaymentAmount = options.paymentAmount;
+    }
+    if (options.paymentStatus === 'paid') {
+      previewOverride.assumePaymentReceived = true;
     }
     if (options.paymentStatus !== 'paid') {
       previewOverride.allowPendingPayment = true;
