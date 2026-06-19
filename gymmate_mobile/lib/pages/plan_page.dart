@@ -13,6 +13,8 @@ import '../services/member_hub_service.dart';
 import '../utils/date_format.dart';
 import '../widgets/async_states.dart';
 import '../widgets/editorial_mobile.dart';
+import 'package:gymmate_mobile/pages/member_onboarding_page.dart';
+import 'package:gymmate_mobile/services/member_plan_service.dart';
 
 void logPlanPage(String msg) {
   assert(() {
@@ -258,6 +260,13 @@ class _PlanPageState extends State<PlanPage> {
 
   double? _calorieGoal;
   bool _planLogLoaded = false;
+
+  // Personalised plan state (dynamic, from /api/member/me/*)
+  Map<String, dynamic>? _memberProfile;
+  Map<String, dynamic>? _memberWorkoutPlan;
+  Map<String, dynamic>? _memberMealPlan;
+  bool _memberPlanLoading = true;
+  String? _memberPlanError;
 
   // Progress data state (like ProgressPage)
   Map<String, dynamic>? _progressData;
@@ -648,6 +657,7 @@ class _PlanPageState extends State<PlanPage> {
     _loadPlanIfNeeded();
     _updateCalorieGoal();
     _loadMembershipHub();
+    _loadPersonalisedPlan();
     // Animated loading message
     Future.doWhile(() async {
       if (!_planLoading) return false;
@@ -721,6 +731,38 @@ class _PlanPageState extends State<PlanPage> {
       setState(() {
         _membershipLoading = false;
         _membershipError = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
+  }
+
+  Future<void> _loadPersonalisedPlan() async {
+    setState(() {
+      _memberPlanLoading = true;
+      _memberPlanError = null;
+    });
+    final token = _authProvider?.token;
+    if (token == null) {
+      setState(() => _memberPlanLoading = false);
+      return;
+    }
+    try {
+      final results = await Future.wait([
+        MemberPlanService.getProfile(token),
+        MemberPlanService.getWorkoutPlan(token),
+        MemberPlanService.getMealPlan(token),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _memberProfile = results[0];
+        _memberWorkoutPlan = results[1];
+        _memberMealPlan = results[2];
+        _memberPlanLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _memberPlanLoading = false;
+        _memberPlanError = e.toString();
       });
     }
   }
@@ -1237,6 +1279,8 @@ class _PlanPageState extends State<PlanPage> {
                 ),
               ),
               const SizedBox(height: 18),
+              _buildPersonalisedPlanSection(),
+              const SizedBox(height: 18),
               if (_planError)
                 _buildEditorialState(
                   title: 'Your plan needs a fresh pull.',
@@ -1624,6 +1668,367 @@ class _PlanPageState extends State<PlanPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildPersonalisedPlanSection() {
+    if (_memberPlanLoading) {
+      return SkeletonLoader.list();
+    }
+    if (_memberPlanError != null) {
+      return ErrorStateView(
+        title: 'Could not load your plan.',
+        message: _memberPlanError,
+        onRetry: _loadPersonalisedPlan,
+      );
+    }
+    if (_memberProfile == null) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 0),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFE5E5EA), width: 1.5),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your personalised plan is waiting.',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Answer 8 quick questions and get a custom workout and meal plan.',
+              style: TextStyle(fontSize: 13, color: Color(0xFF6E6E73)),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MemberOnboardingPage(),
+                  ),
+                );
+                _loadPersonalisedPlan();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 20,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1d1d1f),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'Build my plan →',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final widgets = <Widget>[];
+
+    // Today's Workout card
+    if (_memberWorkoutPlan != null) {
+      final dayIndex = DateTime.now().weekday - 1; // 0=Mon...6=Sun
+      final daysPerWeek =
+          (_memberWorkoutPlan!['daysPerWeek'] as num?)?.toInt() ?? 3;
+      final schedules = _memberWorkoutPlan!['schedules'] as Map<String, dynamic>?;
+      final schedule =
+          (schedules?[daysPerWeek.toString()] as List<dynamic>?) ??
+          (schedules?.values.firstOrNull as List<dynamic>?);
+      final todayWorkoutId =
+          schedule != null ? schedule[dayIndex % 7].toString() : 'rest';
+      final workouts = (_memberWorkoutPlan!['workouts'] as List<dynamic>?) ?? [];
+      final dynamic todayWorkout = todayWorkoutId == 'rest'
+          ? null
+          : workouts.firstWhere(
+              (w) => w['id'] == todayWorkoutId,
+              orElse: () => null,
+            );
+
+      final dayName = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ][dayIndex];
+
+      final weeklyProgression = (_memberWorkoutPlan!['weeklyProgression']
+          as List<dynamic>?) ?? [];
+      final weekNote = weeklyProgression.isNotEmpty
+          ? (weeklyProgression.first['note']?.toString() ?? '')
+          : '';
+
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFFE5E5EA), width: 1.5),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    "Today's Workout",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1d1d1f),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    dayName,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF6E6E73),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (todayWorkout == null)
+                const Text(
+                  'Rest day — recover and prepare for tomorrow.',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF6E6E73)),
+                )
+              else ...[
+                Text(
+                  todayWorkout['name']?.toString() ?? 'Workout',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1d1d1f),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...((todayWorkout['exercises'] as List<dynamic>?) ?? []).map((
+                  ex,
+                ) {
+                  final name = ex['name']?.toString() ?? 'Exercise';
+                  final sets = ex['sets']?.toString() ?? '3';
+                  final reps = ex['reps']?.toString() ?? '12';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.circle,
+                          size: 6,
+                          color: Color(0xFF6E6E73),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF1d1d1f),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${sets}×$reps',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF6E6E73),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+              if (weekNote.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    weekNote,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6E6E73),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+      widgets.add(const SizedBox(height: 14));
+    }
+
+    // Today's Meals card
+    if (_memberMealPlan != null) {
+      final dailyCalories = _memberMealPlan!['dailyCalories'];
+      final macros = _memberMealPlan!['macros'] as Map<String, dynamic>?;
+      final proteinG = macros?['proteinG']?.toString() ?? '';
+      final carbsG = macros?['carbsG']?.toString() ?? '';
+      final fatG = macros?['fatG']?.toString() ?? '';
+      final macroLine = [
+        if (proteinG.isNotEmpty) '${proteinG}g protein',
+        if (carbsG.isNotEmpty) '${carbsG}g carbs',
+        if (fatG.isNotEmpty) '${fatG}g fat',
+      ].join(' · ');
+
+      final dayNum = DateTime.now().weekday; // 1=Mon...7=Sun
+      final days = (_memberMealPlan!['days'] as List<dynamic>?) ?? [];
+      dynamic todayMeals = days.firstWhere(
+        (d) => d['dayNumber'] == dayNum,
+        orElse: () => days.isNotEmpty ? days.first : null,
+      );
+
+      widgets.add(
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFFE5E5EA), width: 1.5),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Today's Meals",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1d1d1f),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${dailyCalories != null ? "$dailyCalories kcal" : ""}${macroLine.isNotEmpty ? " · $macroLine" : ""}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6E6E73),
+                ),
+              ),
+              const SizedBox(height: 14),
+              if (todayMeals != null)
+                ...((todayMeals['meals'] as List<dynamic>?) ?? []).map((meal) {
+                  final mealType = meal['type']?.toString() ?? 'Meal';
+                  final items = (meal['items'] as List<dynamic>?) ?? [];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      childrenPadding: const EdgeInsets.only(bottom: 8),
+                      title: Text(
+                        _formatMealType(mealType),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1d1d1f),
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${items.length} item${items.length == 1 ? "" : "s"}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6E6E73),
+                        ),
+                      ),
+                      children: items.map((item) {
+                        final name = item['name']?.toString() ?? '';
+                        final portion = item['portion']?.toString() ?? '';
+                        final kcal = item['caloriesKcal']?.toString() ?? '';
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF1d1d1f),
+                                      ),
+                                    ),
+                                    if (portion.isNotEmpty)
+                                      Text(
+                                        portion,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF6E6E73),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (kcal.isNotEmpty)
+                                Text(
+                                  '$kcal kcal',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF6E6E73),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                })
+              else
+                const Text(
+                  'No meal data for today.',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF6E6E73)),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (widgets.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
+  String _formatMealType(String raw) {
+    return raw
+        .split('_')
+        .map(
+          (part) =>
+              part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1),
+        )
+        .join(' ');
   }
 
   Widget _buildEditorialLoadingState() {
