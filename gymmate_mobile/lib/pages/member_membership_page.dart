@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import '../api/api_config.dart';
 import '../providers/auth_provider.dart';
 import '../services/member_membership_service.dart';
+import '../utils/currency_format.dart';
 import '../utils/date_format.dart';
+import '../widgets/async_states.dart';
 import '../widgets/editorial_mobile.dart';
 
 class MemberMembershipPage extends StatefulWidget {
@@ -82,7 +84,7 @@ class _MemberMembershipPageState extends State<MemberMembershipPage> {
                 ),
                 const SizedBox(height: 24),
                 if (_loading)
-                  const Center(child: CircularProgressIndicator())
+                  SkeletonLoader.detail()
                 else if (_error != null)
                   _buildErrorState()
                 else if (_membership == null)
@@ -98,19 +100,10 @@ class _MemberMembershipPageState extends State<MemberMembershipPage> {
   }
 
   Widget _buildErrorState() {
-    return EditorialSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          EditorialSectionHeading(
-            eyebrow: 'Error',
-            title: 'Could not load membership.',
-            subtitle: _error,
-          ),
-          const SizedBox(height: 14),
-          EditorialGhostButton(label: 'Retry', onPressed: _loadData),
-        ],
-      ),
+    return ErrorStateView(
+      title: 'Could not load membership.',
+      message: _error,
+      onRetry: _loadData,
     );
   }
 
@@ -198,19 +191,19 @@ class _MemberMembershipPageState extends State<MemberMembershipPage> {
           _InfoRow(
             label: 'Valid From',
             value: membership['startDate'] != null
-                ? formatDateUs(membership['startDate'])
+                ? formatDateIN(membership['startDate'])
                 : 'N/A',
           ),
           _InfoRow(
             label: 'Expires',
             value: membership['endDate'] != null
-                ? formatDateUs(membership['endDate'])
+                ? formatDateIN(membership['endDate'])
                 : 'N/A',
           ),
           if (membership['nextRenewalDate'] != null)
             _InfoRow(
               label: 'Next Renewal',
-              value: formatDateUs(membership['nextRenewalDate']),
+              value: formatDateIN(membership['nextRenewalDate']),
             ),
           if ((membership['paymentReference']?.toString() ?? '').isNotEmpty)
             _InfoRow(
@@ -341,7 +334,7 @@ class _ReceiptPanel extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Paid ₹${NumberFormatHelper.amount(receipt['amount'])}',
+            'Paid ${formatINR(receipt['amount'], decimals: 2)}',
             style: theme.textTheme.bodyMedium,
           ),
           if (link.isNotEmpty) ...[
@@ -367,13 +360,6 @@ class _ReceiptPanel extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class NumberFormatHelper {
-  static String amount(dynamic value) {
-    final parsed = value is num ? value : num.tryParse(value?.toString() ?? '');
-    return (parsed ?? 0).toStringAsFixed(2);
   }
 }
 

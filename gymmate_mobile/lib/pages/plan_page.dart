@@ -11,6 +11,7 @@ import 'dart:math' as math;
 import '../services/onboarding_service.dart';
 import '../services/member_hub_service.dart';
 import '../utils/date_format.dart';
+import '../widgets/async_states.dart';
 import '../widgets/editorial_mobile.dart';
 
 void logPlanPage(String msg) {
@@ -1266,9 +1267,13 @@ class _PlanPageState extends State<PlanPage> {
                       ),
                       const SizedBox(height: 14),
                       if (_membershipLoading)
-                        const Center(child: CircularProgressIndicator())
+                        SkeletonLoader.detail()
                       else if (_membershipError != null)
-                        Text(_membershipError!, style: theme.textTheme.bodyMedium)
+                        ErrorStateView(
+                          title: 'Could not load your plan.',
+                          message: _membershipError,
+                          onRetry: _loadMembershipHub,
+                        )
                       else ...[
                         Text(
                           (_membershipSummary?['planName'] ?? 'No active plan').toString(),
@@ -1282,7 +1287,7 @@ class _PlanPageState extends State<PlanPage> {
                         if (_membershipSummary?['renewalDueDate'] != null) ...[
                           const SizedBox(height: 4),
                           Text(
-                            'Renewal due: ${formatDateUs(_membershipSummary!['renewalDueDate'])}',
+                            'Renewal due: ${formatDateIN(_membershipSummary!['renewalDueDate'])}',
                             style: theme.textTheme.bodySmall,
                           ),
                         ],

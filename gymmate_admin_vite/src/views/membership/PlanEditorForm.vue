@@ -155,6 +155,7 @@ import { ref, toRaw, watch } from "vue";
 
 const props = defineProps({
   template: { type: Object, default: null },
+  initialPreset: { type: Object, default: null },
   loading: { type: Boolean, default: false },
 });
 
@@ -272,33 +273,43 @@ function normalizeForm(input) {
   return next;
 }
 
+function mergeFromSource(source) {
+  const base = clonePlain(defaultForm);
+  if (!source) return base;
+  return {
+    ...base,
+    ...source,
+    durationDays: String(source.durationDays ?? base.durationDays),
+    price: String(source.price ?? base.price),
+    joiningFee: String(source.joiningFee ?? base.joiningFee),
+    renewalLeadDays: String(source.renewalLeadDays ?? base.renewalLeadDays),
+    sortOrder: String(source.sortOrder ?? base.sortOrder),
+    upgradeRank: String(source.upgradeRank ?? base.upgradeRank),
+    includedFeatures: {
+      ...base.includedFeatures,
+      ...(source.includedFeatures || {}),
+      guestPasses: String(
+        source.includedFeatures?.guestPasses ?? base.includedFeatures.guestPasses,
+      ),
+    },
+    availableAddOns: {
+      ...base.availableAddOns,
+      ...(source.availableAddOns || {}),
+    },
+    rules: {
+      ...base.rules,
+      ...(source.rules || {}),
+      freezeLimitDays: String(
+        source.rules?.freezeLimitDays ?? base.rules.freezeLimitDays,
+      ),
+    },
+  };
+}
+
 watch(
-  () => props.template,
-  (template) => {
-    const merged = template
-      ? {
-          ...clonePlain(defaultForm),
-          ...template,
-          durationDays: String(template.durationDays ?? defaultForm.durationDays),
-          price: String(template.price ?? defaultForm.price),
-          joiningFee: String(template.joiningFee ?? defaultForm.joiningFee),
-          renewalLeadDays: String(template.renewalLeadDays ?? defaultForm.renewalLeadDays),
-          sortOrder: String(template.sortOrder ?? defaultForm.sortOrder),
-          upgradeRank: String(template.upgradeRank ?? defaultForm.upgradeRank),
-          includedFeatures: {
-            ...clonePlain(defaultForm.includedFeatures),
-            ...template.includedFeatures,
-            guestPasses: String(template.includedFeatures?.guestPasses ?? defaultForm.includedFeatures.guestPasses),
-          },
-          availableAddOns: { ...clonePlain(defaultForm.availableAddOns), ...template.availableAddOns },
-          rules: {
-            ...clonePlain(defaultForm.rules),
-            ...template.rules,
-            freezeLimitDays: String(template.rules?.freezeLimitDays ?? defaultForm.rules.freezeLimitDays),
-          },
-        }
-      : clonePlain(defaultForm);
-    form.value = merged;
+  () => [props.template, props.initialPreset],
+  ([template, preset]) => {
+    form.value = mergeFromSource(template || preset);
     formError.value = "";
   },
   { immediate: true },

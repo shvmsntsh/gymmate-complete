@@ -48,10 +48,12 @@
               <span class="admin-shell__nav-icon"
                 ><v-icon :icon="item.icon"
               /></span>
-              <span class="admin-shell__nav-label">{{ item.label }}</span>
+              <span class="admin-shell__nav-label" :title="item.label">{{ item.label }}</span>
             </button>
           </div>
         </nav>
+
+        <SidebarOnboardingChip />
 
         <div
           class="admin-shell__sidebar-footer admin-surface admin-surface--muted"
@@ -90,6 +92,7 @@
           </div>
 
           <div class="admin-shell__actions">
+            <QuickAddMenu />
             <slot name="header-actions"></slot>
           </div>
         </header>
@@ -106,6 +109,8 @@
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdminBrand from "./AdminBrand.vue";
+import QuickAddMenu from "./QuickAddMenu.vue";
+import SidebarOnboardingChip from "./SidebarOnboardingChip.vue";
 import { apiFetch, getAdminRole, getAdminSession, getGroupedAdminNavItems } from "../lib/api";
 
 const props = defineProps({

@@ -1,14 +1,44 @@
 <template>
   <AdminShell
     :is-dark="isDark"
-    title="Command Center"
-    :eyebrow="isSuperadmin ? 'Platform Command' : 'Gym Operations'"
-    :description="isSuperadmin ? 'Network-wide gyms, users, activity, and health signals.' : 'Daily health, pending work, and revenue signals for the gym team.'"
+    :title="shellTitle"
+    :eyebrow="shellEyebrow"
+    :description="shellDescription"
     @toggle-theme="toggleTheme"
     @logout="logout"
   >
+    <template v-if="isTrainer">
+      <section class="workspace-panel coach-welcome">
+        <div class="workspace-section-head">
+          <div>
+            <div class="table-overline">Coach Hub</div>
+            <h2 class="section-title">Welcome, {{ session?.user?.name || 'Coach' }}</h2>
+            <p class="section-copy">
+              Here's a quick way to your classes and members. Ask your gym owner
+              if you need access to billing or attendance.
+            </p>
+          </div>
+        </div>
+
+        <div class="coach-actions">
+          <button
+            v-for="action in trainerActions"
+            :key="action.title"
+            class="coach-action"
+            type="button"
+            @click="router.push(action.to)"
+          >
+            <v-icon :icon="action.icon" size="32" />
+            <span>
+              <strong>{{ action.title }}</strong>
+              <small>{{ action.copy }}</small>
+            </span>
+          </button>
+        </div>
+      </section>
+    </template>
     <StateBlock
-      v-if="error"
+      v-else-if="error"
       title="Could not load command center"
       :copy="error"
       icon="mdi-alert-circle-outline"
@@ -32,21 +62,36 @@
         />
       </div>
 
-      <section v-if="!isSuperadmin" class="workspace-panel pilot-checklist">
+      <section
+        v-if="!isSuperadmin && onboarding.visible.value"
+        class="workspace-panel pilot-checklist"
+      >
         <div class="workspace-section-head">
           <div>
             <div class="table-overline">Pilot Setup</div>
-            <h2 class="section-title">Get ready for your first gym test</h2>
+            <h2 class="section-title">Get your gym ready for pilot</h2>
+            <p class="section-copy">
+              Six quick steps. Each one opens the exact next action.
+            </p>
           </div>
-          <v-chip color="primary" variant="tonal">
-            {{ completedSetupCount }}/{{ setupChecklist.length }} done
-          </v-chip>
+          <div class="pilot-checklist__head-actions">
+            <v-chip color="primary" variant="tonal">
+              {{ onboarding.completedCount.value }}/{{ onboarding.totalCount.value }} done
+            </v-chip>
+            <v-btn
+              variant="text"
+              size="small"
+              @click="onboarding.dismiss()"
+            >
+              Hide for now
+            </v-btn>
+          </div>
         </div>
 
         <div class="pilot-checklist__grid">
           <button
             v-for="item in setupChecklist"
-            :key="item.title"
+            :key="item.id"
             class="pilot-checklist__item"
             :class="{ 'pilot-checklist__item--done': item.done }"
             type="button"
@@ -58,6 +103,23 @@
               <small>{{ item.copy }}</small>
             </span>
           </button>
+        </div>
+      </section>
+
+      <section
+        v-else-if="!isSuperadmin && onboarding.isDismissed.value && !onboarding.isComplete.value"
+        class="workspace-panel pilot-checklist pilot-checklist--collapsed"
+      >
+        <div class="workspace-section-head">
+          <div>
+            <div class="table-overline">Pilot Setup</div>
+            <h2 class="section-title">
+              {{ onboarding.completedCount.value }}/{{ onboarding.totalCount.value }} setup steps done
+            </h2>
+          </div>
+          <v-btn variant="tonal" color="primary" size="small" @click="onboarding.restore()">
+            Show checklist
+          </v-btn>
         </div>
       </section>
 
@@ -208,15 +270,48 @@ import StatCard from "../components/StatCard.vue";
 import { API_BASE_URL, apiFetch, canAccessAdminRoute, clearAdminSession, getAdminRole, getAdminSession } from "../lib/api";
 import { formatDateTimeUs } from "../lib/date";
 import { useAdminTheme } from "../composables/useAdminTheme";
+import { useOnboarding } from "../composables/useOnboarding";
 
 const router = useRouter();
 const { isDark, toggleTheme } = useAdminTheme();
 const loading = ref(true);
 const error = ref("");
 const dashboard = ref({ kpis: {}, queues: {} });
-const planCount = ref(0);
 const isSuperadmin = computed(() => getAdminRole() === "admin");
+const isTrainer = computed(() => getAdminRole() === "trainer");
 const session = computed(() => getAdminSession());
+const onboarding = useOnboarding();
+
+const shellTitle = computed(() => (isTrainer.value ? "Coach Hub" : "Command Center"));
+const shellEyebrow = computed(() => {
+  if (isSuperadmin.value) return "Platform Command";
+  if (isTrainer.value) return "Trainer Workspace";
+  return "Gym Operations";
+});
+const shellDescription = computed(() => {
+  if (isSuperadmin.value) return "Network-wide gyms, users, activity, and health signals.";
+  if (isTrainer.value) return "Your classes, members, and quick actions for the day.";
+  return "Daily health, pending work, and revenue signals for the gym team.";
+});
+
+const trainerActions = computed(() =>
+  [
+    {
+      title: "Today's classes",
+      copy: "View the sessions and rosters you're running.",
+      icon: "mdi-calendar-clock",
+      to: "/classes",
+      route: "ClassesWorkspace",
+    },
+    {
+      title: "Settings",
+      copy: "Profile, theme, and account.",
+      icon: "mdi-cog-outline",
+      to: "/settings",
+      route: "Settings",
+    },
+  ].filter((item) => canAccessAdminRoute(item.route, session.value)),
+);
 
 function money(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -297,52 +392,11 @@ const actions = computed(() => [
 const leadQueue = computed(() => dashboard.value.queues?.leads || []);
 const paymentQueue = computed(() => dashboard.value.queues?.payments || []);
 const classQueue = computed(() => dashboard.value.queues?.classes || []);
-const setupChecklist = computed(() => {
-  const kpis = dashboard.value.kpis || {};
-  return [
-    {
-      title: "Create first plan",
-      copy: planCount.value > 0 ? `${planCount.value} plan ready` : "Start with Monthly, Quarterly, or PT add-on.",
-      icon: "mdi-card-account-details-outline",
-      to: planCount.value > 0 ? "/membership?tab=plans" : "/membership?tab=plans&action=create-plan",
-      route: "MembershipOps",
-      done: planCount.value > 0,
-    },
-    {
-      title: "Add staff",
-      copy: Number(kpis.staffCount || 0) > 0 ? `${kpis.staffCount} staff added` : "Add front desk users directly.",
-      icon: "mdi-badge-account-horizontal-outline",
-      to: "/staff?action=add-staff",
-      route: "StaffWorkspace",
-      done: Number(kpis.staffCount || 0) > 0,
-    },
-    {
-      title: "Add members",
-      copy: Number(kpis.activeMembers || 0) > 0 ? `${kpis.activeMembers} active members` : "Invite or add the first pilot members.",
-      icon: "mdi-account-group-outline",
-      to: "/invites?role=gym_member&focus=create",
-      route: "Invites",
-      done: Number(kpis.activeMembers || 0) > 0,
-    },
-    {
-      title: "Record first payment",
-      copy: Number(kpis.paymentsToday || kpis.revenueToday || 0) > 0 ? "Payment flow tested" : "Test cash or UPI collection once.",
-      icon: "mdi-cash-register",
-      to: "/payments",
-      route: "PaymentWorkspace",
-      done: Number(kpis.paymentsToday || kpis.revenueToday || 0) > 0,
-    },
-    {
-      title: "Set attendance method",
-      copy: Number(kpis.todayCheckIns || 0) > 0 ? "Attendance has activity" : "Use manual check-in first; biometric can wait.",
-      icon: "mdi-calendar-check-outline",
-      to: "/attendance",
-      route: "AttendanceWorkspace",
-      done: Number(kpis.todayCheckIns || 0) > 0,
-    },
-  ].filter((item) => canAccessAdminRoute(item.route, session.value));
-});
-const completedSetupCount = computed(() => setupChecklist.value.filter((item) => item.done).length);
+const setupChecklist = computed(() =>
+  onboarding.steps.value.filter((item) =>
+    canAccessAdminRoute(item.route, session.value),
+  ),
+);
 const setupShortcuts = computed(() =>
   [
     { title: "Plans & Memberships", label: "Setup", to: "/membership", route: "MembershipOps" },
@@ -358,6 +412,11 @@ function openSetupItem(item) {
 }
 
 async function fetchDashboard() {
+  if (isTrainer.value) {
+    loading.value = false;
+    error.value = "";
+    return;
+  }
   loading.value = true;
   error.value = "";
   try {
@@ -409,24 +468,13 @@ async function fetchDashboard() {
       throw new Error(data.message || "Could not load workspace dashboard.");
     }
     dashboard.value = data;
-    await fetchPilotSetup();
+    if (!isSuperadmin.value) {
+      onboarding.refresh();
+    }
   } catch (err) {
     error.value = err?.message || "Could not load workspace dashboard.";
   } finally {
     loading.value = false;
-  }
-}
-
-async function fetchPilotSetup() {
-  if (isSuperadmin.value) return;
-  try {
-    const res = await apiFetch("/api/owner/membership-templates");
-    const data = await res.json();
-    if (res.ok) {
-      planCount.value = (data.templates || data.plans || []).length;
-    }
-  } catch {
-    planCount.value = 0;
   }
 }
 

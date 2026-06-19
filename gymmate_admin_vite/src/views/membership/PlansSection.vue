@@ -5,11 +5,11 @@
         <div>
           <div class="table-overline">Setup</div>
           <h2 class="section-title">Plans members can buy</h2>
-          <p class="section-copy">Start with simple gym plans like Monthly, Quarterly, or PT add-on.</p>
+          <p class="section-copy">Start with simple gym plans like Monthly, Quarterly, or PT Pass.</p>
         </div>
-        <v-btn color="primary" @click="showEditor = true">
+        <v-btn color="primary" @click="openCreate()">
           <v-icon start>mdi-plus</v-icon>
-          New Plan
+          Create plan
         </v-btn>
       </div>
     </div>
@@ -24,11 +24,24 @@
       <div class="text-center">
         <v-icon size="64" color="primary">mdi-card-account-details-outline</v-icon>
         <h3 class="text-h6 mt-4">Create your first plan</h3>
-        <p class="text-body-2 text-medium-emphasis mt-2">
-          Add a Monthly, Quarterly, or PT add-on plan so staff can assign it to members.
+        <p class="text-body-2 text-medium-emphasis mt-2 mb-6">
+          Pick a starter to prefill the form, or start from scratch. Edit the price before saving.
         </p>
-        <v-btn color="primary" class="mt-4" @click="showEditor = true">
-          Create First Plan
+        <div class="starter-plans">
+          <button
+            v-for="starter in STARTER_PLANS"
+            :key="starter.id"
+            type="button"
+            class="starter-plan"
+            @click="openCreateWithPreset(starter)"
+          >
+            <strong>{{ starter.name }}</strong>
+            <small>{{ starter.durationDays }} days</small>
+            <span class="starter-plan__price">₹{{ Number(starter.price).toLocaleString('en-IN') }}</span>
+          </button>
+        </div>
+        <v-btn variant="text" class="mt-4" @click="openCreate()">
+          Start from scratch
         </v-btn>
       </div>
     </v-card>
@@ -115,12 +128,13 @@
     <v-dialog v-model="showEditor" max-width="700" scrollable>
       <v-card rounded="xl">
         <v-card-title class="text-h6 pa-4">
-          {{ editingTemplate ? 'Edit Plan' : 'Create Plan' }}
+          {{ editingTemplate ? 'Edit Plan' : 'Create plan' }}
         </v-card-title>
         <v-divider />
         <v-card-text class="pa-4">
           <PlanEditorForm
             :template="editingTemplate"
+            :initial-preset="pendingPreset"
             @save="handleSave"
             @cancel="showEditor = false"
           />
@@ -143,9 +157,67 @@ const emit = defineEmits(["create", "update", "delete"]);
 
 const showEditor = ref(false);
 const editingTemplate = ref(null);
+const pendingPreset = ref(null);
+
+const STARTER_PLANS = [
+  {
+    id: "monthly",
+    name: "Monthly",
+    durationDays: 30,
+    price: 1500,
+    category: "monthly",
+    shortDescription: "Monthly gym access.",
+    renewalLeadDays: 7,
+    includedFeatures: { gymAccess: true },
+  },
+  {
+    id: "quarterly",
+    name: "Quarterly",
+    durationDays: 90,
+    price: 4000,
+    category: "quarterly",
+    shortDescription: "Three months of gym access.",
+    renewalLeadDays: 7,
+    includedFeatures: { gymAccess: true },
+  },
+  {
+    id: "half_yearly",
+    name: "Half-yearly",
+    durationDays: 180,
+    price: 7000,
+    category: "yearly",
+    shortDescription: "Six months of gym access.",
+    renewalLeadDays: 10,
+    includedFeatures: { gymAccess: true },
+  },
+  {
+    id: "yearly",
+    name: "Annual",
+    durationDays: 365,
+    price: 12000,
+    category: "yearly",
+    shortDescription: "A year of gym access.",
+    renewalLeadDays: 14,
+    includedFeatures: { gymAccess: true },
+  },
+  {
+    id: "pt_pass",
+    name: "PT Pass",
+    durationDays: 30,
+    price: 500,
+    category: "add_on",
+    shortDescription: "Personal training add-on.",
+    renewalLeadDays: 5,
+    includedFeatures: { trainerSupport: true },
+    availableAddOns: { personalTraining: true },
+  },
+];
 
 watch(showEditor, (val) => {
-  if (!val) editingTemplate.value = null;
+  if (!val) {
+    editingTemplate.value = null;
+    pendingPreset.value = null;
+  }
 });
 
 function formatFeatureName(key) {
@@ -177,10 +249,17 @@ function openEditor(template) {
 
 function openCreate() {
   editingTemplate.value = null;
+  pendingPreset.value = null;
   showEditor.value = true;
 }
 
-defineExpose({ openEditor, openCreate });
+function openCreateWithPreset(preset) {
+  editingTemplate.value = null;
+  pendingPreset.value = preset;
+  showEditor.value = true;
+}
+
+defineExpose({ openEditor, openCreate, openCreateWithPreset });
 </script>
 
 <style scoped>
@@ -244,5 +323,49 @@ defineExpose({ openEditor, openCreate });
 
 .gap-2 {
   gap: 8px;
+}
+
+.starter-plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.starter-plan {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.starter-plan:hover {
+  border-color: rgb(var(--v-theme-primary));
+  transform: translateY(-1px);
+}
+
+.starter-plan strong {
+  font-size: 0.95rem;
+}
+
+.starter-plan small {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.starter-plan__price {
+  margin-top: 4px;
+  color: rgb(var(--v-theme-primary));
+  font-weight: 600;
+  font-size: 1.05rem;
 }
 </style>

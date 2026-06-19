@@ -53,11 +53,13 @@ const OWNER_PERMISSIONS = [
 ];
 const ADMIN_PERMISSIONS = [...OWNER_PERMISSIONS, "gyms.manage"];
 
+const TRAINER_PERMISSIONS = ["workspace.access"];
+
 const ROLE_PERMISSIONS = {
   admin: ADMIN_PERMISSIONS,
   owner: OWNER_PERMISSIONS,
   staff: [],
-  trainer: [],
+  trainer: TRAINER_PERMISSIONS,
 };
 
 function flattenCapabilityEntries(source, prefix = "") {
@@ -75,7 +77,7 @@ function flattenCapabilityEntries(source, prefix = "") {
 const ADMIN_ROUTE_RULES = {
   AdminDashboard: {
     nav: { icon: "mdi-view-dashboard-outline", label: "Dashboard", to: "/dashboard", group: "Today" },
-    roles: ["admin", "owner", "staff"],
+    roles: ["admin", "owner", "staff", "trainer"],
   },
   CrmWorkspace: {
     nav: { icon: "mdi-account-search-outline", label: "Leads", to: "/crm", group: "Growth" },
@@ -138,7 +140,7 @@ const ADMIN_ROUTE_RULES = {
     roles: ["owner"],
   },
   BiometricOps: {
-    nav: { icon: "mdi-fingerprint", label: "Biometric Setup", to: "/biometric", group: "Setup" },
+    nav: { icon: "mdi-fingerprint", label: "Biometric", to: "/biometric", group: "Setup" },
     roles: ["owner"],
   },
   RegisterGym: {
@@ -150,7 +152,7 @@ const ADMIN_ROUTE_RULES = {
     roles: ["admin"],
   },
   Settings: {
-    nav: { icon: "mdi-cog-outline", label: "Settings", to: "/settings", group: "Setup" },
+    nav: { icon: "mdi-cog-outline", label: "Settings", to: "/settings", group: "Account" },
     roles: ["admin", "owner", "staff", "trainer"],
   },
   GymDetails: {
@@ -269,8 +271,8 @@ export function getGroupedAdminNavItems(currentPath, input = null) {
       : normalizeRole(input?.user?.normalizedRole || input?.user?.role) ||
         (input ? null : getAdminRole());
   const groupOrder = role === "admin"
-    ? ["Platform", "Setup"]
-    : ["Today", "Front Desk", "Growth", "Setup"];
+    ? ["Platform", "Setup", "Account"]
+    : ["Today", "Front Desk", "Growth", "Setup", "Account"];
   const fallbackGroup = role === "admin" ? "Platform" : "More";
   const groups = new Map();
 
@@ -299,8 +301,8 @@ export function getAdminDefaultRoute(input = null) {
         (input ? null : getAdminRole());
   const firstAllowed = getAdminNavItems("", input)[0]?.to;
 
-  if (role === "trainer" && canAccessAdminRoute("ClassesWorkspace", input)) {
-    return "/classes";
+  if (role === "trainer") {
+    return "/dashboard";
   }
 
   return firstAllowed || "/settings";
@@ -337,8 +339,29 @@ export async function apiFetch(path, options = {}) {
     }
   }
 
-  return fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers,
   });
+
+  if (res.status === 401) {
+    clearAdminSession();
+    window.location.replace(import.meta.env.BASE_URL + "login");
+    return res;
+  }
+
+  if (res.status === 403) {
+    try {
+      const body = await res.clone().json();
+      if (
+        typeof body?.message === "string" &&
+        body.message.toLowerCase().includes("token")
+      ) {
+        clearAdminSession();
+        window.location.replace(import.meta.env.BASE_URL + "login");
+      }
+    } catch (_) {}
+  }
+
+  return res;
 }

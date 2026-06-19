@@ -1,26 +1,6 @@
-import 'dart:convert';
-import 'package:gymmate_mobile/api/api_config.dart';
-import 'package:http/http.dart' as http;
+import 'package:gymmate_mobile/api/api_client.dart';
 
 class PaymentsService {
-  static Map<String, String> _headers(String token) {
-    return {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
-  }
-
-  static Map<String, dynamic> _decodeResponse(
-    http.Response response,
-    String fallbackMessage,
-  ) {
-    final payload = json.decode(response.body) as Map<String, dynamic>;
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return payload;
-    }
-    throw Exception(payload['message'] ?? fallbackMessage);
-  }
-
   static Future<Map<String, dynamic>> recordPayment(
     String token, {
     required String memberId,
@@ -32,10 +12,10 @@ class PaymentsService {
     String note = '',
     bool activate = false,
   }) async {
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/owner/payments'),
-      headers: _headers(token),
-      body: json.encode({
+    final response = await ApiClient.post(
+      '/api/owner/payments',
+      token: token,
+      body: {
         'memberId': memberId,
         if (membershipId != null) 'membershipId': membershipId,
         if (membershipRequestId != null)
@@ -45,8 +25,8 @@ class PaymentsService {
         'reference': reference,
         'note': note,
         'activate': activate,
-      }),
+      },
     );
-    return _decodeResponse(response, 'Failed to record payment');
+    return ApiClient.decode(response, 'Failed to record payment');
   }
 }

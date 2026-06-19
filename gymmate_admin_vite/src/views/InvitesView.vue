@@ -85,7 +85,7 @@
       <section class="admin-surface admin-panel overview-card">
         <div class="section-header">
           <div>
-            <div class="table-overline">Invite Pulse</div>
+            <div class="table-overline">Pending Invites</div>
             <h2 class="section-title">What is still open, and what has moved</h2>
             <p class="section-copy">
               Keep open codes visible, spot fresh claims quickly, and follow up
@@ -267,12 +267,15 @@ import { useRoute, useRouter } from "vue-router";
 import AdminShell from "../components/AdminShell.vue";
 import StateBlock from "../components/StateBlock.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
+import { useOnboarding } from "../composables/useOnboarding";
 import {
   apiFetch,
   clearAdminSession,
   getAdminRole,
   isOwnerSession,
 } from "../lib/api";
+
+const onboarding = useOnboarding();
 
 const router = useRouter();
 const route = useRoute();
@@ -443,6 +446,9 @@ async function submitInvite() {
       email: "",
     };
     showMessage("Invite created successfully.");
+    if (form.value.role === "gym_member") {
+      onboarding.markStepComplete("invite_member");
+    }
     await fetchInvites();
   } catch (err) {
     showMessage(

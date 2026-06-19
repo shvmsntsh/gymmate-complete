@@ -567,6 +567,7 @@ import { useRoute, useRouter } from "vue-router";
 import AdminShell from "../components/AdminShell.vue";
 import StateBlock from "../components/StateBlock.vue";
 import { useAdminTheme } from "../composables/useAdminTheme";
+import { useOnboarding } from "../composables/useOnboarding";
 import { formatDateUs, formatDateTimeUs } from "../lib/date";
 import { apiFetch, clearAdminSession, getAdminRole } from "../lib/api";
 import PlansSection from "./membership/PlansSection.vue";
@@ -577,6 +578,7 @@ import RequestDetailCard from "./membership/RequestDetailCard.vue";
 const router = useRouter();
 const route = useRoute();
 const { isDark, toggleTheme } = useAdminTheme();
+const onboarding = useOnboarding();
 
 const activeTab = ref("memberships");
 const error = ref("");
@@ -969,14 +971,28 @@ async function applyRouteAction() {
   if (route.query.tab === "plans") {
     activeTab.value = "plans";
   }
+  if (route.query.tab === "memberships") {
+    activeTab.value = "memberships";
+  }
   if (route.query.action === "create-plan") {
     activeTab.value = "plans";
     await nextTick();
     plansSectionRef.value?.openCreate?.();
-    const nextQuery = { ...route.query };
-    delete nextQuery.action;
-    router.replace({ path: route.path, query: nextQuery });
+    clearActionParam();
+    return;
   }
+  if (route.query.action === "assign-plan") {
+    activeTab.value = "memberships";
+    await nextTick();
+    openAssignDialog();
+    clearActionParam();
+  }
+}
+
+function clearActionParam() {
+  const nextQuery = { ...route.query };
+  delete nextQuery.action;
+  router.replace({ path: route.path, query: nextQuery });
 }
 
 async function createTemplate(data) {
@@ -989,6 +1005,7 @@ async function createTemplate(data) {
     const dataRes = await res.json();
     if (!res.ok) throw new Error(dataRes.message);
     showSnackbar("Plan created successfully");
+    onboarding.markStepComplete("create_plan");
     await fetchAll();
   } catch (err) {
     error.value = err.message;
@@ -1071,6 +1088,23 @@ async function cancelMembership(membershipId, reason) {
 }
 
 function openAssignDialog() {
+  if (templates.value.length === 0) {
+    showSnackbar(
+      "Create a plan first, then assign it to a member.",
+      "info",
+    );
+    activeTab.value = "plans";
+    nextTick(() => plansSectionRef.value?.openCreate?.());
+    return;
+  }
+  if (members.value.length === 0) {
+    showSnackbar(
+      "Invite a member first. You can come back here to assign their plan.",
+      "info",
+    );
+    router.push("/invites?role=gym_member&focus=create");
+    return;
+  }
   if (assignableMembers.value.length === 0) {
     showSnackbar("Every visible member already has a current plan. Use Manage to renew or change an existing membership.", "info");
     return;
@@ -1170,6 +1204,7 @@ async function confirmAssign() {
         ? "Plan change saved"
         : "Membership assigned successfully",
     );
+    onboarding.markStepComplete("assign_plan");
     assignDialog.value = false;
     if (assignForm.value.flowType === "manual_change" && assignForm.value.memberId) {
       const refreshedMember =

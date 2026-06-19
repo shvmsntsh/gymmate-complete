@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:gymmate_mobile/api/api_client.dart';
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
 import 'package:gymmate_mobile/providers/onboarding_provider.dart';
@@ -7,7 +11,6 @@ import 'package:gymmate_mobile/pages/onboarding/onboarding_flow.dart';
 import 'package:gymmate_mobile/pages/admin_dashboard_page.dart';
 import 'package:gymmate_mobile/pages/invite_code_list_page.dart';
 import 'package:gymmate_mobile/pages/profile_page.dart';
-import 'package:gymmate_mobile/pages/gym_owner_dashboard_page.dart';
 import 'package:gymmate_mobile/pages/gym_member_dashboard_page.dart';
 import 'package:gymmate_mobile/pages/splash_screen.dart';
 import 'package:gymmate_mobile/themes/app_colors.dart';
@@ -16,7 +19,6 @@ import 'pages/member_membership_page.dart';
 import 'pages/plan_page.dart';
 import 'pages/coach_page.dart';
 import 'pages/gym_trainer_dashboard_page.dart';
-import 'pages/branding_settings_page.dart';
 import 'pages/gamified_entry_screen.dart';
 import 'pages/required_password_setup_page.dart';
 import 'pages/trainer_clients_page.dart';
@@ -28,6 +30,10 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // India-first: default DateFormat/NumberFormat to en_IN app-wide. Load the
+  // locale's date symbols first so DateFormat doesn't throw for en_IN.
+  await initializeDateFormatting('en_IN', null);
+  Intl.defaultLocale = 'en_IN';
   // const storage = FlutterSecureStorage();
   // await storage.deleteAll(); // REMOVE THIS LINE: Do not clear storage on every app start
   runApp(
@@ -71,6 +77,12 @@ class MyApp extends StatelessWidget {
           ),
           themeMode: ThemeMode.system,
           debugShowCheckedModeBanner: false,
+          supportedLocales: const [Locale('en', 'IN'), Locale('en', 'US')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           home: const AuthGate(),
           routes: {'/onboarding': (context) => const OnboardingFlow()},
         );
@@ -88,7 +100,7 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool _isReady = false;
-  static const _minimumLoader = Duration(milliseconds: 1900);
+  static const _minimumLoader = Duration(milliseconds: 1000);
 
   @override
   void initState() {
@@ -98,6 +110,16 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _bootstrapAuth() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    // Route an expired/invalid session (any 401) back to the entry screen.
+    // logout() flips isAuth false and notifies, so the AuthGate Consumer
+    // rebuilds to GamifiedEntryScreen automatically. Guarded so a burst of
+    // concurrent 401s only triggers one logout.
+    ApiClient.onUnauthorized = () {
+      if (!authProvider.isAuth) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (authProvider.isAuth) authProvider.logout();
+      });
+    };
     final startedAt = DateTime.now();
     await authProvider.tryAutoLogin();
     final elapsed = DateTime.now().difference(startedAt);
@@ -431,8 +453,6 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         '';
     final isGymMember = isMemberRole(userRole);
     final isAdmin = isAdminRole(userRole);
-    final isGymOwner = isOwnerRole(userRole);
-    final brandingReady = isBrandingComplete(authProvider.branding);
     final hasPassword = authProvider.userData?['hasPassword'] == true;
 
     if (authProvider.mustSetPassword || !hasPassword) {
@@ -444,26 +464,20 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       return const OnboardingFlow();
     }
 
-    if (isGymOwner && !brandingReady) {
-      return const BrandingSettingsPage(isRequiredSetup: true);
-    }
-
     final destinations = <_NavDestination>[
       _NavDestination(
         label: 'Dashboard',
         icon: Icons.dashboard_rounded,
         page: isGymMember
             ? const GymMemberDashboardPage()
-            : isGymOwner
-            ? const GymOwnerDashboardPage()
             : isTrainerRole(userRole)
             ? const GymTrainerDashboardPage()
             : const AdminDashboardPage(),
       ),
     ];
 
-    // Add Invites tab for superadmin and gym_owner
-    if (isAdmin || isGymOwner) {
+    // Add Invites tab for superadmin only
+    if (isAdmin) {
       destinations.add(
         const _NavDestination(
           label: 'Invites',

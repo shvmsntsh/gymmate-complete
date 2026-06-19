@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import 'register_page.dart';
+import 'gamified_entry_screen.dart';
 
 class SplashEntryPage extends StatefulWidget {
   const SplashEntryPage({Key? key}) : super(key: key);
@@ -34,7 +34,7 @@ class _SplashEntryPageState extends State<SplashEntryPage> {
                 ? _EntryOptionsCard(
                     key: const ValueKey('entry'),
                     onLogin: () => _navigateTo(const LoginPage()),
-                    onJoin: () => _navigateTo(const RegisterPage()),
+                    onJoin: () => _navigateTo(const GamifiedEntryScreen()),
                   )
                 : const SizedBox.shrink(),
           ),

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../services/membership_plans_service.dart';
+import '../utils/currency_format.dart';
+import '../widgets/async_states.dart';
 import '../widgets/editorial_mobile.dart';
 
 class MembershipPlansPage extends StatefulWidget {
@@ -160,7 +162,7 @@ class _MembershipPlansPageState extends State<MembershipPlansPage> {
                 ),
                 const SizedBox(height: 24),
                 if (_loading)
-                  const Center(child: CircularProgressIndicator())
+                  SkeletonLoader.list()
                 else if (_error != null)
                   _buildErrorState()
                 else if (_plans.isEmpty)
@@ -188,19 +190,10 @@ class _MembershipPlansPageState extends State<MembershipPlansPage> {
   }
 
   Widget _buildErrorState() {
-    return EditorialSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const EditorialSectionHeading(
-            eyebrow: 'Error',
-            title: 'Could not load plans.',
-            subtitle: 'Check your connection and try again.',
-          ),
-          const SizedBox(height: 14),
-          EditorialGhostButton(label: 'Retry', onPressed: _loadPlans),
-        ],
-      ),
+    return ErrorStateView(
+      title: 'Could not load plans.',
+      message: _error,
+      onRetry: _loadPlans,
     );
   }
 
@@ -337,7 +330,7 @@ class _PlanCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '\u20b9${price.toStringAsFixed(0)} for $duration days',
+                        '${formatINR(price)} for $duration days',
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: theme.colorScheme.primary,
                         ),

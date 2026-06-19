@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/services/member_hub_service.dart';
 
+import '../api/api_client.dart';
 import '../main.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_dashboard_service.dart';
 import '../services/onboarding_service.dart';
+import '../widgets/async_states.dart';
 import '../widgets/editorial_dashboard_mobile.dart';
 import '../widgets/editorial_mobile.dart';
 
@@ -23,6 +25,7 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
   Map<String, dynamic>? challengeSummary;
   List<Map<String, dynamic>> announcements = const [];
   bool announcementsLoading = true;
+  Object? announcementsError;
 
   @override
   void initState() {
@@ -39,6 +42,10 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
     );
     List<Map<String, dynamic>> nextAnnouncements = const [];
     Map<String, dynamic>? nextChallenge;
+    Object? nextAnnouncementsError;
+    if (mounted) {
+      setState(() => announcementsError = null);
+    }
     try {
       final onboardingService = OnboardingService()..setToken(token);
       final progress = await onboardingService.getUserProgress();
@@ -70,14 +77,17 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
           }),
         );
       }
-    } catch (_) {
+    } catch (e) {
+      // Surface this instead of silently showing an empty announcements card.
       nextAnnouncements = const [];
+      nextAnnouncementsError = e;
     }
     if (!mounted) return;
     setState(() {
       progressParticipation = data;
       challengeSummary = nextChallenge;
       announcements = nextAnnouncements;
+      announcementsError = nextAnnouncementsError;
       announcementsLoading = false;
     });
   }
@@ -155,15 +165,22 @@ class _GymMemberDashboardPageState extends State<GymMemberDashboardPage> {
                 const SizedBox(height: 18),
                 DashboardSectionCard(
                   eyebrow: 'Announcements',
-                  title: announcements.isEmpty
-                      ? 'No fresh updates right now.'
-                      : 'Latest from your gym.',
+                  title: announcementsError != null
+                      ? 'Couldn’t load announcements.'
+                      : announcements.isEmpty
+                          ? 'No fresh updates right now.'
+                          : 'Latest from your gym.',
                   subtitle: announcementsLoading
                       ? 'Loading latest notices.'
                       : 'Offers, holiday notes, and service updates land here.',
                   child: announcementsLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : announcements.isEmpty
+                      ? SkeletonLoader.list(rows: 2)
+                      : announcementsError != null
+                          ? _AnnouncementsError(
+                              error: announcementsError!,
+                              onRetry: _loadData,
+                            )
+                          : announcements.isEmpty
                           ? Text(
                               'When your gym sends announcements, they will appear here.',
                               style: Theme.of(context).textTheme.bodyMedium,
@@ -519,6 +536,35 @@ class _ConsistencyPanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Lightweight inline error for the announcements card. Kept flat (no surface)
+/// since it already lives inside a DashboardSectionCard.
+class _AnnouncementsError extends StatelessWidget {
+  final Object error;
+  final VoidCallback onRetry;
+
+  const _AnnouncementsError({required this.error, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isNetwork =
+        error is ApiException && (error as ApiException).isNetwork;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          isNetwork
+              ? 'You appear to be offline. Check your connection and try again.'
+              : 'We hit a snag loading announcements. Please try again.',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 12),
+        EditorialGhostButton(label: 'Retry', onPressed: onRetry),
+      ],
     );
   }
 }

@@ -74,6 +74,9 @@
             :title="config.emptyTitle"
             :copy="config.emptyCopy"
             :icon="config.icon"
+            :primary-cta="emptyCta?.label"
+            :primary-cta-icon="emptyCta?.icon"
+            @primary="emptyCta?.run?.()"
           />
         </section>
 
@@ -200,8 +203,8 @@
 
             <template v-else>
               <StateBlock
-                title="Read-only workspace"
-                copy="Open a member row for more detail, or use existing membership actions from the Membership module."
+                :title="detailHintTitle"
+                :copy="detailHintCopy"
                 :icon="config.icon"
               />
             </template>
@@ -222,6 +225,38 @@
           </v-form>
         </section>
       </div>
+
+      <v-dialog v-model="attendanceMethodDialog" max-width="640">
+        <v-card rounded="xl">
+          <v-card-title class="text-h6 pa-4">Choose attendance method</v-card-title>
+          <v-card-text class="pa-4 pt-0">
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              Pick the simplest method that works for your gym today. You can switch later.
+            </p>
+            <div class="attendance-methods">
+              <button
+                v-for="method in attendanceMethods"
+                :key="method.value"
+                type="button"
+                class="attendance-method"
+                :class="{ 'attendance-method--active': selectedAttendanceMethod === method.value }"
+                @click="selectAttendanceMethod(method)"
+              >
+                <v-icon :icon="method.icon" size="28" />
+                <span>
+                  <strong>{{ method.label }}</strong>
+                  <small>{{ method.copy }}</small>
+                </span>
+              </button>
+            </div>
+          </v-card-text>
+          <v-divider />
+          <v-card-actions class="pa-3">
+            <v-spacer />
+            <v-btn variant="text" @click="attendanceMethodDialog = false">Close</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <section v-if="selectedRow" class="workspace-panel workspace-detail">
           <div class="workspace-section-head">
@@ -254,6 +289,7 @@ import StateBlock from "../components/StateBlock.vue";
 import { apiFetch, clearAdminSession } from "../lib/api";
 import { formatDateTimeUs } from "../lib/date";
 import { useAdminTheme } from "../composables/useAdminTheme";
+import { useOnboarding } from "../composables/useOnboarding";
 
 const props = defineProps({
   moduleKey: {
@@ -276,6 +312,31 @@ const selectedCapabilities = ref([]);
 const form = reactive({});
 const addStaffMode = ref(false);
 const addingStaff = ref(false);
+const attendanceMethodDialog = ref(false);
+const onboarding = useOnboarding();
+const selectedAttendanceMethod = computed(
+  () => onboarding.state.storage.attendanceMethod,
+);
+const attendanceMethods = [
+  {
+    value: "manual",
+    label: "Manual check-in",
+    copy: "Front desk records visits in the table below.",
+    icon: "mdi-clipboard-check-outline",
+  },
+  {
+    value: "qr",
+    label: "QR / Member app",
+    copy: "Members scan a code on the way in.",
+    icon: "mdi-qrcode-scan",
+  },
+  {
+    value: "biometric",
+    label: "Biometric device",
+    copy: "Fingerprint or face. Configure in Biometric Setup.",
+    icon: "mdi-fingerprint",
+  },
+];
 const addStaffForm = reactive({
   name: "",
   email: "",
@@ -508,6 +569,68 @@ const canAddStaff = computed(() =>
   ),
 );
 
+const emptyCta = computed(() => {
+  switch (moduleKey.value) {
+    case "members":
+      return {
+        label: "Invite first member",
+        icon: "mdi-account-multiple-plus-outline",
+        run: () => router.push("/invites?role=gym_member&focus=create"),
+      };
+    case "payments":
+      return {
+        label: "Open Plans & Memberships",
+        icon: "mdi-clipboard-account-outline",
+        run: () => router.push("/membership"),
+      };
+    case "attendance":
+      if (!onboarding.state.storage.attendanceMethod) {
+        return {
+          label: "Choose attendance method",
+          icon: "mdi-calendar-check-outline",
+          run: () => {
+            attendanceMethodDialog.value = true;
+          },
+        };
+      }
+      return null;
+    case "crm":
+      return {
+        label: "Add walk-in lead",
+        icon: "mdi-account-search-outline",
+        run: () => {
+          const el = document.querySelector(".workspace-form input");
+          if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+            el.focus();
+          }
+        },
+      };
+    case "staff":
+      return {
+        label: "Add staff",
+        icon: "mdi-account-plus-outline",
+        run: openAddStaffForm,
+      };
+    default:
+      return null;
+  }
+});
+
+const detailHintTitle = computed(() => {
+  if (moduleKey.value === "members") return "Pick a member to see their detail";
+  if (moduleKey.value === "classes") return "Pick a session to see its roster";
+  return "Open a row to see more";
+});
+
+const detailHintCopy = computed(() => {
+  if (moduleKey.value === "members")
+    return "You'll see their plan, payments, and check-ins. Use Quick Add for common next steps.";
+  if (moduleKey.value === "classes")
+    return "Tap a class to see its trainer, capacity, and booked members.";
+  return "Tap a row in the table on the left.";
+});
+
 watch(
   () => props.moduleKey,
   () => {
@@ -626,12 +749,45 @@ function closeAddStaffForm() {
   resetAddStaffForm();
 }
 
+function clearActionParam() {
+  const nextQuery = { ...route.query };
+  delete nextQuery.action;
+  router.replace({ path: route.path, query: nextQuery });
+}
+
 function applyRouteAction() {
-  if (moduleKey.value === "staff" && route.query.action === "add-staff") {
+  const action = route.query.action;
+  if (!action) return;
+  if (moduleKey.value === "staff" && action === "add-staff") {
     openAddStaffForm();
-    const nextQuery = { ...route.query };
-    delete nextQuery.action;
-    router.replace({ path: route.path, query: nextQuery });
+    clearActionParam();
+    return;
+  }
+  if (
+    moduleKey.value === "attendance" &&
+    action === "choose-method"
+  ) {
+    attendanceMethodDialog.value = true;
+    clearActionParam();
+    return;
+  }
+  if (
+    (moduleKey.value === "payments" && action === "record-payment") ||
+    (moduleKey.value === "attendance" && action === "record-attendance") ||
+    (moduleKey.value === "crm" && action === "capture-lead")
+  ) {
+    clearActionParam();
+    return;
+  }
+}
+
+function selectAttendanceMethod(method) {
+  onboarding.setAttendanceMethod(method.value);
+  attendanceMethodDialog.value = false;
+  if (method.value === "biometric") {
+    router.push("/biometric");
+  } else {
+    formMessage.value = `Attendance method set to ${method.label}.`;
   }
 }
 
@@ -702,6 +858,8 @@ async function submitForm() {
     }
     formMessage.value = "Saved.";
     const createdLead = moduleKey.value === "crm" ? payload.lead : null;
+    if (moduleKey.value === "payments") onboarding.markStepComplete("record_payment");
+    if (moduleKey.value === "attendance") onboarding.markStepComplete("attendance_method");
     resetForm();
     await fetchData();
     if (createdLead?.id) {
@@ -738,6 +896,7 @@ async function submitAddStaff() {
       throw new Error(payload.message || "Could not add staff.");
     }
     formMessage.value = "Staff added. Choose permissions below.";
+    onboarding.markStepComplete("add_staff");
     closeAddStaffForm();
     await fetchData();
     const createdStaff = tableRows.value.find((row) => row.id === payload.staff?.id) || payload.staff;

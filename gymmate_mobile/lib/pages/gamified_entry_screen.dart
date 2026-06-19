@@ -1157,7 +1157,7 @@ class _RoleSelectionView extends StatelessWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final compact = constraints.maxWidth < 640;
-                  final roles = ['Owner', 'Trainer', 'Member'];
+                  final roles = ['Trainer', 'Member'];
 
                   if (compact) {
                     return _RoleCarousel(
@@ -1255,7 +1255,7 @@ class _RoleCarouselState extends State<_RoleCarousel> {
         ),
         const SizedBox(height: 18),
         SizedBox(
-          height: 320,
+          height: 330,
           child: PageView.builder(
             controller: _pageController,
             itemCount: widget.roles.length,

@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:gymmate_mobile/api/api_client.dart';
 import 'package:gymmate_mobile/api/api_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -83,11 +84,13 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
+    final response = await http
+        .post(
+          Uri.parse('${ApiConfig.baseUrl}/api/auth/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email, 'password': password}),
+        )
+        .timeout(ApiClient.timeout);
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -105,16 +108,18 @@ class AuthService {
     required String password,
     required String inviteCode,
   }) async {
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': name,
-        'email': email,
-        'password': password,
-        'inviteCode': inviteCode,
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse('${ApiConfig.baseUrl}/api/auth/register'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'name': name,
+            'email': email,
+            'password': password,
+            'inviteCode': inviteCode,
+          }),
+        )
+        .timeout(ApiClient.timeout);
 
     if (response.statusCode == 201) {
       return jsonDecode(response.body);
@@ -135,14 +140,16 @@ class AuthService {
     if (token == null) {
       throw Exception('Authentication token not found.');
     }
-    final response = await http.put(
-      Uri.parse('${ApiConfig.baseUrl}/api/user/profile'),
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'name': name, 'email': email}),
-    );
+    final response = await http
+        .put(
+          Uri.parse('${ApiConfig.baseUrl}/api/user/profile'),
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'name': name, 'email': email}),
+        )
+        .timeout(ApiClient.timeout);
     if (response.statusCode == 200) {
       final decodedBody = json.decode(utf8.decode(response.bodyBytes));
       return decodedBody;
@@ -158,14 +165,16 @@ class AuthService {
     if (token == null) {
       throw Exception('Authentication token not found.');
     }
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/auth/profile-picture'),
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'imageData': imageData}),
-    );
+    final response = await http
+        .post(
+          Uri.parse('${ApiConfig.baseUrl}/api/auth/profile-picture'),
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({'imageData': imageData}),
+        )
+        .timeout(ApiClient.timeout);
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['profilePicture'] ?? imageData;
@@ -182,17 +191,19 @@ class AuthService {
     if (token == null) {
       throw Exception('Authentication token not found.');
     }
-    final response = await http.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/auth/password'),
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        if (currentPassword != null) 'currentPassword': currentPassword,
-        'newPassword': newPassword,
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse('${ApiConfig.baseUrl}/api/auth/password'),
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            if (currentPassword != null) 'currentPassword': currentPassword,
+            'newPassword': newPassword,
+          }),
+        )
+        .timeout(ApiClient.timeout);
     if (response.statusCode != 200) {
       final data = jsonDecode(response.body);
       throw Exception(data['message'] ?? 'Failed to update password.');

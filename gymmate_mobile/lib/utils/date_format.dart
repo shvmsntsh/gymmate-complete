@@ -1,4 +1,4 @@
-String formatDateUs(dynamic raw) {
+String formatDateIN(dynamic raw) {
   if (raw == null) return 'N/A';
 
   final value = raw.toString().trim();
