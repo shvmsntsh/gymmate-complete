@@ -116,6 +116,7 @@
           <v-tab value="usage">Plan Usage</v-tab>
           <v-tab value="invites">Invites</v-tab>
           <v-tab value="services">Services</v-tab>
+          <v-tab value="billing">Plan &amp; Billing</v-tab>
         </v-tabs>
 
         <v-window v-model="tab" class="network-window">
@@ -284,9 +285,161 @@
               </div>
             </div>
           </v-window-item>
+
+          <v-window-item value="billing">
+            <div v-if="!selectedGym" class="billing-empty section-copy">
+              Select a gym above to manage its plan and billing.
+            </div>
+            <div v-else class="billing-panel">
+              <div class="billing-summary admin-surface admin-surface--muted">
+                <div>
+                  <div class="table-overline">{{ selectedGym.gymName }}</div>
+                  <h3>{{ selectedGym.platformPlanName }} plan</h3>
+                  <p class="section-copy">
+                    Rs {{ selectedGym.pricePerMember ?? "—" }}/member · {{ usageLabel(selectedGym) }}
+                  </p>
+                </div>
+                <div class="billing-stat">
+                  <div class="table-overline">Amount due this month</div>
+                  <div class="billing-amount">Rs {{ formatAmount(selectedGym.monthlyAmountDue) }}</div>
+                </div>
+                <div class="billing-stat">
+                  <div class="table-overline">Paid until</div>
+                  <div>{{ selectedGym.planPaidUntil ? formatDate(selectedGym.planPaidUntil) : "No payment on file" }}</div>
+                </div>
+                <v-chip :color="selectedGym.planStatus === 'locked' ? 'error' : 'primary'" variant="tonal">
+                  {{ selectedGym.planStatus === "locked" ? "Locked" : "Active" }}
+                </v-chip>
+              </div>
+
+              <div class="billing-actions">
+                <v-btn color="primary" @click="openPaymentDialog">Record payment</v-btn>
+                <v-btn
+                  color="error"
+                  variant="tonal"
+                  :loading="busyKey === `unassign-${selectedGym.id}`"
+                  :disabled="selectedGym.planStatus === 'locked'"
+                  @click="unassignPlan(selectedGym)"
+                >
+                  Unassign plan
+                </v-btn>
+              </div>
+
+              <div class="billing-history">
+                <div class="table-overline">Payment history</div>
+                <div v-if="billingLoading" class="dialog-loading">
+                  <v-progress-circular indeterminate color="primary" />
+                </div>
+                <p v-else-if="!payments.length" class="section-copy">No payments recorded yet.</p>
+                <div v-else class="payment-row" v-for="payment in payments" :key="payment.id">
+                  <div>
+                    <strong>Rs {{ formatAmount(payment.amount) }}</strong>
+                    <small>
+                      {{ payment.planKey }} · {{ payment.paymentMethod }} ·
+                      {{ formatDate(payment.periodStart) }} – {{ formatDate(payment.periodEnd) }}
+                    </small>
+                  </div>
+                  <small>{{ payment.recordedBy?.name || "Unknown" }} · {{ formatDate(payment.createdAt) }}</small>
+                </div>
+              </div>
+            </div>
+          </v-window-item>
         </v-window>
       </template>
     </section>
+
+    <v-dialog v-model="paymentDialog" max-width="640">
+      <v-card rounded="xl">
+        <v-card-title class="dialog-title">
+          Record payment — {{ selectedGym?.gymName }}
+        </v-card-title>
+        <v-card-text>
+          <v-select
+            v-model="paymentForm.planKey"
+            :items="planTiers"
+            item-title="name"
+            item-value="key"
+            label="Plan"
+            variant="outlined"
+            density="comfortable"
+          />
+          <div v-if="paymentForm.planKey === 'custom'" class="custom-plan-fields">
+            <v-text-field
+              v-model.number="paymentForm.customMemberCap"
+              label="Custom member cap"
+              type="number"
+              variant="outlined"
+              density="comfortable"
+            />
+            <v-text-field
+              v-model.number="paymentForm.customPricePerMember"
+              label="Custom price/member (Rs)"
+              type="number"
+              variant="outlined"
+              density="comfortable"
+            />
+            <v-text-field
+              v-model.number="paymentForm.customFloorPrice"
+              label="Custom floor price (Rs)"
+              type="number"
+              variant="outlined"
+              density="comfortable"
+            />
+          </div>
+          <v-text-field
+            v-model.number="paymentForm.amount"
+            label="Amount received (Rs)"
+            type="number"
+            variant="outlined"
+            density="comfortable"
+          />
+          <v-select
+            v-model="paymentForm.paymentMethod"
+            :items="paymentMethodOptions"
+            item-title="title"
+            item-value="value"
+            label="Payment method"
+            variant="outlined"
+            density="comfortable"
+          />
+          <div class="period-fields">
+            <v-text-field
+              v-model="paymentForm.periodStart"
+              label="Period start"
+              type="date"
+              variant="outlined"
+              density="comfortable"
+            />
+            <v-text-field
+              v-model="paymentForm.periodEnd"
+              label="Period end"
+              type="date"
+              variant="outlined"
+              density="comfortable"
+            />
+          </div>
+          <v-text-field
+            v-model="paymentForm.reference"
+            label="Reference (optional)"
+            variant="outlined"
+            density="comfortable"
+          />
+          <v-textarea
+            v-model="paymentForm.notes"
+            label="Notes (optional)"
+            variant="outlined"
+            density="comfortable"
+            rows="2"
+            auto-grow
+          />
+        </v-card-text>
+        <v-card-actions class="dialog-actions">
+          <v-spacer />
+          <v-btn variant="text" @click="paymentDialog = false">Cancel</v-btn>
+          <v-btn color="primary" :loading="paymentSubmitting" @click="submitPayment">Record payment</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">
       {{ snackbarText }}
@@ -295,7 +448,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import AdminShell from "../components/AdminShell.vue";
 import StatCard from "../components/StatCard.vue";
@@ -320,6 +473,29 @@ const users = ref([]);
 const invites = ref([]);
 const services = ref([]);
 const planTiers = ref([]);
+const payments = ref([]);
+const billingLoading = ref(false);
+const paymentDialog = ref(false);
+const paymentSubmitting = ref(false);
+const paymentForm = ref({
+  planKey: "starter",
+  amount: null,
+  paymentMethod: "upi",
+  periodStart: "",
+  periodEnd: "",
+  reference: "",
+  notes: "",
+  customMemberCap: null,
+  customPricePerMember: null,
+  customFloorPrice: null,
+});
+const paymentMethodOptions = [
+  { title: "UPI", value: "upi" },
+  { title: "Cash", value: "cash" },
+  { title: "Bank transfer", value: "bank_transfer" },
+  { title: "Cheque", value: "cheque" },
+  { title: "Other", value: "other" },
+];
 
 const gymHeaders = [
   { title: "Gym", key: "gymName" },
@@ -406,8 +582,11 @@ function usagePercent(gym) {
 }
 
 function usageTone(gym) {
+  // Cap is a soft band now — overCap is an upsell signal, not a block.
+  // Only planStatus === 'locked' means the gym is actually blocked.
+  if (gym.planStatus === "locked") return "error";
+  if (gym.usage?.overCap) return "error";
   const percent = usagePercent(gym);
-  if (percent >= 100 || gym.planStatus === "locked") return "error";
   if (percent >= 80) return "warning";
   return "primary";
 }
@@ -418,9 +597,20 @@ function usageLabel(gym) {
   return `${used}/${cap} seats`;
 }
 
+function formatAmount(value) {
+  const num = Number(value || 0);
+  return num.toLocaleString("en-IN");
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" });
+}
+
 function selectGym(gym) {
   selectedGym.value = gym;
   tab.value = "gyms";
+  payments.value = [];
 }
 
 async function loadAll() {
@@ -505,6 +695,101 @@ function updateGymCap(gym, memberCap) {
 function toggleGymStatus(gym) {
   patchGym(gym, { status: gym.status === "active" ? "inactive" : "active" });
 }
+
+async function loadBilling(gymId) {
+  if (!gymId) return;
+  billingLoading.value = true;
+  try {
+    const res = await apiFetch(`/api/admin/gyms/${gymId}/billing`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Could not load billing info.");
+    payments.value = data.payments || [];
+    gyms.value = gyms.value.map((row) => (row.id === gymId ? data.gym : row));
+    if (selectedGym.value?.id === gymId) {
+      selectedGym.value = data.gym;
+    }
+  } catch (err) {
+    showMessage(err?.message || "Could not load billing info.", "error");
+  } finally {
+    billingLoading.value = false;
+  }
+}
+
+function openPaymentDialog() {
+  if (!selectedGym.value) return;
+  const today = new Date();
+  const nextMonth = new Date(today);
+  nextMonth.setMonth(nextMonth.getMonth() + 1);
+  paymentForm.value = {
+    planKey: selectedGym.value.platformPlan || "starter",
+    amount: selectedGym.value.monthlyAmountDue || null,
+    paymentMethod: "upi",
+    periodStart: today.toISOString().slice(0, 10),
+    periodEnd: nextMonth.toISOString().slice(0, 10),
+    reference: "",
+    notes: "",
+    customMemberCap: selectedGym.value.memberCap || null,
+    customPricePerMember: selectedGym.value.pricePerMember || null,
+    customFloorPrice: selectedGym.value.floorPrice || null,
+  };
+  paymentDialog.value = true;
+}
+
+async function submitPayment() {
+  if (!selectedGym.value) return;
+  paymentSubmitting.value = true;
+  try {
+    const body = {
+      planKey: paymentForm.value.planKey,
+      amount: paymentForm.value.amount,
+      paymentMethod: paymentForm.value.paymentMethod,
+      periodStart: paymentForm.value.periodStart,
+      periodEnd: paymentForm.value.periodEnd,
+      reference: paymentForm.value.reference,
+      notes: paymentForm.value.notes,
+    };
+    if (paymentForm.value.planKey === "custom") {
+      body.customMemberCap = paymentForm.value.customMemberCap;
+      body.customPricePerMember = paymentForm.value.customPricePerMember;
+      body.customFloorPrice = paymentForm.value.customFloorPrice;
+    }
+    const res = await apiFetch(`/api/admin/gyms/${selectedGym.value.id}/plan-payment`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Could not record payment.");
+    paymentDialog.value = false;
+    showMessage("Payment recorded.");
+    await loadBilling(selectedGym.value.id);
+  } catch (err) {
+    showMessage(err?.message || "Could not record payment.", "error");
+  } finally {
+    paymentSubmitting.value = false;
+  }
+}
+
+async function unassignPlan(gym) {
+  busyKey.value = `unassign-${gym.id}`;
+  try {
+    const res = await apiFetch(`/api/admin/gyms/${gym.id}/plan-unassign`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Could not unassign plan.");
+    gyms.value = gyms.value.map((row) => (row.id === gym.id ? data.gym : row));
+    if (selectedGym.value?.id === gym.id) selectedGym.value = data.gym;
+    showMessage("Plan unassigned. Gym is now locked until a new payment is recorded.");
+  } catch (err) {
+    showMessage(err?.message || "Could not unassign plan.", "error");
+  } finally {
+    busyKey.value = "";
+  }
+}
+
+watch(tab, (value) => {
+  if (value === "billing" && selectedGym.value) {
+    loadBilling(selectedGym.value.id);
+  }
+});
 
 async function toggleUserStatus(user) {
   busyKey.value = `user-${user.id}`;
@@ -680,6 +965,94 @@ onMounted(loadAll);
   padding: 14px 16px;
   border: 1px solid rgba(181, 159, 91, 0.18);
   border-radius: 16px;
+}
+
+.billing-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.billing-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 16px;
+}
+
+.billing-summary h3 {
+  margin: 4px 0;
+}
+
+.billing-stat {
+  text-align: right;
+}
+
+.billing-amount {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.billing-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.billing-history {
+  display: grid;
+  gap: 10px;
+}
+
+.payment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--gm-border);
+  border-radius: 14px;
+}
+
+.payment-row strong {
+  display: block;
+}
+
+.payment-row small {
+  color: var(--gm-text-soft);
+}
+
+.custom-plan-fields,
+.period-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.custom-plan-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.billing-empty {
+  padding: 24px 0;
+}
+
+@media (max-width: 760px) {
+  .billing-summary {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .billing-stat {
+    text-align: left;
+  }
+
+  .custom-plan-fields,
+  .period-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {

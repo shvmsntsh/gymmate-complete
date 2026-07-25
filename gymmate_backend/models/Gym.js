@@ -16,12 +16,12 @@ const gymSchema = new mongoose.Schema({
   },
   platformPlan: {
     type: String,
-    enum: ['launch_50', 'studio_100', 'growth_1000', 'scale_5000', 'enterprise_10000', 'custom'],
-    default: 'launch_50',
+    enum: ['starter', 'growth', 'pro', 'elite', 'custom'],
+    default: 'starter',
   },
   memberCap: {
     type: Number,
-    default: 50,
+    default: 100,
   },
   planStatus: {
     type: String,
@@ -35,6 +35,39 @@ const gymSchema = new mongoose.Schema({
   planUpdatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    default: null,
+  },
+  // Only used when platformPlan === 'custom' — negotiated per gym rather
+  // than fixed in utils/platformPlans.js's tier table.
+  customPricePerMember: {
+    type: Number,
+    default: null,
+  },
+  customFloorPrice: {
+    type: Number,
+    default: null,
+  },
+  // Every NEW gym starts on a 1-month free trial automatically (function
+  // default runs at document-creation time, so it applies uniformly across
+  // every registration path without each one needing its own code).
+  // Existing gyms created before this field existed have no trialEndsAt at
+  // all — they are NOT retroactively put on a trial. See
+  // utils/gymLimits.js for the lazy (no cron) expiry check, and
+  // adminController.recordPlanPayment for how a superadmin graduates a
+  // gym off trial by recording its first real payment.
+  trialEndsAt: {
+    type: Date,
+    default: function trialDefault() {
+      const d = new Date();
+      d.setMonth(d.getMonth() + 1);
+      return d;
+    },
+  },
+  // Informational: end date of the most recently recorded platform
+  // payment. Set only by the superadmin plan-payment flow — there is no
+  // automatic expiry job, this never self-updates or self-locks.
+  planPaidUntil: {
+    type: Date,
     default: null,
   },
   branding: {

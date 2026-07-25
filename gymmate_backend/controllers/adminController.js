@@ -1,9 +1,12 @@
 const Gym = require('../models/Gym');
 const User = require('../models/User');
 const { InviteCode } = require('../models/InviteCode');
-const { PLATFORM_PLAN_TIERS, getPlanCap, getPlanTier } = require('../utils/platformPlans');
+const PlatformPlanPayment = require('../models/PlatformPlanPayment');
+const { PLATFORM_PLAN_TIERS, getPlanCap, getPlanTier, getMonthlyAmountDue } = require('../utils/platformPlans');
 const { getGymMemberUsage } = require('../utils/gymLimits');
 const { normalizeServices, serviceSlug } = require('../utils/serviceCatalog');
+
+const VALID_PAYMENT_METHODS = new Set(['cash', 'upi', 'bank_transfer', 'cheque', 'other']);
 
 const USER_SELECT = 'name email phone_number role gymId accountStatus deactivatedAt createdAt updatedAt registered invited';
 const VALID_USER_STATUSES = new Set(['active', 'deactivated']);
@@ -12,7 +15,7 @@ const VALID_PLAN_STATUSES = new Set(['active', 'locked']);
 const VALID_ROLES = new Set(['superadmin', 'admin', 'gym_owner', 'gym_staff', 'gym_trainer', 'gym_member']);
 
 function serializeGym(gym, usage = null, owner = null) {
-  const planKey = gym.platformPlan || 'launch_50';
+  const planKey = gym.platformPlan || 'starter';
   const plan = getPlanTier(planKey);
   const usagePayload = usage
     ? {
@@ -21,9 +24,19 @@ function serializeGym(gym, usage = null, owner = null) {
         usedSeats: usage.usedSeats,
         memberCap: usage.memberCap,
         remainingSeats: usage.remainingSeats,
+        overCap: usage.overCap,
         isLocked: usage.isLocked,
+        isOnTrial: usage.isOnTrial,
+        isTrialExpired: usage.isTrialExpired,
+        trialEndsAt: usage.trialEndsAt,
       }
     : null;
+  const monthlyAmountDue = getMonthlyAmountDue(
+    planKey,
+    usage ? usage.activeMembers : 0,
+    gym.customPricePerMember,
+    gym.customFloorPrice,
+  );
   return {
     id: gym._id,
     gymName: gym.gymName,
@@ -45,6 +58,10 @@ function serializeGym(gym, usage = null, owner = null) {
       : null,
     platformPlan: planKey,
     platformPlanName: plan.name,
+    pricePerMember: plan.key === 'custom' ? (gym.customPricePerMember ?? null) : plan.pricePerMember,
+    floorPrice: plan.key === 'custom' ? (gym.customFloorPrice ?? null) : plan.floorPrice,
+    monthlyAmountDue,
+    planPaidUntil: gym.planPaidUntil || null,
     memberCap: getPlanCap(planKey, gym.memberCap),
     planStatus: gym.planStatus || 'active',
     usage: usagePayload,
@@ -163,6 +180,157 @@ exports.updateGym = async (req, res) => {
   } catch (error) {
     console.error('Admin update gym failed:', error);
     return res.status(500).json({ message: 'Failed to update gym.' });
+  }
+};
+
+// GET /api/admin/gyms/:gymId/billing — current tier, live-computed amount
+// due, planPaidUntil, planStatus, and the full manual-payment history.
+exports.getGymBilling = async (req, res) => {
+  try {
+    const gym = await Gym.findById(req.params.gymId);
+    if (!gym) return res.status(404).json({ message: 'Gym not found.' });
+
+    const owner = await User.findOne({ gymId: gym._id, role: 'gym_owner' }).select(USER_SELECT);
+    const usage = await getGymMemberUsage(gym._id);
+    const payments = await PlatformPlanPayment.find({ gymId: gym._id })
+      .sort({ createdAt: -1 })
+      .populate('recordedBy', 'name email')
+      .lean();
+
+    return res.json({
+      gym: serializeGym(gym, usage, owner),
+      planTiers: PLATFORM_PLAN_TIERS,
+      payments: payments.map((p) => ({
+        id: p._id,
+        planKey: p.planKey,
+        amount: p.amount,
+        currency: p.currency,
+        paymentMethod: p.paymentMethod,
+        periodStart: p.periodStart,
+        periodEnd: p.periodEnd,
+        reference: p.reference,
+        notes: p.notes,
+        recordedBy: p.recordedBy ? { id: p.recordedBy._id, name: p.recordedBy.name, email: p.recordedBy.email } : null,
+        createdAt: p.createdAt,
+      })),
+    });
+  } catch (error) {
+    console.error('Admin get gym billing failed:', error);
+    return res.status(500).json({ message: 'Failed to load billing info.' });
+  }
+};
+
+// POST /api/admin/gyms/:gymId/plan-payment — "assign a plan after
+// manually collecting payment." Records an immutable payment row and
+// activates the gym on the chosen tier through planPaidUntil.
+exports.recordPlanPayment = async (req, res) => {
+  try {
+    const { planKey, amount, paymentMethod, periodStart, periodEnd, reference, notes,
+      customMemberCap, customPricePerMember, customFloorPrice } = req.body;
+
+    if (!PLATFORM_PLAN_TIERS.some((tier) => tier.key === planKey)) {
+      return res.status(400).json({ message: 'Choose a valid platform plan.' });
+    }
+    const amountNum = Number(amount);
+    if (!Number.isFinite(amountNum) || amountNum < 0) {
+      return res.status(400).json({ message: 'Amount must be a non-negative number.' });
+    }
+    if (!VALID_PAYMENT_METHODS.has(paymentMethod)) {
+      return res.status(400).json({ message: 'Choose a valid payment method.' });
+    }
+    const start = new Date(periodStart);
+    const end = new Date(periodEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+      return res.status(400).json({ message: 'Period end must be a valid date after period start.' });
+    }
+
+    const gym = await Gym.findById(req.params.gymId);
+    if (!gym) return res.status(404).json({ message: 'Gym not found.' });
+
+    const gymUpdates = {
+      platformPlan: planKey,
+      planStatus: 'active',
+      planPaidUntil: end,
+      // A recorded payment graduates a gym off its free trial permanently
+      // (even a Rs 0 "comped" payment counts as a deliberate superadmin
+      // decision to extend/convert it) — the trial's hard cap and
+      // auto-expiry no longer apply once this is cleared.
+      trialEndsAt: null,
+      planUpdatedAt: new Date(),
+      planUpdatedBy: req.user._id,
+    };
+    if (planKey === 'custom') {
+      if (customMemberCap !== undefined) {
+        const cap = Number(customMemberCap);
+        if (!Number.isFinite(cap) || cap < 1) {
+          return res.status(400).json({ message: 'Custom member cap must be a positive number.' });
+        }
+        gymUpdates.memberCap = Math.floor(cap);
+      }
+      if (customPricePerMember !== undefined) {
+        const rate = Number(customPricePerMember);
+        gymUpdates.customPricePerMember = Number.isFinite(rate) && rate >= 0 ? rate : null;
+      }
+      if (customFloorPrice !== undefined) {
+        const floor = Number(customFloorPrice);
+        gymUpdates.customFloorPrice = Number.isFinite(floor) && floor >= 0 ? floor : null;
+      }
+    } else {
+      gymUpdates.memberCap = getPlanCap(planKey);
+    }
+
+    await Gym.updateOne({ _id: gym._id }, { $set: gymUpdates });
+
+    const payment = await PlatformPlanPayment.create({
+      gymId: gym._id,
+      planKey,
+      amount: amountNum,
+      paymentMethod,
+      periodStart: start,
+      periodEnd: end,
+      reference: reference || '',
+      notes: notes || '',
+      recordedBy: req.user._id,
+    });
+
+    const updatedGym = await Gym.findById(gym._id);
+    const paymentOwner = await User.findOne({ gymId: gym._id, role: 'gym_owner' }).select(USER_SELECT);
+    const usage = await getGymMemberUsage(gym._id);
+    return res.status(201).json({
+      gym: serializeGym(updatedGym, usage, paymentOwner),
+      payment: {
+        id: payment._id,
+        planKey: payment.planKey,
+        amount: payment.amount,
+        paymentMethod: payment.paymentMethod,
+        periodStart: payment.periodStart,
+        periodEnd: payment.periodEnd,
+      },
+    });
+  } catch (error) {
+    console.error('Admin record plan payment failed:', error);
+    return res.status(500).json({ message: 'Failed to record payment.' });
+  }
+};
+
+// POST /api/admin/gyms/:gymId/plan-unassign — "unassign" a plan. Locks
+// seat growth WITHOUT touching platformPlan/memberCap/planPaidUntil or
+// deleting payment history, so the gym resumes instantly on next payment.
+exports.unassignPlan = async (req, res) => {
+  try {
+    const gym = await Gym.findByIdAndUpdate(
+      req.params.gymId,
+      { $set: { planStatus: 'locked', planUpdatedAt: new Date(), planUpdatedBy: req.user._id } },
+      { new: true },
+    );
+    if (!gym) return res.status(404).json({ message: 'Gym not found.' });
+
+    const unassignOwner = await User.findOne({ gymId: gym._id, role: 'gym_owner' }).select(USER_SELECT);
+    const usage = await getGymMemberUsage(gym._id);
+    return res.json({ gym: serializeGym(gym, usage, unassignOwner) });
+  } catch (error) {
+    console.error('Admin unassign plan failed:', error);
+    return res.status(500).json({ message: 'Failed to unassign plan.' });
   }
 };
 
