@@ -389,7 +389,10 @@ async function fetchInvites() {
       summary: buildInviteSummary(invite),
     }));
   } catch (err) {
-    error.value = err?.message || "We could not load invites right now.";
+    const msg = err?.message || '';
+    error.value = msg && msg !== 'Internal server error'
+      ? msg
+      : "Couldn't load invites — please refresh the page or try again.";
   } finally {
     loading.value = false;
   }
@@ -405,6 +408,10 @@ async function copyInviteCode(invite) {
 }
 
 async function submitInvite() {
+  if (!form.value.name?.trim() && !form.value.email?.trim()) {
+    showMessage('Add at least a name or email for the invite.', 'error');
+    return;
+  }
   if (form.value.phone_number && (!form.value.name || !form.value.email)) {
     showMessage(
       "Add both name and email when you include a phone number.",

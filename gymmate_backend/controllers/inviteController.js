@@ -114,13 +114,14 @@ exports.listInviteCodes = async (req, res) => {
     let filter = {};
 
     if (hasRole(req.user, ['owner'])) {
-      const currentGym = req.user.gymId
-        ? await Gym.findById(req.user.gymId).select('gymName')
-        : null;
+      if (!req.user.gymId) {
+        return res.status(200).json({ codes: [] });
+      }
+      const currentGym = await Gym.findById(req.user.gymId).select('gymName');
       filter = {
         role: { $in: ['gym_member', 'gym_trainer'] },
         $or: [
-          { gymId: req.user.gymId || null },
+          { gymId: req.user.gymId },
           ...(currentGym?.gymName ? [{ gymName: currentGym.gymName }] : []),
         ],
       };
@@ -182,8 +183,15 @@ exports.listInviteCodes = async (req, res) => {
 
     res.status(200).json({ codes: enrichedCodes || [] });
   } catch (error) {
-    console.error('Error fetching invite codes:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    console.error('listInviteCodes error:', {
+      message: error.message,
+      stack: error.stack,
+      userRole: req.user?.normalizedRole,
+      gymId: req.user?.gymId?.toString?.() || req.user?.gymId,
+      name: error.name,
+      code: error.code,
+    });
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -231,16 +239,18 @@ exports.generateInviteCode = async (req, res) => {
       gymName = gym.gymName;
     }
 
-    if (normalizedRole === 'gym_member') {
-      await ensureCanCreateMemberInvite(gymId);
+    if (['gym_member', 'gym_trainer'].includes(normalizedRole)) {
+      if (normalizedRole === 'gym_member') {
+        await ensureCanCreateMemberInvite(gymId);
+      }
       if (!name) {
-        return res.status(400).json({ message: 'Name is required for members.' });
+        return res.status(400).json({ message: `Name is required for ${normalizedRole === 'gym_member' ? 'members' : 'trainers'}.` });
       }
       if (!isValidEmail(email)) {
-        return res.status(400).json({ message: 'A valid email is required for members.' });
+        return res.status(400).json({ message: `A valid email is required for ${normalizedRole === 'gym_member' ? 'members' : 'trainers'}.` });
       }
       if (!normalizeIndianPhone(phone_number)) {
-        return res.status(400).json({ message: 'A valid Indian phone number is required for members.' });
+        return res.status(400).json({ message: `A valid Indian phone number is required for ${normalizedRole === 'gym_member' ? 'members' : 'trainers'}.` });
       }
     }
 

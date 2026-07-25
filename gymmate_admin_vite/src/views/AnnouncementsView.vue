@@ -295,6 +295,14 @@ function getAnnouncementImageUrl(assetId) {
 }
 
 async function submitAnnouncement() {
+  if (!form.value.title?.trim()) {
+    setError("Validation error", "Title is required.");
+    return;
+  }
+  if (!form.value.body?.trim()) {
+    setError("Validation error", "Message body is required.");
+    return;
+  }
   saving.value = true;
   error.value = "";
   errorTitle.value = "Could not send announcement";

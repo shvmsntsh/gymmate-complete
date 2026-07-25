@@ -19,6 +19,7 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
   final _accessCodeController = TextEditingController();
   bool _loading = false;
   String? _error;
+  String? _phoneError;
 
   bool get _canSubmit =>
       canonicalIndianPhone(_phoneController.text) != null &&
@@ -40,6 +41,7 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _phoneError = null;
     });
 
     try {
@@ -91,15 +93,37 @@ class _QuickJoinScreenState extends State<QuickJoinScreen> {
                   controller: _phoneController,
                   hintText: 'Phone number',
                   keyboardType: TextInputType.phone,
+                  enabled: !_loading,
                   validator: validatePhone,
-                  onChanged: (_) => setState(() => _error = null),
+                  onChanged: (val) => setState(() {
+                    _error = null;
+                    if (val.isEmpty) {
+                      _phoneError = null;
+                    } else if (canonicalIndianPhone(val) == null) {
+                      _phoneError =
+                          'Enter a 10-digit mobile number starting with 6, 7, 8 or 9';
+                    } else {
+                      _phoneError = null;
+                    }
+                  }),
                   index: 0,
                 ),
+                if (_phoneError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 12),
+                    child: Text(
+                      _phoneError!,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                          fontSize: 12),
+                    ),
+                  ),
                 const SizedBox(height: 14),
                 AnimatedFormField(
                   controller: _accessCodeController,
                   hintText: 'Invite / Access Code',
                   keyboardType: TextInputType.text,
+                  enabled: !_loading,
                   textCapitalization: TextCapitalization.characters,
                   validator: (v) {
                     if (v == null || v.isEmpty) {

@@ -92,7 +92,7 @@
           </div>
 
           <div class="admin-shell__actions">
-            <QuickAddMenu />
+            <QuickAddMenu v-if="sessionRole === 'owner' || sessionRole === 'staff'" />
             <slot name="header-actions"></slot>
           </div>
         </header>
@@ -171,7 +171,7 @@ const workspaceLabel = computed(() =>
 const userName = computed(() => session.value?.user?.name || sidebarBrandName.value || "GymMate User");
 const userRoleLabel = computed(() =>
   sessionRole.value === "admin"
-    ? "Superadmin"
+    ? "Platform Admin"
     : sessionRole.value === "owner"
       ? "Gym Owner"
       : sessionRole.value === "staff"

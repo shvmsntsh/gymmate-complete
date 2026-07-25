@@ -81,27 +81,27 @@ const ADMIN_ROUTE_RULES = {
   },
   CrmWorkspace: {
     nav: { icon: "mdi-account-search-outline", label: "Leads", to: "/crm", group: "Growth" },
-    roles: ["admin", "owner", "staff"],
+    roles: ["owner", "staff"],
     permissions: ["leads.manage"],
   },
   MemberWorkspace: {
     nav: { icon: "mdi-account-group-outline", label: "Members", to: "/members", group: "Front Desk" },
-    roles: ["admin", "owner", "staff"],
+    roles: ["owner", "staff"],
     permissions: ["members.view", "members.manage"],
   },
   PaymentWorkspace: {
     nav: { icon: "mdi-cash-register", label: "Payments", to: "/payments", group: "Front Desk" },
-    roles: ["admin", "owner", "staff"],
+    roles: ["owner", "staff"],
     permissions: ["billing.manage", "payments.manage"],
   },
   AttendanceWorkspace: {
     nav: { icon: "mdi-calendar-check-outline", label: "Attendance", to: "/attendance", group: "Front Desk" },
-    roles: ["admin", "owner", "staff"],
+    roles: ["owner", "staff"],
     permissions: ["attendance.manage"],
   },
   ClassesWorkspace: {
     nav: { icon: "mdi-calendar-clock", label: "Classes & PT", to: "/classes", group: "Front Desk" },
-    roles: ["admin", "owner", "staff", "trainer"],
+    roles: ["owner", "staff", "trainer"],
     permissions: ["classes.manage"],
   },
   NetworkControl: {
@@ -109,26 +109,27 @@ const ADMIN_ROUTE_RULES = {
     roles: ["admin"],
   },
   ManageMembers: {
-    roles: ["admin", "owner", "staff"],
+    roles: ["owner", "staff"],
     permissions: ["members.manage"],
   },
   Announcements: {
     nav: { icon: "mdi-bullhorn-outline", label: "Announcements", to: "/announcements", group: "Growth" },
-    roles: ["admin", "owner", "staff"],
+    roles: ["owner", "staff"],
+    permissions: ["announcements.manage"],
   },
   MembershipOps: {
     nav: { icon: "mdi-card-account-details-outline", label: "Plans & Memberships", to: "/membership", group: "Setup" },
-    roles: ["admin", "owner", "staff"],
+    roles: ["owner", "staff"],
     permissions: ["membership.requests.manage", "membership.plans.manage"],
   },
   Membership: {
     nav: { icon: "mdi-card-account-details-outline", label: "Plans & Memberships", to: "/membership", group: "Setup" },
-    roles: ["admin", "owner", "staff"],
+    roles: ["owner", "staff"],
     permissions: ["membership.requests.manage", "membership.plans.manage"],
   },
   StaffWorkspace: {
     nav: { icon: "mdi-badge-account-horizontal-outline", label: "Staff", to: "/staff", group: "Setup" },
-    roles: ["admin", "owner"],
+    roles: ["owner"],
     permissions: ["staff.manage"],
   },
   Invites: {

@@ -11,7 +11,21 @@ const ROLE_ALIASES = {
   member: 'member',
 };
 
-const STAFF_PERMISSIONS = new Set([
+// Baseline permissions granted to EVERY gym_staff account unconditionally.
+// Kept intentionally minimal: workspace.access only lets a staff member load
+// the empty workspace shell and log in — it exposes no member, payment, or
+// announcement data. Every other capability (members.view, members.manage,
+// announcements.manage, membership.requests.manage, payments.manage,
+// receipts.view, etc.) must come from the owner's explicit per-staff
+// staffCapabilities selection via getExplicitStaffPermissions() below.
+// STAFF_FULL_PERMISSIONS lists every permission a staff member CAN be
+// granted (used by OWNER_PERMISSIONS, which is unrestricted), separate from
+// the baseline that's actually auto-granted.
+const STAFF_BASELINE_PERMISSIONS = new Set([
+  'workspace.access',
+]);
+
+const STAFF_FULL_PERMISSIONS = new Set([
   'workspace.access',
   'members.view',
   'members.manage',
@@ -22,7 +36,7 @@ const STAFF_PERMISSIONS = new Set([
 ]);
 
 const OWNER_PERMISSIONS = new Set([
-  ...STAFF_PERMISSIONS,
+  ...STAFF_FULL_PERMISSIONS,
   'membership.plans.manage',
   'biometric.manage',
   'staff.manage',
@@ -83,7 +97,7 @@ function getPermissions(subject) {
   }
 
   if (subjectRole === 'staff') {
-    STAFF_PERMISSIONS.forEach((permission) => permissions.add(permission));
+    STAFF_BASELINE_PERMISSIONS.forEach((permission) => permissions.add(permission));
     getExplicitStaffPermissions(subject).forEach((permission) =>
       permissions.add(permission),
     );
@@ -108,5 +122,8 @@ module.exports = {
   hasRole,
   hasPermission,
   getPermissions,
-  STAFF_PERMISSIONS: Array.from(STAFF_PERMISSIONS),
+  // Every permission a staff member CAN be granted (via staffCapabilities).
+  // Not auto-granted — see STAFF_BASELINE_PERMISSIONS above for what's
+  // actually unconditional.
+  STAFF_PERMISSIONS: Array.from(STAFF_FULL_PERMISSIONS),
 };

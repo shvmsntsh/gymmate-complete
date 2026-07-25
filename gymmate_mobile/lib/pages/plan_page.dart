@@ -760,9 +760,15 @@ class _PlanPageState extends State<PlanPage> {
       });
     } catch (e) {
       if (!mounted) return;
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      final is404 = msg.contains('404') ||
+          msg.toLowerCase().contains('no workout plan') ||
+          msg.toLowerCase().contains('no meal plan') ||
+          msg.toLowerCase().contains('not assigned') ||
+          msg.toLowerCase().contains('not found');
       setState(() {
         _memberPlanLoading = false;
-        _memberPlanError = e.toString();
+        _memberPlanError = is404 ? '__onboarding_needed__' : msg;
       });
     }
   }
@@ -1675,6 +1681,61 @@ class _PlanPageState extends State<PlanPage> {
       return SkeletonLoader.list();
     }
     if (_memberPlanError != null) {
+      if (_memberPlanError == '__onboarding_needed__') {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 0),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFFE5E5EA), width: 1.5),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Complete your fitness profile to get your personalised plan.',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Answer 8 quick questions and get a custom workout and meal plan.',
+                style: TextStyle(fontSize: 13, color: Color(0xFF6E6E73)),
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MemberOnboardingPage(),
+                    ),
+                  );
+                  _loadPersonalisedPlan();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1d1d1f),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'Build my plan →',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
       return ErrorStateView(
         title: 'Could not load your plan.',
         message: _memberPlanError,

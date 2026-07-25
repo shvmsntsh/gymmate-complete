@@ -89,7 +89,7 @@ class _MemberOnboardingPageState extends State<MemberOnboardingPage> {
     } catch (e) {
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = e.toString().replaceFirst('Exception: ', '');
       });
     }
   }
@@ -227,12 +227,34 @@ class _MemberOnboardingPageState extends State<MemberOnboardingPage> {
           ),
         ),
         const SizedBox(height: 28),
+        if (_error != null) ...[
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              _error!,
+              style: const TextStyle(color: Colors.red, fontSize: 13),
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
         SizedBox(
           width: double.infinity,
           child: GestureDetector(
             onTap: _validateScreen1()
-                ? () => setState(() => _screen = 1)
-                : null,
+                ? () => setState(() {
+                      _screen = 1;
+                      _error = null;
+                    })
+                : () => setState(
+                      () => _error = 'Please check all fields and try again.',
+                    ),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 150),
               padding: const EdgeInsets.symmetric(vertical: 14),

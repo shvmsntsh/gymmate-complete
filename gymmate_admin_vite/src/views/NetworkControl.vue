@@ -2,7 +2,7 @@
   <AdminShell
     :is-dark="isDark"
     title="Network Control"
-    eyebrow="Superadmin"
+    eyebrow="Platform Admin"
     description="Manage gyms, people, plan caps, invite locks, and service analytics."
     @toggle-theme="toggleTheme"
     @logout="logout"
