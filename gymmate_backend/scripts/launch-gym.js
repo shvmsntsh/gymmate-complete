@@ -18,6 +18,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const { normalizeIndianPhone } = require('../utils/phone');
 
 const User = require('../models/User');
 const Gym = require('../models/Gym');
@@ -204,6 +205,13 @@ function profileBundle(goal, sex, idx) {
  */
 async function upsertUser(spec, gymId, extra = {}, opts = {}) {
   const email = String(spec.email).trim().toLowerCase();
+  // Store the SAME canonical +91 format quickLogin's lookup uses
+  // (normalizeIndianPhone/indianPhoneVariants) — a bare 10-digit value here
+  // would silently fail that lookup, fall through to creating a duplicate
+  // user with the same email, and hang the request on the resulting
+  // unhandled E11000 error.
+  const canonicalPhone = normalizeIndianPhone(spec.phone_number) || spec.phone_number;
+  spec = { ...spec, phone_number: canonicalPhone };
   const existing = await User.findOne({ email });
 
   if (existing) {

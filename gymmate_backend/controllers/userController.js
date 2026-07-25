@@ -380,6 +380,13 @@ exports.login = async (req, res) => {
 /**
  * First-time invite access with phone number and access code.
  */
+async function releaseInviteClaim(inviteId) {
+  await InviteCode.updateOne(
+    { _id: inviteId },
+    { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
+  );
+}
+
 exports.quickLogin = async (req, res) => {
   const phone_number = normalizePhone(req.body.phone_number);
   const accessCode = normalizeInviteCode(req.body.accessCode || req.body.inviteCode || req.body.otp);
@@ -388,87 +395,94 @@ exports.quickLogin = async (req, res) => {
     return res.status(400).json({ message: 'Phone number and access code are required.' });
   }
 
-  const invite = await InviteCode.findOneAndUpdate(
-    {
-      code: accessCode,
-      inviteePhone: { $in: indianPhoneVariants(phone_number) },
-      role: { $in: ['gym_member', 'gym_trainer'] },
-      used: false,
-    },
-    { $set: { used: true, usedAt: new Date() } },
-    { new: true },
-  );
+  let invite;
+  try {
+    invite = await InviteCode.findOneAndUpdate(
+      {
+        code: accessCode,
+        inviteePhone: { $in: indianPhoneVariants(phone_number) },
+        role: { $in: ['gym_member', 'gym_trainer'] },
+        used: false,
+      },
+      { $set: { used: true, usedAt: new Date() } },
+      { new: true },
+    );
 
-  if (!invite) {
-    return res.status(401).json({ message: 'Invalid phone number or access code.' });
-  }
-  if (invite.gymId) {
-    const gym = await Gym.findById(invite.gymId).select('status');
-    if (!gym || gym.status !== 'active') {
-      await InviteCode.updateOne(
-        { _id: invite._id },
-        { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
-      );
+    if (!invite) {
       return res.status(401).json({ message: 'Invalid phone number or access code.' });
     }
-  }
+    if (invite.gymId) {
+      const gym = await Gym.findById(invite.gymId).select('status');
+      if (!gym || gym.status !== 'active') {
+        await releaseInviteClaim(invite._id);
+        return res.status(401).json({ message: 'Invalid phone number or access code.' });
+      }
+    }
 
-  let user = await User.findOne({
-    role: invite.role,
-    invited: true,
-    registered: false,
-    $or: [{ inviteCodeId: invite._id }, { phone_number }],
-  });
-
-  if (!user) {
-    user = new User({
-      name: invite.inviteeName || 'GymMate Invite',
-      email: normalizeEmail(invite.inviteeEmail),
-      phone_number,
+    // Matched by phone_number only, using the SAME canonical +91 format
+    // quickLogin itself uses (via normalizePhone/indianPhoneVariants) — a
+    // pre-created "invited" user whose stored phone_number isn't in that
+    // exact canonical form will never match here, falls through to
+    // `new User(...)`, and collides on the unique email index when saved.
+    let user = await User.findOne({
       role: invite.role,
-      gymId: invite.gymId,
       invited: true,
       registered: false,
+      $or: [{ inviteCodeId: invite._id }, { phone_number: { $in: indianPhoneVariants(phone_number) } }],
     });
+
+    if (!user) {
+      user = new User({
+        name: invite.inviteeName || 'GymMate Invite',
+        email: normalizeEmail(invite.inviteeEmail),
+        phone_number,
+        role: invite.role,
+        gymId: invite.gymId,
+        invited: true,
+        registered: false,
+      });
+    }
+
+    if (!user.email) {
+      await releaseInviteClaim(invite._id);
+      return res.status(401).json({ message: 'Invalid phone number or access code.' });
+    }
+    if (user.accountStatus === 'deactivated') {
+      await releaseInviteClaim(invite._id);
+      return res.status(401).json({ message: 'Invalid phone number or access code.' });
+    }
+
+    user.name = user.name || invite.inviteeName || 'GymMate Invite';
+    user.phone_number = phone_number;
+    user.invited = false;
+    user.registered = true;
+    user.registeredFromInviteAt = new Date();
+    user.registrationMethod = 'first_time_invite_access';
+    user.inviteCodeId = invite._id;
+    user.inviteCode = invite.code;
+    await user.save({ validateBeforeSave: false });
+
+    invite.usedBy = user._id;
+    invite.updatedAt = new Date();
+    await invite.save();
+
+    const gymName = await getGymNameForUser(user);
+    const token = createToken(user, gymName);
+
+    return res.json({
+      token,
+      requiresPasswordSetup: !user.password,
+      user: buildUserPayload(user, gymName),
+    });
+  } catch (error) {
+    console.error('❌ quickLogin failed:', error);
+    // Never leave the invite permanently burned on an unexpected failure -
+    // release the claim so the member/trainer can safely retry.
+    if (invite?._id) {
+      try { await releaseInviteClaim(invite._id); } catch (_) {}
+    }
+    return res.status(500).json({ message: 'Something went wrong claiming your invite. Please try again.' });
   }
-
-  if (!user.email) {
-    await InviteCode.updateOne(
-      { _id: invite._id },
-      { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
-    );
-    return res.status(401).json({ message: 'Invalid phone number or access code.' });
-  }
-  if (user.accountStatus === 'deactivated') {
-    await InviteCode.updateOne(
-      { _id: invite._id },
-      { $set: { used: false, usedAt: null }, $unset: { usedBy: 1 } },
-    );
-    return res.status(401).json({ message: 'Invalid phone number or access code.' });
-  }
-
-  user.name = user.name || invite.inviteeName || 'GymMate Invite';
-  user.phone_number = phone_number;
-  user.invited = false;
-  user.registered = true;
-  user.registeredFromInviteAt = new Date();
-  user.registrationMethod = 'first_time_invite_access';
-  user.inviteCodeId = invite._id;
-  user.inviteCode = invite.code;
-  await user.save({ validateBeforeSave: false });
-
-  invite.usedBy = user._id;
-  invite.updatedAt = new Date();
-  await invite.save();
-
-  const gymName = await getGymNameForUser(user);
-  const token = createToken(user, gymName);
-
-  return res.json({
-    token,
-    requiresPasswordSetup: !user.password,
-    user: buildUserPayload(user, gymName),
-  });
 };
 
 exports.changePassword = async (req, res) => {
