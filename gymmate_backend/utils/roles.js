@@ -76,11 +76,36 @@ function hasRole(subject, allowedRoles) {
     .includes(subjectRole);
 }
 
+// staffCapabilities is defined via dot-notation schema paths (e.g.
+// 'workspace.access', 'announcements.manage'), which Mongoose compiles into
+// genuinely NESTED subdocuments — a saved doc looks like
+// { workspace: { access: true }, announcements: { manage: true } }, not a
+// flat object with dotted keys. This recursively flattens it back into
+// dotted permission strings ('workspace.access', 'announcements.manage'),
+// mirroring flattenCapabilityEntries() in gymmate_admin_vite/src/lib/api.js.
+// A shallow Object.entries() here would only see top-level keys like
+// 'workspace' — Boolean({access:true}) is true, so it wouldn't error, but
+// permissionKey('workspace') never matches a real permission string like
+// 'workspace.access', silently discarding every explicit grant.
+function flattenStaffCapabilities(source, prefix = '') {
+  if (!source || typeof source !== 'object') return [];
+  return Object.entries(source).flatMap(([key, value]) => {
+    const path = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === 'object') {
+      return flattenStaffCapabilities(value, path);
+    }
+    return value ? [path] : [];
+  });
+}
+
 function getExplicitStaffPermissions(subject) {
-  const capabilities = subject?.staffCapabilities || {};
-  return Object.entries(capabilities)
-    .filter(([, enabled]) => Boolean(enabled))
-    .map(([key]) => permissionKey(key))
+  const raw = subject?.staffCapabilities;
+  if (!raw) return [];
+  // Normalize Mongoose (sub)documents to a plain object before recursing,
+  // so we only ever walk real data fields, not Mongoose internals/methods.
+  const capabilities = typeof raw.toObject === 'function' ? raw.toObject() : raw;
+  return flattenStaffCapabilities(capabilities)
+    .map((key) => permissionKey(key))
     .filter(Boolean);
 }
 

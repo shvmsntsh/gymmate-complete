@@ -1,37 +1,38 @@
 /**
- * archive-test-announcement.js — Cleanup for ONE specific test document.
+ * archive-test-announcement.js — Cleanup for test/probe documents only.
  *
- * Targets exactly _id 6a64a9773e5a1c6c149d5161 (verified via
- * find-test-announcement.js as the "QA permission test" announcement
- * created accidentally during permission testing). Sets status to
- * 'archived' — does NOT delete the document or its delivery records,
- * preserving the audit trail. No other document is touched.
+ * Targets ONLY announcements whose title matches the known test patterns
+ * ("QA permission test", "deploy-verify-probe") created during this
+ * session's permission testing. Sets status to 'archived' — does NOT
+ * delete the document or its delivery records, preserving the audit trail.
+ * No other document is touched; the title match is intentionally narrow.
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
 const Announcement = require('../models/Announcement');
 
-const TARGET_ID = '6a64a9773e5a1c6c149d5161';
-const EXPECTED_TITLE = 'QA permission test - should be rejected';
+const TITLE_PATTERNS = [/QA permission test/i, /deploy-verify-probe/i, /single-verify-check/i, /verify-check/i, /final-deploy-check/i, /post-fix-verify/i];
 
 (async () => {
   await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
 
-  const doc = await Announcement.findById(TARGET_ID);
-  if (!doc) {
-    console.log('Document not found — nothing to do.');
+  const docs = await Announcement.find({
+    $or: TITLE_PATTERNS.map((title) => ({ title })),
+    status: { $ne: 'archived' },
+  });
+
+  if (docs.length === 0) {
+    console.log('Nothing to archive — all matching test announcements are already archived.');
     await mongoose.disconnect();
     return;
   }
-  if (doc.title !== EXPECTED_TITLE) {
-    console.error(`SAFETY ABORT: title mismatch. Expected "${EXPECTED_TITLE}", found "${doc.title}". Not touching this document.`);
-    await mongoose.disconnect();
-    process.exit(1);
+
+  for (const doc of docs) {
+    doc.status = 'archived';
+    await doc.save();
+    console.log(`Archived: ${doc._id} — "${doc.title}"`);
   }
 
-  doc.status = 'archived';
-  await doc.save();
-  console.log(`Archived: ${doc._id} — "${doc.title}" (status: ${doc.status})`);
-
+  console.log(`\n${docs.length} document(s) archived.`);
   await mongoose.disconnect();
 })();
