@@ -1,10 +1,8 @@
 const Conversation = require('../models/Conversation');
 const TrainerAssignment = require('../models/TrainerAssignment');
 const User = require('../models/User');
-const {
-  loadMealPlanForMember,
-  loadWorkoutPlanForMember,
-} = require('./planController');
+const MemberWorkoutPlan = require('../models/MemberWorkoutPlan');
+const MemberMealPlan = require('../models/MemberMealPlan');
 const {
   buildClientSummary,
   buildSevenDaySeries,
@@ -325,8 +323,8 @@ exports.getTrainerClientSummary = async (req, res) => {
       conversation ? unreadByConversation[String(conversation._id)] || 0 : 0,
     );
     const [mealPlan, workoutPlan] = await Promise.all([
-      loadMealPlanForMember(member),
-      loadWorkoutPlanForMember(member),
+      MemberMealPlan.findOne({ userId: memberId }).lean(),
+      MemberWorkoutPlan.findOne({ userId: memberId }).lean(),
     ]);
     const status = buildAttentionStatus(summary);
 

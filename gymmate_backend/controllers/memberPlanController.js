@@ -278,11 +278,30 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// Shared self-healing helper: if a member's User has enough data to derive a
+// MemberProfile but the plan doc requested hasn't been generated yet (e.g.
+// a parallel request beat getProfile's own derivation to the punch), derive
+// the profile and generate plans here too, so each endpoint is independently
+// self-healing regardless of call order. Returns null if derivation truly
+// isn't possible (sparse User data) - callers should 404 in that case.
+async function ensureProfileAndPlans(userId) {
+  const user = await User.findById(userId);
+  const derived = user ? deriveMemberProfileFromUser(user) : null;
+  if (!derived) return null;
+  return upsertProfileAndGeneratePlans(userId, user.gymId, derived);
+}
+
 // GET /api/member/me/workout-plan
 exports.getWorkoutPlan = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
-    const plan = await MemberWorkoutPlan.findOne({ userId });
+    let plan = await MemberWorkoutPlan.findOne({ userId });
+    if (!plan) {
+      const result = await ensureProfileAndPlans(userId);
+      if (result) {
+        plan = await MemberWorkoutPlan.findOne({ userId });
+      }
+    }
     if (!plan) return res.status(404).json({ message: 'No workout plan assigned. Complete your profile first.' });
     res.json({ workoutPlan: plan });
   } catch (err) {
@@ -294,7 +313,13 @@ exports.getWorkoutPlan = async (req, res) => {
 exports.getMealPlan = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
-    const plan = await MemberMealPlan.findOne({ userId });
+    let plan = await MemberMealPlan.findOne({ userId });
+    if (!plan) {
+      const result = await ensureProfileAndPlans(userId);
+      if (result) {
+        plan = await MemberMealPlan.findOne({ userId });
+      }
+    }
     if (!plan) return res.status(404).json({ message: 'No meal plan assigned. Complete your profile first.' });
     res.json({ mealPlan: plan });
   } catch (err) {
@@ -309,12 +334,20 @@ exports.trainerUpdateWorkoutPlan = async (req, res) => {
     const trainerId = req.user._id || req.user.id;
     const assignment = await TrainerAssignment.findOne({ trainerId, memberId, status: 'active' });
     if (!assignment) return res.status(403).json({ message: 'Not assigned to this member' });
+    const member = await User.findById(memberId);
+    if (!member) return res.status(404).json({ message: 'Member not found' });
     const plan = await MemberWorkoutPlan.findOneAndUpdate(
       { userId: memberId },
-      { ...req.body, isModified: true, modifiedBy: trainerId, modifiedAt: new Date() },
-      { new: true }
+      {
+        ...req.body,
+        userId: memberId,
+        gymId: member.gymId,
+        isModified: true,
+        modifiedBy: trainerId,
+        modifiedAt: new Date(),
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
     );
-    if (!plan) return res.status(404).json({ message: 'Member has no workout plan yet' });
     res.json({ workoutPlan: plan });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -328,12 +361,20 @@ exports.trainerUpdateMealPlan = async (req, res) => {
     const trainerId = req.user._id || req.user.id;
     const assignment = await TrainerAssignment.findOne({ trainerId, memberId, status: 'active' });
     if (!assignment) return res.status(403).json({ message: 'Not assigned to this member' });
+    const member = await User.findById(memberId);
+    if (!member) return res.status(404).json({ message: 'Member not found' });
     const plan = await MemberMealPlan.findOneAndUpdate(
       { userId: memberId },
-      { ...req.body, isModified: true, modifiedBy: trainerId, modifiedAt: new Date() },
-      { new: true }
+      {
+        ...req.body,
+        userId: memberId,
+        gymId: member.gymId,
+        isModified: true,
+        modifiedBy: trainerId,
+        modifiedAt: new Date(),
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
     );
-    if (!plan) return res.status(404).json({ message: 'Member has no meal plan yet' });
     res.json({ mealPlan: plan });
   } catch (err) {
     res.status(500).json({ message: err.message });

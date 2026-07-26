@@ -328,17 +328,36 @@ class _TrainerClientDetailPageState extends State<TrainerClientDetailPage> {
     });
 
     try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/api/plans/${widget.clientId}/$type'),
+      // Strip server-managed fields before round-tripping the document back -
+      // sending _id/timestamps/userId back to a findOneAndUpdate can conflict
+      // with the values the backend sets explicitly (userId, gymId,
+      // isModified, modifiedBy, modifiedAt).
+      final body = Map<String, dynamic>.from(plan)
+        ..remove('_id')
+        ..remove('__v')
+        ..remove('userId')
+        ..remove('gymId')
+        ..remove('createdAt')
+        ..remove('updatedAt')
+        ..remove('isModified')
+        ..remove('modifiedBy')
+        ..remove('modifiedAt');
+      final endpointType = type == 'meal' ? 'meal-plan' : 'workout-plan';
+      final response = await http.put(
+        Uri.parse(
+          '${ApiConfig.baseUrl}/api/trainer/members/${widget.clientId}/$endpointType',
+        ),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: json.encode(plan),
+        body: json.encode(body),
       );
       final payload = json.decode(response.body) as Map<String, dynamic>;
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception(payload['error'] ?? 'Failed to save $type plan');
+        throw Exception(
+          payload['message'] ?? payload['error'] ?? 'Failed to save $type plan',
+        );
       }
       await _loadDetail();
       if (!mounted) return;
@@ -1089,6 +1108,10 @@ class _SimpleEmptyState extends StatelessWidget {
   }
 }
 
+// Edits a MemberMealPlan document: { days: [{ dayNumber, dayName, meals:
+// [{ type, items: [{ name, portion, caloriesKcal, proteinG, carbsG, fatG }] }]
+// }], macros, dailyCalories, ... }. Simplified from the old flat editor: the
+// trainer picks one day at a time rather than seeing all 7 days at once.
 class _MealPlanEditorSheet extends StatefulWidget {
   final Map<String, dynamic> initialPlan;
 
@@ -1100,6 +1123,7 @@ class _MealPlanEditorSheet extends StatefulWidget {
 
 class _MealPlanEditorSheetState extends State<_MealPlanEditorSheet> {
   late Map<String, dynamic> _plan;
+  int _selectedDayIndex = 0;
 
   @override
   void initState() {
@@ -1110,7 +1134,12 @@ class _MealPlanEditorSheetState extends State<_MealPlanEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final meals = _mapFromDynamic(_plan['meals']);
+    final days = _listFromDynamic(_plan['days']);
+    if (_selectedDayIndex >= days.length) _selectedDayIndex = 0;
+    final selectedDay = days.isEmpty
+        ? <String, dynamic>{}
+        : _mapFromDynamic(days[_selectedDayIndex]);
+    final meals = _listFromDynamic(selectedDay['meals']);
     final sheetHeight = MediaQuery.of(context).size.height * 0.84;
     return Padding(
       padding: EdgeInsets.only(
@@ -1127,237 +1156,257 @@ class _MealPlanEditorSheetState extends State<_MealPlanEditorSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Update meal plan',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Edit meal names and key nutrition values.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 16),
-                      ...meals.entries.map((entry) {
-                        final section = _mapFromDynamic(entry.value);
-                        final items = _listFromDynamic(section['items']);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: ExpansionTile(
-                            tilePadding: EdgeInsets.zero,
-                            childrenPadding: EdgeInsets.zero,
-                            title: Text(
-                              (section['name'] ?? entry.key).toString(),
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            subtitle: Text(
-                              '${items.length} item${items.length == 1 ? '' : 's'}',
-                            ),
-                            children: [
-                              EditorialSurface(
-                                radius: 22,
-                                padding: const EdgeInsets.all(14),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    TextFormField(
-                                      initialValue:
-                                          (section['name'] ?? entry.key)
-                                              .toString(),
-                                      decoration: const InputDecoration(
-                                        labelText: 'Meal block',
-                                      ),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          meals[entry.key]['name'] = value;
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(height: 10),
-                                    ...List.generate(items.length, (index) {
-                                      final item = _mapFromDynamic(
-                                        items[index],
-                                      );
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 12,
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: TextFormField(
-                                                    initialValue:
-                                                        (item['name'] ?? '')
-                                                            .toString(),
-                                                    decoration:
-                                                        const InputDecoration(
-                                                          labelText:
-                                                              'Item name',
-                                                        ),
-                                                    onChanged: (value) =>
-                                                        item['name'] = value,
-                                                  ),
-                                                ),
-                                                IconButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      items.removeAt(index);
-                                                    });
-                                                  },
-                                                  icon: const Icon(
-                                                    Icons
-                                                        .delete_outline_rounded,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: TextFormField(
-                                                    initialValue:
-                                                        (item['calories'] ??
-                                                                item['cal'] ??
-                                                                '')
-                                                            .toString(),
-                                                    decoration:
-                                                        const InputDecoration(
-                                                          labelText: 'Calories',
-                                                        ),
-                                                    keyboardType:
-                                                        TextInputType.number,
-                                                    onChanged: (value) =>
-                                                        item['calories'] =
-                                                            double.tryParse(
-                                                              value,
-                                                            ) ??
-                                                            0,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: TextFormField(
-                                                    initialValue: _macroValue(
-                                                      item,
-                                                      'protein',
-                                                    ),
-                                                    decoration:
-                                                        const InputDecoration(
-                                                          labelText: 'Protein',
-                                                        ),
-                                                    keyboardType:
-                                                        TextInputType.number,
-                                                    onChanged: (value) =>
-                                                        _setMacro(
-                                                          item,
-                                                          'protein',
-                                                          double.tryParse(
-                                                                value,
-                                                              ) ??
-                                                              0,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: TextFormField(
-                                                    initialValue: _macroValue(
-                                                      item,
-                                                      'carbs',
-                                                    ),
-                                                    decoration:
-                                                        const InputDecoration(
-                                                          labelText: 'Carbs',
-                                                        ),
-                                                    keyboardType:
-                                                        TextInputType.number,
-                                                    onChanged: (value) =>
-                                                        _setMacro(
-                                                          item,
-                                                          'carbs',
-                                                          double.tryParse(
-                                                                value,
-                                                              ) ??
-                                                              0,
-                                                        ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: TextFormField(
-                                                    initialValue: _macroValue(
-                                                      item,
-                                                      'fats',
-                                                    ),
-                                                    decoration:
-                                                        const InputDecoration(
-                                                          labelText: 'Fats',
-                                                        ),
-                                                    keyboardType:
-                                                        TextInputType.number,
-                                                    onChanged: (value) =>
-                                                        _setMacro(
-                                                          item,
-                                                          'fats',
-                                                          double.tryParse(
-                                                                value,
-                                                              ) ??
-                                                              0,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }),
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        setState(() {
-                                          items.add({
-                                            'name': 'New item',
-                                            'calories': 0,
-                                            'macros': {
-                                              'protein': 0,
-                                              'carbs': 0,
-                                              'fats': 0,
-                                            },
-                                          });
-                                          meals[entry.key]['items'] = items;
-                                        });
-                                      },
-                                      icon: const Icon(Icons.add_rounded),
-                                      label: const Text('Add item'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-                    ],
+              Text(
+                'Update meal plan',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Pick a day, then edit its meal items.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              if (days.isEmpty)
+                const Expanded(child: _SimpleEmptyState())
+              else ...[
+                SizedBox(
+                  height: 40,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: days.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final day = _mapFromDynamic(days[index]);
+                      final label = (day['dayName'] ?? 'Day ${index + 1}')
+                          .toString();
+                      return _FilterChip(
+                        label: label,
+                        selected: index == _selectedDayIndex,
+                        onTap: () =>
+                            setState(() => _selectedDayIndex = index),
+                      );
+                    },
                   ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...List.generate(meals.length, (mealIndex) {
+                          final meal = _mapFromDynamic(meals[mealIndex]);
+                          final items = _listFromDynamic(meal['items']);
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: ExpansionTile(
+                              tilePadding: EdgeInsets.zero,
+                              childrenPadding: EdgeInsets.zero,
+                              title: Text(
+                                _titleCase((meal['type'] ?? '').toString()),
+                                style:
+                                    Theme.of(context).textTheme.titleMedium,
+                              ),
+                              subtitle: Text(
+                                '${items.length} item${items.length == 1 ? '' : 's'}',
+                              ),
+                              children: [
+                                EditorialSurface(
+                                  radius: 22,
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ...List.generate(items.length, (index) {
+                                        final item = _mapFromDynamic(
+                                          items[index],
+                                        );
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 12,
+                                          ),
+                                          child: Column(
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: TextFormField(
+                                                      initialValue:
+                                                          (item['name'] ?? '')
+                                                              .toString(),
+                                                      decoration:
+                                                          const InputDecoration(
+                                                            labelText:
+                                                                'Item name',
+                                                          ),
+                                                      onChanged: (value) =>
+                                                          item['name'] = value,
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        items.removeAt(index);
+                                                        meal['items'] = items;
+                                                      });
+                                                    },
+                                                    icon: const Icon(
+                                                      Icons
+                                                          .delete_outline_rounded,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              TextFormField(
+                                                initialValue:
+                                                    (item['portion'] ?? '')
+                                                        .toString(),
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: 'Portion',
+                                                    ),
+                                                onChanged: (value) =>
+                                                    item['portion'] = value,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: TextFormField(
+                                                      initialValue: _numValue(
+                                                        item,
+                                                        'caloriesKcal',
+                                                      ),
+                                                      decoration:
+                                                          const InputDecoration(
+                                                            labelText:
+                                                                'Calories',
+                                                          ),
+                                                      keyboardType:
+                                                          TextInputType.number,
+                                                      onChanged: (value) =>
+                                                          item['caloriesKcal'] =
+                                                              double.tryParse(
+                                                                value,
+                                                              ) ??
+                                                              0,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: TextFormField(
+                                                      initialValue: _numValue(
+                                                        item,
+                                                        'proteinG',
+                                                      ),
+                                                      decoration:
+                                                          const InputDecoration(
+                                                            labelText:
+                                                                'Protein (g)',
+                                                          ),
+                                                      keyboardType:
+                                                          TextInputType.number,
+                                                      onChanged: (value) =>
+                                                          item['proteinG'] =
+                                                              double.tryParse(
+                                                                value,
+                                                              ) ??
+                                                              0,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: TextFormField(
+                                                      initialValue: _numValue(
+                                                        item,
+                                                        'carbsG',
+                                                      ),
+                                                      decoration:
+                                                          const InputDecoration(
+                                                            labelText:
+                                                                'Carbs (g)',
+                                                          ),
+                                                      keyboardType:
+                                                          TextInputType.number,
+                                                      onChanged: (value) =>
+                                                          item['carbsG'] =
+                                                              double.tryParse(
+                                                                value,
+                                                              ) ??
+                                                              0,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: TextFormField(
+                                                      initialValue: _numValue(
+                                                        item,
+                                                        'fatG',
+                                                      ),
+                                                      decoration:
+                                                          const InputDecoration(
+                                                            labelText:
+                                                                'Fat (g)',
+                                                          ),
+                                                      keyboardType:
+                                                          TextInputType.number,
+                                                      onChanged: (value) =>
+                                                          item['fatG'] =
+                                                              double.tryParse(
+                                                                value,
+                                                              ) ??
+                                                              0,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }),
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          setState(() {
+                                            items.add({
+                                              'name': 'New item',
+                                              'portion': '1 serving',
+                                              'caloriesKcal': 0,
+                                              'proteinG': 0,
+                                              'carbsG': 0,
+                                              'fatG': 0,
+                                            });
+                                            meal['items'] = items;
+                                          });
+                                        },
+                                        icon: const Icon(Icons.add_rounded),
+                                        label: const Text('Add item'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: EditorialPrimaryButton(
                   label: 'Save meal plan',
-                  onPressed: () => Navigator.of(context).pop(_plan),
+                  onPressed: days.isEmpty
+                      ? null
+                      : () => Navigator.of(context).pop(_plan),
                 ),
               ),
             ],
@@ -1368,6 +1417,10 @@ class _MealPlanEditorSheetState extends State<_MealPlanEditorSheet> {
   }
 }
 
+// Edits a MemberWorkoutPlan document: { workouts: [{ id, name, exercises:
+// [{ name, sets, reps, restSeconds, notes }] }], schedules, ... }. Each
+// "workout" (e.g. Push/Pull/Legs) is a focus area, matching the old
+// muscle-group grouping the trainer was used to.
 class _WorkoutPlanEditorSheet extends StatefulWidget {
   final Map<String, dynamic> initialPlan;
 
@@ -1390,7 +1443,7 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final exercises = _mapFromDynamic(_plan['exercises']);
+    final workouts = _listFromDynamic(_plan['workouts']);
     final sheetHeight = MediaQuery.of(context).size.height * 0.84;
     return Padding(
       padding: EdgeInsets.only(
@@ -1422,20 +1475,25 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 16),
-                      ...exercises.entries.map((entry) {
-                        final section = _mapFromDynamic(entry.value);
-                        final items = _listFromDynamic(section['items']);
+                      if (workouts.isEmpty) const _SimpleEmptyState(),
+                      ...List.generate(workouts.length, (workoutIndex) {
+                        final workout = _mapFromDynamic(
+                          workouts[workoutIndex],
+                        );
+                        final exercises = _listFromDynamic(
+                          workout['exercises'],
+                        );
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: ExpansionTile(
                             tilePadding: EdgeInsets.zero,
                             childrenPadding: EdgeInsets.zero,
                             title: Text(
-                              (section['muscleGroup'] ?? entry.key).toString(),
+                              (workout['name'] ?? 'Workout').toString(),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             subtitle: Text(
-                              '${items.length} move${items.length == 1 ? '' : 's'}',
+                              '${exercises.length} move${exercises.length == 1 ? '' : 's'}',
                             ),
                             children: [
                               EditorialSurface(
@@ -1445,23 +1503,23 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     TextFormField(
-                                      initialValue:
-                                          (section['muscleGroup'] ?? entry.key)
-                                              .toString(),
+                                      initialValue: (workout['name'] ?? '')
+                                          .toString(),
                                       decoration: const InputDecoration(
-                                        labelText: 'Focus area',
+                                        labelText: 'Workout name',
                                       ),
                                       onChanged: (value) {
                                         setState(() {
-                                          exercises[entry.key]['muscleGroup'] =
-                                              value;
+                                          workout['name'] = value;
                                         });
                                       },
                                     ),
                                     const SizedBox(height: 10),
-                                    ...List.generate(items.length, (index) {
+                                    ...List.generate(exercises.length, (
+                                      index,
+                                    ) {
                                       final item = _mapFromDynamic(
-                                        items[index],
+                                        exercises[index],
                                       );
                                       return Padding(
                                         padding: const EdgeInsets.only(
@@ -1487,7 +1545,11 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
                                                 IconButton(
                                                   onPressed: () {
                                                     setState(() {
-                                                      items.removeAt(index);
+                                                      exercises.removeAt(
+                                                        index,
+                                                      );
+                                                      workout['exercises'] =
+                                                          exercises;
                                                     });
                                                   },
                                                   icon: const Icon(
@@ -1502,9 +1564,10 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
                                               children: [
                                                 Expanded(
                                                   child: TextFormField(
-                                                    initialValue:
-                                                        (item['sets'] ?? '')
-                                                            .toString(),
+                                                    initialValue: _numValue(
+                                                      item,
+                                                      'sets',
+                                                    ),
                                                     decoration:
                                                         const InputDecoration(
                                                           labelText: 'Sets',
@@ -1512,7 +1575,11 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
                                                     keyboardType:
                                                         TextInputType.number,
                                                     onChanged: (value) =>
-                                                        item['sets'] = value,
+                                                        item['sets'] =
+                                                            int.tryParse(
+                                                              value,
+                                                            ) ??
+                                                            0,
                                                   ),
                                                 ),
                                                 const SizedBox(width: 8),
@@ -1531,6 +1598,46 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
                                                 ),
                                               ],
                                             ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: TextFormField(
+                                                    initialValue: _numValue(
+                                                      item,
+                                                      'restSeconds',
+                                                    ),
+                                                    decoration:
+                                                        const InputDecoration(
+                                                          labelText:
+                                                              'Rest (sec)',
+                                                        ),
+                                                    keyboardType:
+                                                        TextInputType.number,
+                                                    onChanged: (value) =>
+                                                        item['restSeconds'] =
+                                                            int.tryParse(
+                                                              value,
+                                                            ) ??
+                                                            0,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: TextFormField(
+                                                    initialValue:
+                                                        (item['notes'] ?? '')
+                                                            .toString(),
+                                                    decoration:
+                                                        const InputDecoration(
+                                                          labelText: 'Notes',
+                                                        ),
+                                                    onChanged: (value) =>
+                                                        item['notes'] = value,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ],
                                         ),
                                       );
@@ -1538,12 +1645,14 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
                                     TextButton.icon(
                                       onPressed: () {
                                         setState(() {
-                                          items.add({
+                                          exercises.add({
                                             'name': 'New exercise',
-                                            'sets': '3',
+                                            'sets': 3,
                                             'reps': '10',
+                                            'restSeconds': 60,
+                                            'notes': '',
                                           });
-                                          exercises[entry.key]['items'] = items;
+                                          workout['exercises'] = exercises;
                                         });
                                       },
                                       icon: const Icon(Icons.add_rounded),
@@ -1565,7 +1674,9 @@ class _WorkoutPlanEditorSheetState extends State<_WorkoutPlanEditorSheet> {
                 width: double.infinity,
                 child: EditorialPrimaryButton(
                   label: 'Save workout plan',
-                  onPressed: () => Navigator.of(context).pop(_plan),
+                  onPressed: workouts.isEmpty
+                      ? null
+                      : () => Navigator.of(context).pop(_plan),
                 ),
               ),
             ],
@@ -1611,15 +1722,8 @@ String _activityDate(Map<String, dynamic> client) {
   return 'No log';
 }
 
-String _macroValue(Map<String, dynamic> item, String key) {
-  final macros = _mapFromDynamic(item['macros']);
-  return (macros[key] ?? 0).toString();
-}
-
-void _setMacro(Map<String, dynamic> item, String key, double value) {
-  final macros = _mapFromDynamic(item['macros']);
-  macros[key] = value;
-  item['macros'] = macros;
+String _numValue(Map<String, dynamic> item, String key) {
+  return (item[key] ?? 0).toString();
 }
 
 Map<String, dynamic> _mapFromDynamic(dynamic value) {
@@ -1640,7 +1744,7 @@ List<dynamic> _listFromDynamic(dynamic value) {
 
 String _exerciseLabel(dynamic value) {
   final map = _mapFromDynamic(value);
-  final name = (map['name'] ?? map['exercise'] ?? '').toString().trim();
+  final name = (map['name'] ?? '').toString().trim();
   final sets = (map['sets'] ?? '').toString().trim();
   final reps = (map['reps'] ?? '').toString().trim();
   final fragments = <String>[if (name.isNotEmpty) name];
@@ -1657,12 +1761,8 @@ String _exerciseLabel(dynamic value) {
 
 String _mealLabel(dynamic value) {
   final map = _mapFromDynamic(value);
-  final name = (map['name'] ?? map['item'] ?? map['title'] ?? '')
-      .toString()
-      .trim();
-  final calories = (map['calories'] ?? map['kcal'] ?? map['cal'] ?? '')
-      .toString()
-      .trim();
+  final name = (map['name'] ?? '').toString().trim();
+  final calories = (map['caloriesKcal'] ?? '').toString().trim();
   if (calories.isEmpty) return name;
   if (name.isEmpty) return '$calories kcal';
   return '$name • $calories kcal';
@@ -1686,15 +1786,15 @@ class WorkoutPlanSummary {
   const WorkoutPlanSummary({required this.subtitle, required this.groups});
 
   factory WorkoutPlanSummary.fromPlan(Map<String, dynamic>? plan) {
-    final exercises = _mapFromDynamic(plan?['exercises']);
+    final workouts = _listFromDynamic(plan?['workouts']);
     final groups = <PlanGroupSummary>[];
 
-    exercises.forEach((key, value) {
+    for (final value in workouts) {
       final section = _mapFromDynamic(value);
-      final items = _listFromDynamic(section['items']);
+      final items = _listFromDynamic(section['exercises']);
       groups.add(
         PlanGroupSummary(
-          title: _titleCase((section['muscleGroup'] ?? key).toString()),
+          title: _titleCase((section['name'] ?? 'Workout').toString()),
           subtitle: items.isEmpty
               ? 'No exercises listed here yet.'
               : items
@@ -1706,7 +1806,7 @@ class WorkoutPlanSummary {
           trailingBottom: items.length == 1 ? 'EXERCISE' : 'EXERCISES',
         ),
       );
-    });
+    }
 
     return WorkoutPlanSummary(
       subtitle: groups.isEmpty
@@ -1724,15 +1824,20 @@ class MealPlanSummary {
   const MealPlanSummary({required this.subtitle, required this.groups});
 
   factory MealPlanSummary.fromPlan(Map<String, dynamic>? plan) {
-    final meals = _mapFromDynamic(plan?['meals']);
+    final days = _listFromDynamic(plan?['days']);
     final groups = <PlanGroupSummary>[];
+    // The full plan varies per day; the trainer detail view only has room
+    // for a preview, so show the first day here (matching Day 1 / Monday of
+    // the assigned template) rather than every day.
+    final firstDay = days.isNotEmpty ? _mapFromDynamic(days.first) : null;
+    final meals = firstDay != null ? _listFromDynamic(firstDay['meals']) : [];
 
-    meals.forEach((key, value) {
+    for (final value in meals) {
       final section = _mapFromDynamic(value);
       final items = _listFromDynamic(section['items']);
       groups.add(
         PlanGroupSummary(
-          title: _titleCase((section['name'] ?? key).toString()),
+          title: _titleCase((section['type'] ?? 'Meal').toString()),
           subtitle: items.isEmpty
               ? 'No meal items listed here yet.'
               : items
@@ -1744,12 +1849,12 @@ class MealPlanSummary {
           trailingBottom: items.length == 1 ? 'ITEM' : 'ITEMS',
         ),
       );
-    });
+    }
 
     return MealPlanSummary(
       subtitle: groups.isEmpty
           ? 'This client does not have a meal plan here yet.'
-          : 'Each meal block shows the first items inside it.',
+          : 'Showing ${(firstDay?['dayName'] ?? 'day 1').toString()} — each meal block shows the first items inside it.',
       groups: groups,
     );
   }

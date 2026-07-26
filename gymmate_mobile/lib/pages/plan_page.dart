@@ -46,7 +46,7 @@ class AnimatedFillIcon extends StatelessWidget {
         return Stack(
           alignment: Alignment.center,
           children: [
-            Icon(icon, color: color.withOpacity(0.12), size: size),
+            Icon(icon, color: color.withValues(alpha: 0.12), size: size),
             ClipRect(
               child: Align(
                 alignment: Alignment.bottomCenter,
@@ -203,28 +203,11 @@ class PlanPage extends StatefulWidget {
   State<PlanPage> createState() => _PlanPageState();
 }
 
-class _PlanPageState extends State<PlanPage> {
-  bool _isLoading = true;
-  String? _error;
-  Map<String, dynamic>? _userData;
-  List<dynamic>? _weekPlan;
-  double? _bmi;
-
-  // Checklist state: Set of 'day-mealType' and 'day-workout' keys
-  final Set<String> _checkedItems = {};
-
+class _PlanPageState extends State<PlanPage> with WidgetsBindingObserver {
   AuthProvider? _authProvider;
 
-  // 1. Store the current day's plan only
-  Map<String, dynamic>? _dayPlan;
-  final bool _usedFallback = false;
-  String? _aiError;
-
-  final int _selectedDayIndex = DateTime.now().weekday - 1; // 0=Monday
-
-  int get _todayIndex => DateTime.now().weekday - 1;
-
-  // 1. Add loading animation and animated text sequence
+  // Rotating loading-message animation shown while the personalised plan
+  // (profile + workout + meal plan) is being fetched.
   final List<String> _loadingMessages = [
     '🧠 Generating your personalized fitness plan…',
     '🏋️‍♂️ Matching workouts to your goals…',
@@ -232,23 +215,11 @@ class _PlanPageState extends State<PlanPage> {
   ];
   int _loadingMessageIndex = 0;
 
-  // 2. Use cached AI response if onboarding data hasn't changed
-  Map<String, dynamic>? _lastUserData;
-  Map<String, dynamic>? _cachedDayPlan;
-
   Map<String, bool> _checkboxState = {};
-
-  Map<String, dynamic>? _plan; // Store the full plan object from backend
-  bool _planLoading = true;
-  bool _planError = false;
 
   // Add state for meal logging
   Map<String, Map<int, double>> _mealItemQuantities =
       {}; // key: mealType, value: {itemIdx: quantity}
-  double _totalCaloriesLogged = 0;
-
-  // Add state for workout logging
-  final List<bool> _workoutCompleted = [];
 
   // Add state for water and steps persistence
   int _waterGlasses = 0;
@@ -258,10 +229,19 @@ class _PlanPageState extends State<PlanPage> {
 
   Map<String, bool> _exerciseCompleted = {}; // key: exerciseKey, value: checked
 
-  double? _calorieGoal;
+  // Completion state (DailyPlanLog) is fetched fresh for every calendar day -
+  // these track whether that fetch has completed/failed for the date the
+  // page currently has loaded, so checkbox state is never rendered from
+  // stale local state before the server has had a chance to answer.
   bool _planLogLoaded = false;
+  bool _planLogLoading = true;
+  String? _planLogError;
+  String? _loadedForDate;
 
-  // Personalised plan state (dynamic, from /api/member/me/*)
+  // Personalised plan state (dynamic, from /api/member/me/*) - this is the
+  // single source of truth for what's displayed on this page. The old
+  // /api/plans/meal|workout pipeline and its cached_plan_* SharedPreferences
+  // cache have been retired in favour of this.
   Map<String, dynamic>? _memberProfile;
   Map<String, dynamic>? _memberWorkoutPlan;
   Map<String, dynamic>? _memberMealPlan;
@@ -314,187 +294,10 @@ class _PlanPageState extends State<PlanPage> {
 
   double _asDouble(dynamic raw) => (raw as num?)?.toDouble() ?? 0.0;
 
-  double _round1(double value) => double.parse(value.toStringAsFixed(1));
-
-  String _primaryGoal(List<dynamic> goals) {
-    if (goals.isEmpty) return 'general_fitness';
-    return goals.first.toString().toLowerCase();
-  }
-
-  Map<String, double> _dailyNutritionTargetsFromUser(
-    Map<String, dynamic> userData,
-  ) {
-    final profile = Map<String, dynamic>.from(userData['profile'] ?? {});
-    final age = _asDouble(profile['age']) > 0 ? _asDouble(profile['age']) : 30;
-    final gender = (profile['gender']?.toString().toLowerCase() ?? 'male');
-    final weight = _asDouble(profile['weight']) > 0
-        ? _asDouble(profile['weight'])
-        : 70;
-    final height = _asDouble(profile['height']) > 0
-        ? _asDouble(profile['height'])
-        : 170;
-    final activity =
-        userData['workoutHabits']?['currentActivityLevel']
-            ?.toString()
-            .toLowerCase() ??
-        'sedentary';
-    final goals = List<dynamic>.from(userData['fitnessGoals'] ?? const []);
-    final primaryGoal = _primaryGoal(goals);
-
-    double bmr = gender == 'female'
-        ? 10 * weight + 6.25 * height - 5 * age - 161
-        : 10 * weight + 6.25 * height - 5 * age + 5;
-
-    double activityMult = 1.2;
-    if (activity == 'lightly_active') {
-      activityMult = 1.375;
-    } else if (activity == 'moderately_active') {
-      activityMult = 1.55;
-    } else if (activity == 'very_active') {
-      activityMult = 1.725;
-    } else if (activity == 'extra_active') {
-      activityMult = 1.9;
-    }
-
-    double calories = bmr * activityMult;
-    if (goals.contains('fat_loss')) calories -= 300;
-    if (goals.contains('muscle_gain')) calories += 200;
-    if (calories < 1200) calories = 1200;
-
-    double proteinPerKg = 1.6;
-    double fatPerKg = 0.8;
-    double carbFloorPerKg = 2.0;
-
-    if (primaryGoal.contains('fat')) {
-      proteinPerKg = 2.0;
-      fatPerKg = 0.7;
-      carbFloorPerKg = 2.0;
-    } else if (primaryGoal.contains('muscle')) {
-      proteinPerKg = 1.9;
-      fatPerKg = 0.9;
-      carbFloorPerKg = 3.0;
-    } else if (primaryGoal.contains('strength')) {
-      proteinPerKg = 1.8;
-      fatPerKg = 0.85;
-      carbFloorPerKg = 2.5;
-    } else if (primaryGoal.contains('endur')) {
-      proteinPerKg = 1.6;
-      fatPerKg = 0.75;
-      carbFloorPerKg = 3.0;
-    } else if (primaryGoal.contains('flex')) {
-      proteinPerKg = 1.4;
-      fatPerKg = 0.8;
-      carbFloorPerKg = 2.0;
-    }
-
-    double protein = weight * proteinPerKg;
-    double fat = weight * fatPerKg;
-    final minFat = weight * 0.6;
-    final minCarbs = weight * carbFloorPerKg;
-
-    double carbs = (calories - protein * 4 - fat * 9) / 4;
-    if (carbs < minCarbs) {
-      fat = math.max(minFat, (calories - protein * 4 - minCarbs * 4) / 9);
-      carbs = (calories - protein * 4 - fat * 9) / 4;
-    }
-
-    if (carbs < 0) carbs = 0;
-
-    final normalizedCalories = protein * 4 + carbs * 4 + fat * 9;
-    return {
-      'calories': normalizedCalories.roundToDouble(),
-      'protein': _round1(protein),
-      'carbs': _round1(carbs),
-      'fat': _round1(fat),
-    };
-  }
-
-  Map<String, dynamic> _normalizeMealsToTargets(
-    Map<String, dynamic> rawMeals,
-    Map<String, double> dailyTargets,
-  ) {
-    final normalizedMeals = <String, dynamic>{};
-    final mealKeys = _orderedMealKeysFromRaw(rawMeals);
-    double totalProtein = 0;
-    double totalCarbs = 0;
-    double totalFat = 0;
-
-    for (final mealType in mealKeys) {
-      final meal = rawMeals[mealType] is Map
-          ? Map<String, dynamic>.from(rawMeals[mealType] as Map)
-          : <String, dynamic>{
-              'name': _planFriendlyLabel(mealType),
-              'items': [],
-            };
-      final items = meal['items'] is List
-          ? List<dynamic>.from(meal['items'])
-          : <dynamic>[];
-      for (final rawItem in items) {
-        final item = _planMealItemAsMap(rawItem);
-        final rawMacros = item['macros'];
-        if (rawMacros is Map) {
-          totalProtein += _asDouble(rawMacros['protein'] ?? rawMacros['p']);
-          totalCarbs += _asDouble(rawMacros['carbs'] ?? rawMacros['c']);
-          totalFat += _asDouble(rawMacros['fats'] ?? rawMacros['f']);
-        }
-      }
-      normalizedMeals[mealType] = meal;
-    }
-
-    final proteinScale = totalProtein > 0
-        ? (dailyTargets['protein'] ?? totalProtein) / totalProtein
-        : 1.0;
-    final carbScale = totalCarbs > 0
-        ? (dailyTargets['carbs'] ?? totalCarbs) / totalCarbs
-        : 1.0;
-    final fatScale = totalFat > 0
-        ? (dailyTargets['fat'] ?? totalFat) / totalFat
-        : 1.0;
-
-    for (final mealType in mealKeys) {
-      final meal = Map<String, dynamic>.from(normalizedMeals[mealType] as Map);
-      final items = meal['items'] is List
-          ? List<dynamic>.from(meal['items'])
-          : <dynamic>[];
-      final normalizedItems = <Map<String, dynamic>>[];
-      double mealProtein = 0;
-      double mealCarbs = 0;
-      double mealFat = 0;
-
-      for (final rawItem in items) {
-        final item = _planMealItemAsMap(rawItem);
-        final rawMacros = item['macros'];
-        final macros = rawMacros is Map
-            ? Map<String, dynamic>.from(rawMacros)
-            : {};
-        final protein =
-            _asDouble(macros['protein'] ?? macros['p']) * proteinScale;
-        final carbs = _asDouble(macros['carbs'] ?? macros['c']) * carbScale;
-        final fats = _asDouble(macros['fats'] ?? macros['f']) * fatScale;
-        final normalizedItem = Map<String, dynamic>.from(item);
-        normalizedItem['macros'] = {
-          'protein': protein,
-          'carbs': carbs,
-          'fats': fats,
-        };
-        normalizedItem['calories'] = protein * 4 + carbs * 4 + fats * 9;
-        normalizedItems.add(normalizedItem);
-        mealProtein += protein;
-        mealCarbs += carbs;
-        mealFat += fats;
-      }
-
-      meal['items'] = normalizedItems;
-      meal['p'] = mealProtein;
-      meal['c'] = mealCarbs;
-      meal['f'] = mealFat;
-      meal['cal'] = mealProtein * 4 + mealCarbs * 4 + mealFat * 9;
-      normalizedMeals[mealType] = meal;
-    }
-
-    return normalizedMeals;
-  }
-
+  // Daily calorie/macro targets now come straight from the server-computed
+  // MemberMealPlan (dailyCalories/macros, TDEE-aware) via _todayPlan -
+  // there's no need to re-derive them locally from onboarding data the way
+  // the old pipeline used to.
   Map<String, double> _dailyTargetsForPlan(Map<String, dynamic> plan) {
     final raw = plan['dailyTargets'];
     if (raw is Map) {
@@ -505,7 +308,7 @@ class _PlanPageState extends State<PlanPage> {
         'fat': _asDouble(raw['fat']),
       };
     }
-    return _dailyNutritionTargetsFromUser(_authProvider?.userData ?? const {});
+    return {'calories': 1800, 'protein': 120, 'carbs': 220, 'fat': 60};
   }
 
   // Helper to get calories for a meal item
@@ -561,7 +364,7 @@ class _PlanPageState extends State<PlanPage> {
       final meal = mealRaw is Map ? mealRaw : <String, dynamic>{};
       final items = meal['items'] is List ? meal['items'] : [];
       for (int i = 0; i < items.length; i++) {
-        final key = '${plan['day']}-meal-$mealType-$i';
+        final key = 'meal-$mealType-$i';
         if (_checkboxState[key] == true) {
           final qty = _mealItemQuantities[mealType]?[i] ?? 1.0;
           cal += _getCaloriesForMealItem(meal, qty, items[i]);
@@ -573,33 +376,6 @@ class _PlanPageState extends State<PlanPage> {
       }
     }
     return {'cal': cal, 'p': p, 'f': f, 'c': c};
-  }
-
-  // Update _totalCaloriesLogged whenever a meal item is checked/quantity changed
-  void _recalculateTotalCaloriesLogged(Map<String, dynamic> plan) {
-    double total = 0;
-    // Defensive: ensure meals is a Map
-    final meals = plan['meals'] is Map
-        ? plan['meals'] as Map
-        : <String, dynamic>{};
-    final mealKeys = _orderedMealKeysFromRaw(Map<String, dynamic>.from(meals));
-    for (final mealType in mealKeys) {
-      // Defensive: ensure meal is a Map
-      final meal = meals[mealType] is Map
-          ? meals[mealType] as Map
-          : <String, dynamic>{};
-      final items = meal['items'] is List ? meal['items'] : [];
-      for (int i = 0; i < items.length; i++) {
-        final key = '${plan['day']}-meal-$mealType-$i';
-        if (_checkboxState[key] == true) {
-          final qty = _mealItemQuantities[mealType]?[i] ?? 1.0;
-          total += _getCaloriesForMealItem(meal, qty, items[i]);
-        }
-      }
-    }
-    setState(() {
-      _totalCaloriesLogged = total;
-    });
   }
 
   // Helper to get workout calories (if available)
@@ -628,7 +404,7 @@ class _PlanPageState extends State<PlanPage> {
     final exercises = _workoutPreviewItems(workout);
     final exerciseKeys = List.generate(
       exercises.length,
-      (i) => '${plan['day']}-workout-ex-$i',
+      (i) => 'workout-ex-$i',
     );
     int completed = exerciseKeys
         .where((k) => _exerciseCompleted[k] == true)
@@ -648,68 +424,74 @@ class _PlanPageState extends State<PlanPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _authProvider?.addListener(_onAuthChanged);
     _fetchProgressData();
-    _loadUserDataAndBMI();
-    _loadCheckboxState();
     _loadWaterAndSteps(); // <-- Load water/steps from storage
-    _loadPlanIfNeeded();
-    _updateCalorieGoal();
     _loadMembershipHub();
     _loadPersonalisedPlan();
     // Animated loading message
     Future.doWhile(() async {
-      if (!_planLoading) return false;
+      if (!_memberPlanLoading) return false;
       await Future.delayed(const Duration(seconds: 2));
-      if (_planLoading) {
+      if (_memberPlanLoading) {
         setState(() {
           _loadingMessageIndex =
               (_loadingMessageIndex + 1) % _loadingMessages.length;
         });
       }
-      return _planLoading;
+      return _memberPlanLoading;
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshIfDayChanged();
+    }
+  }
+
+  // A session left open across midnight (or across a day boundary while the
+  // app was backgrounded) should not keep showing yesterday's plan/checkbox
+  // state. Compared against on every resume, and cheaply re-checked on every
+  // build() too since IndexedStack keeps this page's State alive across tab
+  // switches (no route-level pop/push to hook into).
+  void _refreshIfDayChanged() {
+    if (_loadedForDate == null) return;
+    if (_loadedForDate != _currentPlanDateKey()) {
+      _checkboxState = {};
+      _exerciseCompleted = {};
+      _mealItemQuantities = {};
+      _planLogLoaded = false;
+      _loadPersonalisedPlan();
+    }
   }
 
   void _onAuthChanged() {
     if (_authProvider != null && !_authProvider!.isAuth) {
       setState(() {
-        _weekPlan = null;
-        _checkedItems.clear();
-        _userData = null;
-        _bmi = null;
-        _isLoading = false;
-        _error = null;
-        _plan = null;
-        _planLoading = false;
-        _planError = false;
+        _checkboxState = {};
+        _exerciseCompleted = {};
+        _mealItemQuantities = {};
+        _memberProfile = null;
+        _memberWorkoutPlan = null;
+        _memberMealPlan = null;
+        _memberPlanLoading = false;
+        _memberPlanError = null;
+        _planLogLoaded = false;
+        _planLogLoading = false;
+        _planLogError = null;
+        _loadedForDate = null;
       });
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authProvider?.removeListener(_onAuthChanged);
     super.dispose();
-  }
-
-  Future<void> _loadUserDataAndBMI() async {
-    final userData = _authProvider?.userData;
-    if (userData != null) {
-      setState(() {
-        _userData = userData;
-        final weight =
-            (userData['profile']?['weight'] as num?)?.toDouble() ?? 0.0;
-        final height =
-            (userData['profile']?['height'] as num?)?.toDouble() ?? 0.0;
-        if (weight > 0 && height > 0) {
-          _bmi = weight / ((height / 100) * (height / 100));
-        } else {
-          _bmi = null;
-        }
-      });
-    }
   }
 
   Future<void> _loadMembershipHub() async {
@@ -758,6 +540,7 @@ class _PlanPageState extends State<PlanPage> {
         _memberMealPlan = results[2];
         _memberPlanLoading = false;
       });
+      await _hydratePlanLogForCurrentPlan();
     } catch (e) {
       if (!mounted) return;
       final msg = e.toString().replaceFirst('Exception: ', '');
@@ -773,92 +556,39 @@ class _PlanPageState extends State<PlanPage> {
     }
   }
 
-  Future<void> _loadCheckboxState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final map = prefs.getString('plan_checkbox_state');
-    if (map != null) {
-      setState(() {
-        _checkboxState = Map<String, bool>.from(json.decode(map));
-      });
-    }
-    final workoutMap = prefs.getString('plan_exercise_completed');
-    if (workoutMap != null) {
-      setState(() {
-        _exerciseCompleted = Map<String, bool>.from(json.decode(workoutMap));
-      });
-    }
-    final mealQuantities = prefs.getString('plan_meal_item_quantities');
-    if (mealQuantities != null) {
-      final decoded = json.decode(mealQuantities);
-      if (decoded is Map) {
-        setState(() {
-          _mealItemQuantities = decoded.map<String, Map<int, double>>((
-            key,
-            value,
-          ) {
-            final raw = value is Map ? value : <String, dynamic>{};
-            return MapEntry(
-              key.toString(),
-              raw.map<int, double>(
-                (itemKey, itemValue) => MapEntry(
-                  int.tryParse(itemKey.toString()) ?? 0,
-                  (itemValue as num?)?.toDouble() ?? 1.0,
-                ),
-              ),
-            );
-          });
-        });
-      }
-    }
-  }
-
-  Future<void> _saveCheckboxState() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('plan_checkbox_state', json.encode(_checkboxState));
-    await prefs.setString(
-      'plan_exercise_completed',
-      json.encode(_exerciseCompleted),
-    );
-    final serializableQuantities = _mealItemQuantities
-        .map<String, Map<String, double>>(
-          (mealType, items) => MapEntry(
-            mealType,
-            items.map<String, double>(
-              (index, quantity) => MapEntry(index.toString(), quantity),
-            ),
-          ),
-        );
-    await prefs.setString(
-      'plan_meal_item_quantities',
-      json.encode(serializableQuantities),
-    );
-    _syncPlanLogToServer();
+  // Completion state lives entirely on the server (DailyPlanLog, keyed by
+  // real {memberId, date}) now - there's no local persistence step here
+  // beyond the in-memory _checkboxState/_exerciseCompleted/
+  // _mealItemQuantities maps, which _hydratePlanLogForCurrentPlan populates
+  // from the server on load and _syncPlanLogToServer pushes back on every
+  // toggle. The old global, unscoped SharedPreferences cache
+  // (plan_checkbox_state / plan_exercise_completed /
+  // plan_meal_item_quantities) has been removed - it could serve a
+  // yesterday's-checkmarks-look-done-today bug if the server sync ever
+  // silently failed.
+  Future<void> _persistCompletionChange() async {
+    setState(() {}); // re-render immediately with the optimistic local state
+    await _syncPlanLogToServer();
   }
 
   String _currentPlanDateKey() =>
       DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-  String _currentPlanDayPrefix() {
-    if (_plan == null) return '';
-    return '${_plan!['day']}-';
-  }
-
   Map<String, dynamic> _buildPlanLogPayload() {
-    final plan = _plan;
+    final plan = _todayPlan;
     final loggedMealItems = <String, double>{};
     final loggedWorkoutItems = <String, bool>{};
-    final dayPrefix = _currentPlanDayPrefix();
 
     _checkboxState.forEach((key, value) {
-      if (value != true || !key.startsWith('${dayPrefix}meal-')) return;
+      if (value != true || !key.startsWith('meal-')) return;
       final parts = key.split('-');
-      final mealType = parts.length >= 3 ? parts[2] : '';
+      final mealType = parts.length >= 2 ? parts[1] : '';
       final index = parts.isNotEmpty ? int.tryParse(parts.last) ?? 0 : 0;
       loggedMealItems[key] = _mealItemQuantities[mealType]?[index] ?? 1.0;
     });
 
     _exerciseCompleted.forEach((key, value) {
-      if (value == true && key.startsWith('${dayPrefix}workout-')) {
+      if (value == true && key.startsWith('workout-')) {
         loggedWorkoutItems[key] = true;
       }
     });
@@ -870,8 +600,8 @@ class _PlanPageState extends State<PlanPage> {
         ? {'progress': 0.0}
         : _calculateWorkoutSummary(plan);
     final mealGoal = plan == null
-        ? (_calorieGoal ?? 1800)
-        : (_dailyTargetsForPlan(plan)['calories'] ?? (_calorieGoal ?? 1800));
+        ? 1800.0
+        : (_dailyTargetsForPlan(plan)['calories'] ?? 1800.0);
     final calorieProgress = mealGoal > 0
         ? ((dailyTotals['cal'] ?? 0) / mealGoal).clamp(0.0, 1.0)
         : 0.0;
@@ -897,87 +627,99 @@ class _PlanPageState extends State<PlanPage> {
   }
 
   Future<void> _hydratePlanLogForCurrentPlan() async {
-    if (_plan == null || _planLoading || _planLogLoaded) return;
+    if (_todayPlan == null || _memberPlanLoading || _planLogLoaded) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final token = authProvider.token;
     if (token == null) return;
+    final dateKey = _currentPlanDateKey();
+
+    setState(() {
+      _planLogLoading = true;
+      _planLogError = null;
+    });
 
     try {
       final response = await http.get(
-        Uri.parse(
-          '${ApiConfig.baseUrl}/api/member/plan-log?date=${_currentPlanDateKey()}',
-        ),
+        Uri.parse('${ApiConfig.baseUrl}/api/member/plan-log?date=$dateKey'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
       );
-      if (response.statusCode != 200) return;
+      if (response.statusCode != 200) {
+        throw Exception('Failed with status ${response.statusCode}');
+      }
       final payload = json.decode(response.body);
       final log = payload['log'];
-      if (log is! Map) return;
 
-      final dayPrefix = _currentPlanDayPrefix();
-      final nextCheckboxState = Map<String, bool>.from(_checkboxState)
-        ..removeWhere(
-          (key, _) =>
-              key.startsWith('${dayPrefix}meal-') ||
-              key.startsWith('${dayPrefix}workout-'),
+      final nextCheckboxState = <String, bool>{};
+      final nextExerciseCompleted = <String, bool>{};
+      final nextMealQuantities = <String, Map<int, double>>{};
+      int nextWater = 0;
+      int nextSteps = 0;
+
+      if (log is Map) {
+        final loggedMeals = Map<String, dynamic>.from(
+          log['loggedMealItems'] ?? {},
         );
-      final nextExerciseCompleted = Map<String, bool>.from(_exerciseCompleted)
-        ..removeWhere((key, _) => key.startsWith('${dayPrefix}workout-'));
-      final nextMealQuantities = _mealItemQuantities
-          .map<String, Map<int, double>>(
-            (mealType, items) =>
-                MapEntry(mealType, Map<int, double>.from(items)),
-          );
+        loggedMeals.forEach((key, value) {
+          final normalizedKey = key.toString();
+          nextCheckboxState[normalizedKey] = true;
+          final parts = normalizedKey.split('-');
+          if (parts.length >= 3) {
+            final mealType = parts[1];
+            final index = int.tryParse(parts.last) ?? 0;
+            nextMealQuantities[mealType] = Map<int, double>.from(
+              nextMealQuantities[mealType] ?? <int, double>{},
+            );
+            nextMealQuantities[mealType]![index] =
+                (value as num?)?.toDouble() ?? 1.0;
+          }
+        });
 
-      final loggedMeals = Map<String, dynamic>.from(
-        log['loggedMealItems'] ?? {},
-      );
-      loggedMeals.forEach((key, value) {
-        final normalizedKey = key.toString();
-        nextCheckboxState[normalizedKey] = true;
-        final parts = normalizedKey.split('-');
-        if (parts.length >= 4) {
-          final mealType = parts[2];
-          final index = int.tryParse(parts.last) ?? 0;
-          nextMealQuantities[mealType] = Map<int, double>.from(
-            nextMealQuantities[mealType] ?? <int, double>{},
-          );
-          nextMealQuantities[mealType]![index] =
-              (value as num?)?.toDouble() ?? 1.0;
-        }
-      });
+        final loggedWorkout = Map<String, dynamic>.from(
+          log['loggedWorkoutItems'] ?? {},
+        );
+        loggedWorkout.forEach((key, value) {
+          nextExerciseCompleted[key.toString()] = value == true;
+        });
 
-      final loggedWorkout = Map<String, dynamic>.from(
-        log['loggedWorkoutItems'] ?? {},
-      );
-      loggedWorkout.forEach((key, value) {
-        nextExerciseCompleted[key.toString()] = value == true;
-      });
+        nextWater = (log['water'] as num?)?.toInt() ?? 0;
+        nextSteps = (log['steps'] as num?)?.toInt() ?? 0;
+      }
 
       if (!mounted) return;
       setState(() {
         _checkboxState = nextCheckboxState;
         _exerciseCompleted = nextExerciseCompleted;
         _mealItemQuantities = nextMealQuantities;
-        _waterGlasses = (log['water'] as num?)?.toInt() ?? _waterGlasses;
-        _steps = (log['steps'] as num?)?.toInt() ?? _steps;
+        _waterGlasses = nextWater;
+        _steps = nextSteps;
         _planLogLoaded = true;
+        _planLogLoading = false;
+        _planLogError = null;
+        _loadedForDate = dateKey;
       });
-      _recalculateTotalCaloriesLogged(_plan!);
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      // Do NOT fall back to stale local/cached state on failure - show a
+      // retry affordance instead (surfaced in build()) so the member never
+      // sees a checkbox that might actually belong to a previous day.
+      setState(() {
+        _planLogLoading = false;
+        _planLogError = e.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   Future<void> _syncPlanLogToServer() async {
-    if (_plan == null || _planLoading) return;
+    if (_todayPlan == null || _memberPlanLoading) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final token = authProvider.token;
     if (token == null) return;
 
     try {
-      await http.put(
+      final response = await http.put(
         Uri.parse('${ApiConfig.baseUrl}/api/member/plan-log'),
         headers: {
           'Authorization': 'Bearer $token',
@@ -985,178 +727,21 @@ class _PlanPageState extends State<PlanPage> {
         },
         body: json.encode(_buildPlanLogPayload()),
       );
-    } catch (_) {}
-  }
-
-  void _loadPlanIfNeeded() async {
-    // Only fetch if plan is not loaded or onboarding changed or refresh is clicked
-    final userData = _authProvider?.userData;
-    if (userData == null) return;
-    final onboardingHash = _getOnboardingHash(userData);
-    final prefs = await SharedPreferences.getInstance();
-    final cachedPlanStr = prefs.getString('cached_plan_$onboardingHash');
-    if (cachedPlanStr != null) {
-      try {
-        final decoded = json.decode(cachedPlanStr);
-        if (decoded is Map<String, dynamic>) {
-          final enriched = Map<String, dynamic>.from(decoded);
-          final targets = _dailyNutritionTargetsFromUser(userData);
-          final normalizedMeals = _normalizeMealsToTargets(
-            Map<String, dynamic>.from(enriched['meals'] ?? {}),
-            targets,
-          );
-          setState(() {
-            _plan = {
-              ...enriched,
-              'meals': normalizedMeals,
-              'dailyTargets': targets,
-            };
-            _calorieGoal = targets['calories'];
-            _planLoading = false;
-            _planError = false;
-          });
-          await _hydratePlanLogForCurrentPlan();
-          return;
-        } else {
-          // Corrupted cache, clear and fetch fresh
-          await prefs.remove('cached_plan_$onboardingHash');
-        }
-      } catch (e) {
-        // Corrupted cache, clear and fetch fresh
-        await prefs.remove('cached_plan_$onboardingHash');
-      }
-    }
-    _loadPlanFromBackend();
-  }
-
-  String _getOnboardingHash(Map<String, dynamic> userData) {
-    final onboardingData = {
-      'age': userData['profile']?['age'],
-      'gender': userData['profile']?['gender'],
-      'height': userData['profile']?['height'],
-      'weight': userData['profile']?['weight'],
-      'diet': userData['dietPreferences']?['type'],
-      'goals': userData['fitnessGoals'],
-      'activity': userData['workoutHabits']?['currentActivityLevel'],
-      'frequency': userData['workoutHabits']?['daysPerWeek'],
-    };
-    return onboardingData.toString().hashCode.toString();
-  }
-
-  Future<void> _loadPlanFromBackend({bool force = false}) async {
-    setState(() {
-      _planLoading = true;
-      _planError = false;
-    });
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final token = authProvider.token;
-      final memberId =
-          authProvider.userId ??
-          authProvider.userData?['id']?.toString() ??
-          authProvider.userData?['_id']?.toString();
-      final userData = authProvider.userData;
-      if (token == null || userData == null || memberId == null) {
-        if (mounted)
-          setState(() {
-            _planError = true;
-            _planLoading = false;
-          });
-        return;
-      }
-      // Calculate BMI category
-      final profile = userData['profile'] ?? {};
-      final weight = (profile['weight'] as num?)?.toDouble() ?? 0.0;
-      final height = (profile['height'] as num?)?.toDouble() ?? 0.0;
-      double bmi = 0;
-      String bmiCategory = 'normal';
-      if (weight > 0 && height > 0) {
-        bmi = weight / ((height / 100) * (height / 100));
-        if (bmi < 18.5) {
-          bmiCategory = 'underweight';
-        } else if (bmi < 25)
-          bmiCategory = 'normal';
-        else if (bmi < 30)
-          bmiCategory = 'overweight';
-        else
-          bmiCategory = 'obese';
-      }
-      // Prepare query params
-      final goal = (userData['fitnessGoals'] as List?)?.isNotEmpty == true
-          ? userData['fitnessGoals'][0]
-          : 'general_fitness';
-      final dietType = userData['dietPreferences']?['type'] ?? 'flexible';
-      final workoutSplit = userData['workoutHabits']?['split'] ?? 'Full Body';
-      final day = DateFormat('EEEE').format(DateTime.now());
-      final mealUri = Uri.parse('${ApiConfig.baseUrl}/api/plans/meal').replace(
-        queryParameters: {
-          'goal': goal.toString(),
-          'dietType': dietType.toString(),
-          'bmiCategory': bmiCategory,
-          'day': day,
-          'memberId': memberId,
-        },
-      );
-      final workoutUri = Uri.parse('${ApiConfig.baseUrl}/api/plans/workout')
-          .replace(
-            queryParameters: {
-              'goal': goal.toString(),
-              'workoutSplit': workoutSplit.toString(),
-              'bmiCategory': bmiCategory,
-              'day': day,
-              'memberId': memberId,
-            },
-          );
-      // Fetch meal plan
-      final mealRes = await http.get(
-        mealUri,
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      // Fetch workout plan
-      final workoutRes = await http.get(
-        workoutUri,
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      if (mealRes.statusCode == 200 && workoutRes.statusCode == 200) {
-        final mealPlan = json.decode(mealRes.body);
-        final workoutPlan = json.decode(workoutRes.body);
-        final dailyTargets = _dailyNutritionTargetsFromUser(userData);
-        final normalizedMeals = _normalizeMealsToTargets(
-          Map<String, dynamic>.from(mealPlan['meals'] ?? {}),
-          dailyTargets,
-        );
-        setState(() {
-          _plan = {
-            'meals': normalizedMeals,
-            'workout': workoutPlan,
-            'day': day,
-            'dailyTargets': dailyTargets,
-          };
-          _calorieGoal = dailyTargets['calories'];
-          _planLoading = false;
-          _planError = false;
-        });
-        await _hydratePlanLogForCurrentPlan();
-      } else {
-        setState(() {
-          _planError = true;
-          _planLoading = false;
-        });
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Failed with status ${response.statusCode}');
       }
     } catch (e) {
-      if (mounted)
-        setState(() {
-          _planError = true;
-          _planLoading = false;
-        });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Could not save your progress. Check your connection.'),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: _syncPlanLogToServer,
+          ),
+        ),
+      );
     }
-  }
-
-  String _getBMICategory(double bmi) {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi < 25) return 'Normal';
-    if (bmi < 30) return 'Overweight';
-    return 'Obese';
   }
 
   void _incrementSteps([int by = 1000]) {
@@ -1183,7 +768,7 @@ class _PlanPageState extends State<PlanPage> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        Icon(icon, color: color.withOpacity(0.20), size: size),
+        Icon(icon, color: color.withValues(alpha: 0.20), size: size),
         ShaderMask(
           shaderCallback: (Rect bounds) {
             return LinearGradient(
@@ -1200,47 +785,48 @@ class _PlanPageState extends State<PlanPage> {
     );
   }
 
-  void _updateCalorieGoal() {
-    final userData = _authProvider?.userData;
-    if (userData == null) return;
-    final targets = _dailyNutritionTargetsFromUser(userData);
-    setState(() {
-      _calorieGoal = targets['calories'];
-    });
-  }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _updateCalorieGoal();
+    // IndexedStack keeps this page's State alive across tab switches, so
+    // this is also our cheapest hook for catching a day rollover that
+    // happened while the app was open on another tab.
+    _refreshIfDayChanged();
   }
 
-  // Add a refresh button for user to force reload plan if needed
+  // Refresh button: reloads the personalised plan and its completion log.
   void _refreshPlan() async {
     setState(() {
-      _planLoading = true;
-      _planError = false;
       _planLogLoaded = false;
     });
-    await _loadPlanFromBackend();
+    await _loadPersonalisedPlan();
   }
 
   @override
   Widget build(BuildContext context) {
-    final plan = _plan;
+    // Cheap day-rollover guard: build() runs far more often than the
+    // lifecycle callback, so this catches a midnight rollover that happens
+    // while this tab is the visible one (IndexedStack keeps this page's
+    // State alive across tab switches, so didChangeDependencies alone
+    // wouldn't fire again on a tab re-visit).
+    _refreshIfDayChanged();
+
+    final plan = _todayPlan;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    // Defensive: check plan structure
-    final hasMeals = plan != null && plan['meals'] is Map;
-    final hasWorkout = plan != null && plan['workout'] is Map;
-    final planReady =
-        !_planLoading && !_planError && plan != null && hasMeals && hasWorkout;
+    final hasMeals = plan != null && (plan['meals'] as Map).isNotEmpty;
+    final hasWorkout = plan != null && (plan['workout'] as Map).isNotEmpty;
+    final isRestDay = plan != null && plan['isRestDay'] == true;
+    final planReady = !_memberPlanLoading &&
+        _memberPlanError == null &&
+        !_planLogLoading &&
+        plan != null;
     final dailyTargets = plan != null
         ? _dailyTargetsForPlan(plan)
-        : _dailyNutritionTargetsFromUser(_authProvider?.userData ?? const {});
+        : {'calories': 1800.0, 'protein': 120.0, 'carbs': 220.0, 'fat': 60.0};
     double mealPercent = 0;
     double mealCalories = 0;
-    double mealGoal = dailyTargets['calories'] ?? (_calorieGoal ?? 1800);
+    double mealGoal = dailyTargets['calories'] ?? 1800;
     double mealLeft = 0;
     double workoutPercent = 0;
     if (planReady) {
@@ -1280,32 +866,38 @@ class _PlanPageState extends State<PlanPage> {
                 subtitle:
                     'Workout, meals, water, and steps stay in one clear view.',
                 trailing: IconButton(
-                  onPressed: _planLoading ? null : _refreshPlan,
+                  onPressed: _memberPlanLoading ? null : _refreshPlan,
                   icon: const Icon(Icons.refresh_rounded),
                 ),
               ),
               const SizedBox(height: 18),
-              _buildPersonalisedPlanSection(),
-              const SizedBox(height: 18),
-              if (_planError)
+              if (_memberPlanError == '__onboarding_needed__')
+                _buildBuildPlanPrompt(
+                  context,
+                  'Complete your fitness profile to get your personalised plan.',
+                )
+              else if (_memberPlanError != null)
                 _buildEditorialState(
                   title: 'Your plan needs a fresh pull.',
                   message:
-                      'We hit a snag while loading your meals and workouts. Try one more refresh and we will bring everything back into place.',
+                      'We hit a snag while loading your meals and workouts (${_memberPlanError!}). Try one more refresh and we will bring everything back into place.',
                   buttonLabel: 'Refresh Plan',
                   onPressed: _refreshPlan,
                 )
-              else if (_planLoading)
+              else if (_memberPlanLoading)
                 _buildEditorialLoadingState()
-              else if (!hasMeals || !hasWorkout)
-                _buildEditorialState(
-                  title: 'Your plan is still getting set up.',
-                  message:
-                      'Finish your profile details and we will shape a clear training and meal rhythm around your goals.',
-                  buttonLabel: 'Generate Plan',
-                  onPressed: _refreshPlan,
+              else if (plan == null || (!hasMeals && !hasWorkout && !isRestDay))
+                _buildBuildPlanPrompt(
+                  context,
+                  'Your personalised plan is waiting.',
                 )
+              else if (_planLogLoading)
+                _buildEditorialLoadingState()
               else ...[
+                if (_planLogError != null) ...[
+                  _buildPlanLogRetryBanner(colorScheme),
+                  const SizedBox(height: 18),
+                ],
                 EditorialSurface(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1464,15 +1056,25 @@ class _PlanPageState extends State<PlanPage> {
                           ),
                         ],
                       ),
-                      if ((plan['usedFallback'] == true ||
-                          plan['fallback'] == true)) ...[
-                        const SizedBox(height: 14),
-                        _fallbackBanner(colorScheme),
-                      ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 18),
+                if (isRestDay)
+                  EditorialSurface(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const EditorialSectionHeading(
+                          eyebrow: 'Coming Up Next',
+                          title: 'Rest day.',
+                          subtitle:
+                              'No workout is scheduled today - recover and get ready for tomorrow.',
+                        ),
+                      ],
+                    ),
+                  )
+                else
                 EditorialSurface(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1613,25 +1215,32 @@ class _PlanPageState extends State<PlanPage> {
                         subtitle: 'Key meal info stays easy to scan.',
                       ),
                       const SizedBox(height: 18),
-                      ..._orderedMealKeysFromRaw(
-                        Map<String, dynamic>.from(meals),
-                      ).map(
-                        (mealType) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _buildMealPreviewCard(
-                            mealType,
-                            meals[mealType],
+                      if (meals.isEmpty)
+                        Text(
+                          'No meal plan is set up for today yet.',
+                          style: theme.textTheme.bodyMedium,
+                        )
+                      else ...[
+                        ..._orderedMealKeysFromRaw(
+                          Map<String, dynamic>.from(meals),
+                        ).map(
+                          (mealType) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildMealPreviewCard(
+                              mealType,
+                              meals[mealType],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: EditorialPrimaryButton(
-                          label: 'Open Full Meal Plan',
-                          onPressed: _goToMealDetail,
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: EditorialPrimaryButton(
+                            label: 'Open Full Meal Plan',
+                            onPressed: _goToMealDetail,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -1741,279 +1350,143 @@ class _PlanPageState extends State<PlanPage> {
     );
   }
 
-  Widget _buildPersonalisedPlanSection() {
-    if (_memberPlanLoading) {
-      return SkeletonLoader.list();
-    }
-    if (_memberPlanError != null) {
-      if (_memberPlanError == '__onboarding_needed__') {
-        return _buildBuildPlanPrompt(
-          context,
-          'Complete your fitness profile to get your personalised plan.',
-        );
-      }
-      return ErrorStateView(
-        title: 'Could not load your plan.',
-        message: _memberPlanError,
-        onRetry: _loadPersonalisedPlan,
-      );
-    }
-    if (_memberProfile == null) {
-      return _buildBuildPlanPrompt(context, 'Your personalised plan is waiting.');
-    }
+  // Single derived "today" view built from the new engine
+  // (_memberWorkoutPlan/_memberMealPlan) - the source of truth for
+  // everything this page renders. Shaped to match what the "Coming Up
+  // Next"/"Meals Today" cards and the two logging bottom sheets already
+  // expect, so their UI logic didn't need to change, only what feeds it.
+  Map<String, dynamic>? get _todayPlan {
+    if (_memberWorkoutPlan == null && _memberMealPlan == null) return null;
 
-    final theme = Theme.of(context);
-    final onSurface = theme.colorScheme.onSurface;
-    final onSurfaceMuted = theme.colorScheme.onSurfaceVariant;
-    final widgets = <Widget>[];
+    const dayNames = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    final now = DateTime.now();
+    final dayIndex = now.weekday - 1; // 0=Mon...6=Sun
+    final dayNum = now.weekday; // 1=Mon...7=Sun
+    final dayName = dayNames[dayIndex];
 
-    // Today's Workout card
+    Map<String, dynamic> workout = {};
+    bool isRestDay = false;
     if (_memberWorkoutPlan != null) {
-      final dayIndex = DateTime.now().weekday - 1; // 0=Mon...6=Sun
       final daysPerWeek =
           (_memberWorkoutPlan!['daysPerWeek'] as num?)?.toInt() ?? 3;
-      final schedules = _memberWorkoutPlan!['schedules'] as Map<String, dynamic>?;
+      final schedules =
+          _memberWorkoutPlan!['schedules'] as Map<String, dynamic>?;
       final schedule =
           (schedules?[daysPerWeek.toString()] as List<dynamic>?) ??
           (schedules?.values.firstOrNull as List<dynamic>?);
       final todayWorkoutId =
-          schedule != null ? schedule[dayIndex % 7].toString() : 'rest';
-      final workouts = (_memberWorkoutPlan!['workouts'] as List<dynamic>?) ?? [];
-      final dynamic todayWorkout = todayWorkoutId == 'rest'
+          (schedule != null && schedule.length == 7)
+          ? schedule[dayIndex].toString()
+          : 'rest';
+      final workouts =
+          (_memberWorkoutPlan!['workouts'] as List<dynamic>?) ?? [];
+      final dynamic matched = todayWorkoutId == 'rest'
           ? null
           : workouts.firstWhere(
-              (w) => w['id'] == todayWorkoutId,
+              (w) => w is Map && w['id'] == todayWorkoutId,
               orElse: () => null,
             );
-
-      final dayName = [
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-        'Sunday',
-      ][dayIndex];
-
-      final weeklyProgression = (_memberWorkoutPlan!['weeklyProgression']
-          as List<dynamic>?) ?? [];
-      final weekNote = weeklyProgression.isNotEmpty
-          ? (weeklyProgression.first['note']?.toString() ?? '')
-          : '';
-
-      widgets.add(
-        _planCard(
-          context,
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    "Today's Workout",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: onSurface,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    dayName,
-                    style: TextStyle(fontSize: 13, color: onSurfaceMuted),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (todayWorkout == null)
-                Text(
-                  'Rest day — recover and prepare for tomorrow.',
-                  style: TextStyle(fontSize: 14, color: onSurfaceMuted),
-                )
-              else ...[
-                Text(
-                  todayWorkout['name']?.toString() ?? 'Workout',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: onSurface,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...((todayWorkout['exercises'] as List<dynamic>?) ?? []).map((
-                  ex,
-                ) {
-                  final name = ex['name']?.toString() ?? 'Exercise';
-                  final sets = ex['sets']?.toString() ?? '3';
-                  final reps = ex['reps']?.toString() ?? '12';
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      children: [
-                        Icon(Icons.circle, size: 6, color: onSurfaceMuted),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            name,
-                            style: TextStyle(fontSize: 13, color: onSurface),
-                          ),
-                        ),
-                        Text(
-                          '${sets}×$reps',
-                          style: TextStyle(fontSize: 13, color: onSurfaceMuted),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-              if (weekNote.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    weekNote,
-                    style: TextStyle(fontSize: 12, color: onSurfaceMuted),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-      widgets.add(const SizedBox(height: 14));
+      if (matched == null) {
+        isRestDay = true;
+      } else {
+        final m = Map<String, dynamic>.from(matched as Map);
+        workout = {
+          'name': m['name'],
+          'target': m['name'],
+          'exercises': (m['exercises'] as List<dynamic>?) ?? [],
+          'duration': 0,
+          'calories': 0,
+        };
+      }
     }
 
-    // Today's Meals card
+    final meals = <String, dynamic>{};
     if (_memberMealPlan != null) {
-      final dailyCalories = _memberMealPlan!['dailyCalories'];
-      final macros = _memberMealPlan!['macros'] as Map<String, dynamic>?;
-      final proteinG = macros?['proteinG']?.toString() ?? '';
-      final carbsG = macros?['carbsG']?.toString() ?? '';
-      final fatG = macros?['fatG']?.toString() ?? '';
-      final macroLine = [
-        if (proteinG.isNotEmpty) '${proteinG}g protein',
-        if (carbsG.isNotEmpty) '${carbsG}g carbs',
-        if (fatG.isNotEmpty) '${fatG}g fat',
-      ].join(' · ');
-
-      final dayNum = DateTime.now().weekday; // 1=Mon...7=Sun
       final days = (_memberMealPlan!['days'] as List<dynamic>?) ?? [];
-      dynamic todayMeals = days.firstWhere(
-        (d) => d['dayNumber'] == dayNum,
-        orElse: () => days.isNotEmpty ? days.first : null,
-      );
-
-      widgets.add(
-        _planCard(
-          context,
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Today's Meals",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: onSurface,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${dailyCalories != null ? "$dailyCalories kcal" : ""}${macroLine.isNotEmpty ? " · $macroLine" : ""}',
-                style: TextStyle(fontSize: 12, color: onSurfaceMuted),
-              ),
-              const SizedBox(height: 14),
-              if (todayMeals != null)
-                ...((todayMeals['meals'] as List<dynamic>?) ?? []).map((meal) {
-                  final mealType = meal['type']?.toString() ?? 'Meal';
-                  final items = (meal['items'] as List<dynamic>?) ?? [];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ExpansionTile(
-                      tilePadding: EdgeInsets.zero,
-                      childrenPadding: const EdgeInsets.only(bottom: 8),
-                      title: Text(
-                        _formatMealType(mealType),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: onSurface,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${items.length} item${items.length == 1 ? "" : "s"}',
-                        style: TextStyle(fontSize: 12, color: onSurfaceMuted),
-                      ),
-                      children: items.map((item) {
-                        final name = item['name']?.toString() ?? '';
-                        final portion = item['portion']?.toString() ?? '';
-                        final kcal = item['caloriesKcal']?.toString() ?? '';
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: TextStyle(fontSize: 13, color: onSurface),
-                                    ),
-                                    if (portion.isNotEmpty)
-                                      Text(
-                                        portion,
-                                        style: TextStyle(fontSize: 12, color: onSurfaceMuted),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              if (kcal.isNotEmpty)
-                                Text(
-                                  '$kcal kcal',
-                                  style: TextStyle(fontSize: 12, color: onSurfaceMuted),
-                                ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  );
-                })
-              else
-                Text(
-                  'No meal data for today.',
-                  style: TextStyle(fontSize: 13, color: onSurfaceMuted),
-                ),
-            ],
-          ),
-        ),
-      );
+      final dynamic todayMealsRaw = days.isEmpty
+          ? null
+          : days.firstWhere(
+              (d) => d is Map && d['dayNumber'] == dayNum,
+              orElse: () => days.first,
+            );
+      if (todayMealsRaw is Map) {
+        final mealsList = (todayMealsRaw['meals'] as List<dynamic>?) ?? [];
+        for (final rawMeal in mealsList) {
+          if (rawMeal is! Map) continue;
+          final type = (rawMeal['type'] ?? 'meal').toString();
+          final items = (rawMeal['items'] as List<dynamic>?) ?? [];
+          meals[type] = {
+            'items': items.map((rawItem) {
+              if (rawItem is! Map) return <String, dynamic>{};
+              return {
+                'name': rawItem['name'],
+                'quantity': rawItem['portion'],
+                'calories': rawItem['caloriesKcal'],
+                'macros': {
+                  'protein': rawItem['proteinG'],
+                  'carbs': rawItem['carbsG'],
+                  'fats': rawItem['fatG'],
+                },
+              };
+            }).toList(),
+          };
+        }
+      }
     }
 
-    if (widgets.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: widgets,
-    );
+    final macros = _memberMealPlan?['macros'] as Map<String, dynamic>?;
+
+    return {
+      'day': dayName,
+      'workout': workout,
+      'isRestDay': isRestDay,
+      'meals': meals,
+      'dailyTargets': {
+        'calories': _asDouble(_memberMealPlan?['dailyCalories']),
+        'protein': _asDouble(macros?['proteinG']),
+        'carbs': _asDouble(macros?['carbsG']),
+        'fat': _asDouble(macros?['fatG']),
+      },
+      'goal': _memberProfile?['goal'] ?? _memberWorkoutPlan?['goal'] ?? '',
+    };
   }
 
-  String _formatMealType(String raw) {
-    return raw
-        .split('_')
-        .map(
-          (part) =>
-              part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1),
-        )
-        .join(' ');
+  Widget _buildPlanLogRetryBanner(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.sync_problem_rounded, color: colorScheme.error),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Couldn't sync today's progress ($_planLogError).",
+              style: TextStyle(color: colorScheme.onErrorContainer),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() => _planLogLoaded = false);
+              _hydratePlanLogForCurrentPlan();
+            },
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEditorialLoadingState() {
@@ -2254,7 +1727,7 @@ class _PlanPageState extends State<PlanPage> {
     Map<String, dynamic> item,
   ) {
     final theme = Theme.of(context);
-    final key = '${_plan?['day']}-meal-$mealType-$index';
+    final key = 'meal-$mealType-$index';
     final logged = _checkboxState[key] ?? false;
     final quantity = _mealItemQuantities[mealType]?[index] ?? 1.0;
     final macros = _mealMacroSummary(item);
@@ -2358,7 +1831,7 @@ class _PlanPageState extends State<PlanPage> {
     int index,
   ) {
     final theme = Theme.of(context);
-    final exerciseKey = '${plan['day']}-workout-ex-$index';
+    final exerciseKey = 'workout-ex-$index';
     final logged = _exerciseCompleted[exerciseKey] ?? false;
     final muscle =
         exercise['muscleGroup']?.toString() ??
@@ -2522,17 +1995,16 @@ class _PlanPageState extends State<PlanPage> {
   }
 
   void _toggleMealLogged(String mealType, int index, bool logged) {
-    if (_plan == null) return;
-    final key = '${_plan!['day']}-meal-$mealType-$index';
+    if (_todayPlan == null) return;
+    final key = 'meal-$mealType-$index';
     setState(() {
       _checkboxState[key] = logged;
     });
-    _recalculateTotalCaloriesLogged(_plan!);
-    _saveCheckboxState();
+    _persistCompletionChange();
   }
 
   void _updateMealQuantity(String mealType, int index, double quantity) {
-    if (_plan == null) return;
+    if (_todayPlan == null) return;
     final sanitized = quantity <= 0 ? 0.5 : quantity;
     setState(() {
       _mealItemQuantities[mealType] = Map<int, double>.from(
@@ -2540,19 +2012,19 @@ class _PlanPageState extends State<PlanPage> {
       );
       _mealItemQuantities[mealType]![index] = sanitized;
     });
-    _recalculateTotalCaloriesLogged(_plan!);
-    _saveCheckboxState();
+    _persistCompletionChange();
   }
 
   void _toggleExerciseLogged(String exerciseKey, bool logged) {
     setState(() {
       _exerciseCompleted[exerciseKey] = logged;
     });
-    _saveCheckboxState();
+    _persistCompletionChange();
   }
 
   void _goToMealDetail() async {
-    if (_plan == null || _planLoading) {
+    final plan = _todayPlan;
+    if (plan == null || _memberPlanLoading) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Plan is still loading. Please wait.')),
       );
@@ -2565,10 +2037,10 @@ class _PlanPageState extends State<PlanPage> {
       builder: (sheetContext) => FractionallySizedBox(
         heightFactor: 0.94,
         child: _MealLoggingSheet(
-          plan: _plan!,
+          plan: plan,
           checkboxState: _checkboxState,
           mealItemQuantities: _mealItemQuantities,
-          dailyTargets: _dailyTargetsForPlan(_plan!),
+          dailyTargets: _dailyTargetsForPlan(plan),
           onToggleItem: _toggleMealLogged,
           onQuantityChanged: _updateMealQuantity,
           calculateDailyTotals: _calculateDailyTotals,
@@ -2578,28 +2050,21 @@ class _PlanPageState extends State<PlanPage> {
   }
 
   void _goToWorkoutDetail() async {
-    if (_plan == null || _planLoading) {
+    final plan = _todayPlan;
+    if (plan == null || _memberPlanLoading) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Plan is still loading. Please wait.')),
       );
       return;
     }
-    final plan = _plan;
-    final workoutRaw = plan?['workout'];
-    logPlanPage(
-      '[PlanPage] plan["workout"] type: \\${workoutRaw.runtimeType}, value: \\$workoutRaw',
-    );
+    final workoutRaw = plan['workout'];
     final workout = workoutRaw is Map
         ? workoutRaw as Map<String, dynamic>
         : <String, dynamic>{};
-    final exercisesRaw = workout['exercises'];
-    logPlanPage(
-      '[PlanPage] workout["exercises"] type: \\${exercisesRaw.runtimeType}, value: \\$exercisesRaw',
-    );
     final exercises = _workoutPreviewItems(workout);
     final exerciseKeys = List.generate(
       exercises.length,
-      (i) => '${plan?['day']}-workout-ex-$i',
+      (i) => 'workout-ex-$i',
     );
     await showModalBottomSheet<void>(
       context: context,
@@ -2608,39 +2073,12 @@ class _PlanPageState extends State<PlanPage> {
       builder: (sheetContext) => FractionallySizedBox(
         heightFactor: 0.94,
         child: _WorkoutLoggingSheet(
-          plan: plan!,
+          plan: plan,
           exerciseKeys: exerciseKeys,
           exerciseCompleted: _exerciseCompleted,
           onToggleExercise: _toggleExerciseLogged,
           calculateWorkoutSummary: _calculateWorkoutSummary,
         ),
-      ),
-    );
-  }
-
-  Widget _fallbackBanner(ColorScheme colorScheme) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.primary.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.primary, width: 1.5),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.warning, color: colorScheme.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'No exact plan found for your onboarding. Showing the closest match.',
-              style: TextStyle(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -2699,7 +2137,6 @@ class _PlanPageState extends State<PlanPage> {
     final dietPreferences = (data['dietPreferences'] is Map)
         ? Map<String, dynamic>.from(data['dietPreferences'])
         : <String, dynamic>{};
-    final theme = Theme.of(context);
     return EditorialSurface(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3417,8 +2854,7 @@ class _MealLoggingSheetState extends State<_MealLoggingSheet> {
                     const SizedBox(height: 14),
                     ...List.generate(items.length, (index) {
                       final item = _planMealItemAsMap(items[index]);
-                      final itemKey =
-                          '${widget.plan['day']}-meal-$mealType-$index';
+                      final itemKey = 'meal-$mealType-$index';
                       final logged = widget.checkboxState[itemKey] ?? false;
                       final quantity =
                           widget.mealItemQuantities[mealType]?[index] ?? 1.0;
