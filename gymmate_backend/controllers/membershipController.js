@@ -58,6 +58,12 @@ function asBool(value, fallback = false) {
 
 function sanitizeTemplatePayload(payload = {}, { partial = false } = {}) {
   const next = { ...payload };
+  // Never let a client-supplied id/_id reach `new MembershipTemplate({...})`
+  // - Mongoose's `id` virtual maps straight onto _id, so a stray non-ObjectId
+  // string here (e.g. a frontend preset's decorative id like "monthly")
+  // throws a CastError instead of creating a normal document.
+  delete next.id;
+  delete next._id;
 
   if (!partial || next.name !== undefined) {
     next.name = String(next.name || '').trim();

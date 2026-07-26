@@ -22,6 +22,66 @@ function calcTargetKcal(tdee, goal, sex) {
   return Math.max(target, sex === 'female' ? 1300 : 1500);
 }
 
+// Maps the ORIGINAL app-entry onboarding data (User.profile / fitnessGoals /
+// workoutHabits / dietPreferences - collected once at signup via
+// OnboardingFlow) onto the newer MemberProfile shape this plan-generation
+// system needs. Without this, a member who already completed onboarding
+// gets asked the same handful of questions again on the Plan tab, because
+// the two features were built independently against separate collections.
+// Returns null if the source data is too sparse to derive a valid profile -
+// the caller should fall back to asking the member directly in that case.
+function deriveMemberProfileFromUser(user) {
+  const p = user.profile || {};
+  const wh = user.workoutHabits || {};
+  const dp = user.dietPreferences || {};
+  const goals = user.fitnessGoals || [];
+
+  const sex = p.gender === 'male' || p.gender === 'female' ? p.gender : null;
+  const age = Number(p.age);
+  const weightKg = Number(p.weight);
+  const heightCm = Number(p.height);
+  if (!sex || !age || !weightKg || !heightCm) return null;
+
+  const goalMap = {
+    fat_loss: 'lose_fat',
+    muscle_gain: 'build_muscle',
+    muscle: 'build_muscle',
+    strength: 'build_muscle',
+    weight_maintenance: 'maintain',
+    general_fitness: 'get_fit',
+    endurance: 'get_fit',
+    flexibility: 'get_fit',
+    performance: 'get_fit',
+  };
+  const goal = goalMap[goals[0]] || 'get_fit';
+
+  const levelMap = {
+    sedentary: 'beginner',
+    lightly_active: 'beginner',
+    moderately_active: 'intermediate',
+    very_active: 'advanced',
+    extremely_active: 'advanced',
+  };
+  const fitnessLevel = levelMap[wh.currentActivityLevel] || 'beginner';
+
+  const rawDays = Number(wh.workoutsPerWeek) || 3;
+  const daysPerWeek = [3, 4, 5, 6].reduce(
+    (closest, v) => (Math.abs(v - rawDays) < Math.abs(closest - rawDays) ? v : closest),
+    3,
+  );
+
+  const dietMap = {
+    vegetarian: 'vegetarian',
+    vegan: 'vegan',
+    keto: 'keto',
+    non_vegetarian: 'high_protein',
+    paleo: 'high_protein',
+  };
+  const dietPref = dietMap[dp.type] || 'none';
+
+  return { sex, age, weightKg, heightCm, goal, fitnessLevel, daysPerWeek, dietPref };
+}
+
 function closestBracket(target) {
   const brackets = [1400, 1600, 1800, 2000, 2200, 2400, 2600, 2800];
   return brackets.reduce((p, c) => Math.abs(c - target) < Math.abs(p - target) ? c : p);
@@ -67,6 +127,97 @@ function scaleMealPlan(template, scale) {
   });
 }
 
+// Shared by saveProfile (explicit form submit) and getProfile's
+// auto-derivation path (member who already onboarded elsewhere) - both need
+// to end up with the same MemberProfile + MemberWorkoutPlan + MemberMealPlan
+// documents, not just the profile.
+async function upsertProfileAndGeneratePlans(userId, gymId, data) {
+  const { sex, age, weightKg, heightCm, goal, fitnessLevel, daysPerWeek, dietPref, limitations } = data;
+
+  const tdeeKcal = calcTDEE({ sex, age, weightKg, heightCm, daysPerWeek });
+  const targetKcal = calcTargetKcal(tdeeKcal, goal, sex);
+
+  const profile = await MemberProfile.findOneAndUpdate(
+    { userId },
+    {
+      userId,
+      gymId,
+      sex,
+      age,
+      weightKg,
+      heightCm,
+      goal,
+      fitnessLevel,
+      daysPerWeek,
+      dietPref: dietPref || 'none',
+      limitations: limitations || '',
+      tdeeKcal,
+      targetKcal,
+      onboardedAt: new Date(),
+    },
+    { upsert: true, new: true },
+  );
+
+  let workoutTemplate = await WorkoutPlanTemplate.findOne({ goal, fitnessLevel });
+  if (!workoutTemplate) workoutTemplate = await WorkoutPlanTemplate.findOne({ goal, fitnessLevel: 'beginner' });
+  if (!workoutTemplate) workoutTemplate = await WorkoutPlanTemplate.findOne({ goal: 'get_fit', fitnessLevel: 'beginner' });
+
+  const dp = dietPref || 'none';
+  let mealTemplate = await MealPlanTemplate.findOne({ goal, dietPref: dp });
+  if (!mealTemplate) mealTemplate = await MealPlanTemplate.findOne({ goal, dietPref: 'none' });
+  if (!mealTemplate) mealTemplate = await MealPlanTemplate.findOne({ goal: 'maintain', dietPref: 'none' });
+
+  const calorieBracket = closestBracket(targetKcal);
+  const portionScale = targetKcal / (mealTemplate?.baseCalories || 2000);
+  const macros = calcMacros(goal, targetKcal);
+
+  if (workoutTemplate) {
+    const wt = workoutTemplate.toObject();
+    await MemberWorkoutPlan.findOneAndUpdate(
+      { userId },
+      {
+        userId,
+        gymId,
+        templateId: workoutTemplate._id,
+        isModified: false,
+        assignedAt: new Date(),
+        goal,
+        fitnessLevel,
+        daysPerWeek,
+        workouts: wt.workouts,
+        schedules: wt.schedules,
+        weeklyProgression: wt.weeklyProgression,
+      },
+      { upsert: true, new: true },
+    );
+  }
+
+  let memberMealPlan = null;
+  if (mealTemplate) {
+    const scaledDays = scaleMealPlan(mealTemplate, portionScale);
+    memberMealPlan = await MemberMealPlan.findOneAndUpdate(
+      { userId },
+      {
+        userId,
+        gymId,
+        templateId: mealTemplate._id,
+        isModified: false,
+        assignedAt: new Date(),
+        goal,
+        dietPref: dp,
+        calorieBracket,
+        portionScale: Math.round(portionScale * 1000) / 1000,
+        dailyCalories: Math.round(targetKcal),
+        macros,
+        days: scaledDays,
+      },
+      { upsert: true, new: true },
+    );
+  }
+
+  return { profile, workoutTemplate, memberMealPlan, targetKcal, macros, daysPerWeek };
+}
+
 // POST /api/member/me/profile
 exports.saveProfile = async (req, res) => {
   try {
@@ -78,20 +229,8 @@ exports.saveProfile = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const tdeeKcal = calcTDEE({
-      sex,
-      age: Number(age),
-      weightKg: Number(weightKg),
-      heightCm: Number(heightCm),
-      daysPerWeek: Number(daysPerWeek),
-    });
-    const targetKcal = calcTargetKcal(tdeeKcal, goal, sex);
-
-    const profile = await MemberProfile.findOneAndUpdate(
-      { userId },
-      {
-        userId,
-        gymId,
+    const { profile, workoutTemplate, memberMealPlan, targetKcal, macros } =
+      await upsertProfileAndGeneratePlans(userId, gymId, {
         sex,
         age: Number(age),
         weightKg: Number(weightKg),
@@ -99,80 +238,13 @@ exports.saveProfile = async (req, res) => {
         goal,
         fitnessLevel,
         daysPerWeek: Number(daysPerWeek),
-        dietPref: dietPref || 'none',
-        limitations: limitations || '',
-        tdeeKcal,
-        targetKcal,
-        onboardedAt: new Date(),
-      },
-      { upsert: true, new: true }
-    );
-
-    // Find workout template
-    let workoutTemplate = await WorkoutPlanTemplate.findOne({ goal, fitnessLevel });
-    if (!workoutTemplate) workoutTemplate = await WorkoutPlanTemplate.findOne({ goal, fitnessLevel: 'beginner' });
-    if (!workoutTemplate) workoutTemplate = await WorkoutPlanTemplate.findOne({ goal: 'get_fit', fitnessLevel: 'beginner' });
-
-    // Find meal template
-    const dp = dietPref || 'none';
-    let mealTemplate = await MealPlanTemplate.findOne({ goal, dietPref: dp });
-    if (!mealTemplate) mealTemplate = await MealPlanTemplate.findOne({ goal, dietPref: 'none' });
-    if (!mealTemplate) mealTemplate = await MealPlanTemplate.findOne({ goal: 'maintain', dietPref: 'none' });
-
-    const calorieBracket = closestBracket(targetKcal);
-    const portionScale = targetKcal / (mealTemplate?.baseCalories || 2000);
-    const macros = calcMacros(goal, targetKcal);
-
-    // Clone and upsert workout plan
-    let memberWorkoutPlan = null;
-    if (workoutTemplate) {
-      const wt = workoutTemplate.toObject();
-      memberWorkoutPlan = await MemberWorkoutPlan.findOneAndUpdate(
-        { userId },
-        {
-          userId,
-          gymId,
-          templateId: workoutTemplate._id,
-          isModified: false,
-          assignedAt: new Date(),
-          goal,
-          fitnessLevel,
-          daysPerWeek: Number(daysPerWeek),
-          workouts: wt.workouts,
-          schedules: wt.schedules,
-          weeklyProgression: wt.weeklyProgression,
-        },
-        { upsert: true, new: true }
-      );
-    }
-
-    // Clone, scale, and upsert meal plan
-    let memberMealPlan = null;
-    if (mealTemplate) {
-      const scaledDays = scaleMealPlan(mealTemplate, portionScale);
-      memberMealPlan = await MemberMealPlan.findOneAndUpdate(
-        { userId },
-        {
-          userId,
-          gymId,
-          templateId: mealTemplate._id,
-          isModified: false,
-          assignedAt: new Date(),
-          goal,
-          dietPref: dp,
-          calorieBracket,
-          portionScale: Math.round(portionScale * 1000) / 1000,
-          dailyCalories: Math.round(targetKcal),
-          macros,
-          days: scaledDays,
-        },
-        { upsert: true, new: true }
-      );
-    }
+        dietPref,
+        limitations,
+      });
 
     res.json({
       profile,
-      workoutPlan: workoutTemplate ? { name: workoutTemplate.name, daysPerWeek } : null,
+      workoutPlan: workoutTemplate ? { name: workoutTemplate.name, daysPerWeek: Number(daysPerWeek) } : null,
       mealPlan: memberMealPlan ? { dailyCalories: Math.round(targetKcal), macros } : null,
     });
   } catch (err) {
@@ -185,7 +257,20 @@ exports.saveProfile = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     const userId = req.user._id || req.user.id;
-    const profile = await MemberProfile.findOne({ userId });
+    let profile = await MemberProfile.findOne({ userId });
+
+    if (!profile) {
+      // No dedicated MemberProfile yet - before asking the member to
+      // re-enter data they already gave during their original onboarding,
+      // try to derive one from it so "Build my plan" can skip straight to
+      // plan generation instead of showing a redundant mini-onboarding form.
+      const user = await User.findById(userId);
+      const derived = user ? deriveMemberProfileFromUser(user) : null;
+      if (derived) {
+        ({ profile } = await upsertProfileAndGeneratePlans(userId, user.gymId, derived));
+      }
+    }
+
     if (!profile) return res.status(404).json({ message: 'Profile not found' });
     res.json({ profile });
   } catch (err) {

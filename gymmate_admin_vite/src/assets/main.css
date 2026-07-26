@@ -537,23 +537,40 @@ a {
   margin-top: 20px;
 }
 
-.workspace-json {
+.workspace-detail-fields {
   max-height: 360px;
   margin: 0;
   overflow: auto;
   padding: 14px;
   border-radius: 8px;
   background: rgba(32, 26, 21, 0.06);
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr;
+  column-gap: 16px;
+  row-gap: 10px;
+}
+
+.workspace-detail-fields dt {
+  color: var(--gm-text-muted, rgba(32, 26, 21, 0.6));
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  align-self: start;
+}
+
+.workspace-detail-fields dd {
+  margin: 0;
   color: var(--gm-text);
-  font-size: 0.78rem;
-  line-height: 1.55;
+  font-size: 0.85rem;
+  word-break: break-word;
 }
 
 .v-theme--dark .workspace-panel {
   box-shadow: 0 18px 46px rgba(0, 0, 0, 0.22);
 }
 
-.v-theme--dark .workspace-json {
+.v-theme--dark .workspace-detail-fields {
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -2035,6 +2052,15 @@ a {
 
 .admin-shell__profile-copy {
   min-width: 0;
+}
+
+.admin-shell__build-version {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--gm-text-muted, rgba(255, 255, 255, 0.4));
+  opacity: 0.6;
 }
 
 .admin-shell__logout-icon {

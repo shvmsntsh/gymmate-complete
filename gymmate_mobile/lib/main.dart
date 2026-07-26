@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:gymmate_mobile/api/api_client.dart';
+import 'package:gymmate_mobile/api/build_info.dart';
 import 'package:provider/provider.dart';
 import 'package:gymmate_mobile/providers/auth_provider.dart';
 import 'package:gymmate_mobile/providers/onboarding_provider.dart';
@@ -550,14 +551,33 @@ class MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         titleSpacing: 0,
         title: _buildRoleLogoAndSignature(userRole, context),
       ),
-      body: pages[safeIndex],
+      // IndexedStack (not pages[safeIndex]) keeps every tab's widget mounted
+      // and just toggles visibility, so switching tabs no longer destroys
+      // and recreates each page's State - that was why the Plan tab (and
+      // every other tab) refetched all its data from scratch on every visit.
+      body: IndexedStack(index: safeIndex, children: pages),
       bottomNavigationBar: SafeArea(
         top: false,
         minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-        child: _ModernBottomNavigationBar(
-          destinations: destinations,
-          currentIndex: safeIndex,
-          onTap: setTab,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ModernBottomNavigationBar(
+              destinations: destinations,
+              currentIndex: safeIndex,
+              onTap: setTab,
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                BuildInfo.versionLabel,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

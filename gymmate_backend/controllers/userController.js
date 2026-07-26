@@ -163,6 +163,21 @@ async function buildTrainerAttendanceSeries(user) {
  * This function handles the core logic for user creation based on invitation codes.
  */
 exports.register = async (req, res) => {
+  try {
+    await doRegister(req, res);
+  } catch (err) {
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyValue || {})[0] || 'a field';
+      return res.status(409).json({
+        message: `That ${field.replace('_', ' ')} is already in use by another account.`,
+      });
+    }
+    console.error('❌ Registration failed:', err);
+    return res.status(500).json({ message: 'Registration failed. Please try again.' });
+  }
+};
+
+async function doRegister(req, res) {
   let { name, email, password, inviteCode, phone_number } = req.body;
   if (!name || !email || !password || !inviteCode) {
     return res.status(400).json({ message: 'Name, email, password, and invite code are required.' });
@@ -319,7 +334,7 @@ exports.register = async (req, res) => {
     token,
     user: buildUserPayload(user, gymName),
   });
-};
+}
 
 /**
  * Log in an existing user

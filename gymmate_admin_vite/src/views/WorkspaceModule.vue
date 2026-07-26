@@ -115,7 +115,7 @@
             <template v-else-if="moduleKey === 'classes'">
               <v-select v-model="form.classAction" :items="classActions" item-title="label" item-value="value" label="Create" density="comfortable" variant="outlined" hide-details="auto" />
               <template v-if="form.classAction === 'template'">
-                <v-text-field v-model="form.name" label="Class/PT name" density="comfortable" variant="outlined" hide-details="auto" />
+                <v-text-field v-model="form.name" label="Class/PT name *" density="comfortable" variant="outlined" hide-details="auto" :rules="[(v) => !!v?.trim() || 'Required']" />
                 <v-select v-model="form.type" :items="classTypes" label="Type" density="comfortable" variant="outlined" hide-details="auto" />
                 <v-select v-model="form.trainerId" :items="trainerOptions" item-title="label" item-value="value" label="Trainer" density="comfortable" variant="outlined" hide-details="auto" />
                 <v-text-field v-model="form.defaultCapacity" label="Capacity" type="number" density="comfortable" variant="outlined" hide-details="auto" />
@@ -275,7 +275,12 @@
             </v-btn>
             <v-btn icon="mdi-close" variant="text" @click="selectedRow = null" />
           </div>
-        <pre class="workspace-json">{{ JSON.stringify(selectedRow, null, 2) }}</pre>
+        <dl class="workspace-detail-fields">
+          <template v-for="field in selectedRowFields" :key="field.key">
+            <dt>{{ field.label }}</dt>
+            <dd>{{ field.value }}</dd>
+          </template>
+        </dl>
       </section>
     </template>
   </AdminShell>
@@ -550,6 +555,19 @@ const presetOptions = computed(() =>
   })),
 );
 const selectedTitle = computed(() => selectedRow.value?.name || selectedRow.value?.member?.name || selectedRow.value?.template?.name || "Record detail");
+// Reuses the same per-module `columns` config the table already renders
+// with, so the detail panel shows the same human-readable fields instead of
+// dumping the raw record object as JSON.
+const selectedRowFields = computed(() => {
+  if (!selectedRow.value) return [];
+  return config.value.columns
+    .map((column) => ({
+      key: column.key,
+      label: column.label,
+      value: displayCell(selectedRow.value, column),
+    }))
+    .filter((field) => field.value !== "N/A");
+});
 const editableStaffRows = computed(() =>
   (data.value.staff || []).filter((user) => {
     const role = String(user.role || "").toLowerCase();
@@ -559,6 +577,9 @@ const editableStaffRows = computed(() =>
 const canSubmitCurrentForm = computed(() => {
   if (!config.value.canSubmit) return false;
   if (moduleKey.value === "staff") return Boolean(form.userId) && editableStaffRows.value.length > 0;
+  if (moduleKey.value === "classes" && form.classAction === "template") {
+    return Boolean(form.name?.trim());
+  }
   return true;
 });
 const canAddStaff = computed(() =>

@@ -260,6 +260,14 @@ function toNumber(value, label, { min = 0, max = Number.MAX_SAFE_INTEGER } = {})
 
 function normalizeForm(input) {
   const next = clonePlain(input);
+  // Starter-preset objects (see STARTER_PLANS in PlansSection.vue) carry a
+  // decorative `id` like "monthly" for their own v-for :key. mergeFromSource
+  // spreads that straight into the form; if left in, it rides all the way to
+  // `new MembershipTemplate({...})` on the backend and corrupts _id (Mongoose
+  // maps an `id` assignment onto _id), throwing a CastError. The real id for
+  // an update is passed separately via the URL, never from this payload.
+  delete next.id;
+  delete next._id;
   next.name = next.name.trim();
   if (!next.name) throw new Error("Plan name is required.");
   next.durationDays = toNumber(next.durationDays, "Duration days", { min: 1, max: 730 });

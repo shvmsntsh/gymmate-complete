@@ -6,21 +6,22 @@ OUTPUT_DIR="$ROOT_DIR/deploy/vercel/output"
 ADMIN_DIST_DIR="$ROOT_DIR/gymmate_admin_vite/dist"
 MOBILE_DIST_DIR="$ROOT_DIR/gymmate_mobile/build/web"
 BACKEND_ORIGIN="${BACKEND_ORIGIN:-https://gymmate-backend.vercel.app}"
+BUILD_TIME="${BUILD_TIME:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 
-echo "Preparing combined Vercel site..."
+echo "Preparing combined Vercel site... (build $BUILD_TIME)"
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR/admin"
 
 echo "Building admin for /admin/..."
 (
   cd "$ROOT_DIR/gymmate_admin_vite"
-  VITE_PUBLIC_BASE=/admin/ VITE_API_BASE_URL= npm run build
+  VITE_PUBLIC_BASE=/admin/ VITE_API_BASE_URL= VITE_BUILD_TIME="$BUILD_TIME" npm run build
 )
 
 echo "Building mobile web app for / ..."
 (
   cd "$ROOT_DIR/gymmate_mobile"
-  flutter build web --release --dart-define=API_BASE_URL="$BACKEND_ORIGIN"
+  flutter build web --release --dart-define=API_BASE_URL="$BACKEND_ORIGIN" --dart-define=BUILD_TIME="$BUILD_TIME"
 )
 
 echo "Copying build outputs..."

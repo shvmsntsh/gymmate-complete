@@ -4,6 +4,9 @@ import vuetify from 'vite-plugin-vuetify'
 
 export default defineConfig({
   base: process.env.VITE_PUBLIC_BASE || '/',
+  define: {
+    __APP_BUILD_TIME__: JSON.stringify(process.env.VITE_BUILD_TIME || new Date().toISOString()),
+  },
   plugins: [
     vue(),
     vuetify({

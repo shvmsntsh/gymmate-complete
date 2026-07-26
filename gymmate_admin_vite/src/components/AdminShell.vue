@@ -73,6 +73,7 @@
               <v-icon icon="mdi-logout" />
             </button>
           </div>
+          <div class="admin-shell__build-version">{{ buildVersionLabel }}</div>
         </div>
       </aside>
 
@@ -133,6 +134,14 @@ const props = defineProps({
 });
 
 defineEmits(["toggle-theme", "logout"]);
+
+const buildVersionLabel = computed(() => {
+  const raw = typeof __APP_BUILD_TIME__ !== "undefined" ? __APP_BUILD_TIME__ : null;
+  if (!raw) return "dev build";
+  const d = new Date(raw);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `v${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+});
 
 const route = useRoute();
 const router = useRouter();

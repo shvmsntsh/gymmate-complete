@@ -1,0 +1,1 @@
+void openUrlInNewTabImpl(String url) {}

@@ -277,6 +277,21 @@ exports.generateInviteCode = async (req, res) => {
       ) {
         return res.status(409).json({ message: 'User with this email already exists.' });
       }
+
+      // Broad phone check across ANY role/gym, not just this invite's role - a
+      // stray User with the same unique phone_number but a different role
+      // (e.g. invited as trainer, now re-inviting as member) would otherwise
+      // sail past both checks above, reach the placeholder .save() below, and
+      // throw an unhandled Mongo E11000 duplicate-key error there instead.
+      const anyUserWithPhone = await User.findOne(phoneLookup(phone_number));
+      if (
+        anyUserWithPhone &&
+        !(anyUserWithPhone.role === normalizedRole && idsEqual(anyUserWithPhone.gymId, gymId))
+      ) {
+        return res.status(409).json({
+          message: 'This phone number is already linked to another account. Use a different number or ask them to use their existing login.',
+        });
+      }
     }
 
     const code = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -324,6 +339,12 @@ exports.generateInviteCode = async (req, res) => {
     res.status(201).json(invite); // Return the full invite object
   } catch (err) {
     console.error('Error generating invite code:', err);
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyValue || {})[0] || 'a field';
+      return res.status(409).json({
+        message: `That ${field.replace('_', ' ')} is already in use by another account.`,
+      });
+    }
     res.status(err.statusCode || 500).json({
       message: err.statusCode ? err.message : 'Internal server error',
       error: err.statusCode ? err.message : 'Internal server error',

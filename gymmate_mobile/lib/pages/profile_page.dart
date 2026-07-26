@@ -6,7 +6,6 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:provider/provider.dart';
 
 import '../main.dart';
-import '../utils/gallery_picker.dart';
 import '../providers/auth_provider.dart';
 import '../services/auth_service.dart';
 import '../services/onboarding_service.dart';
@@ -688,16 +687,22 @@ class _ProfilePageState extends State<ProfilePage> {
         ).catchError((_) => originalBytes);
         base64Data = 'data:image/jpeg;base64,${base64Encode(compressed)}';
       } else {
-        final galleryData = await pickGalleryImage();
-        if (galleryData == null) {
+        // Previously used a custom gallery_picker abstraction whose web
+        // implementation was an unconditional no-op stub (always returned
+        // null), so "Choose from Gallery" silently did nothing on web.
+        // image_picker already handles ImageSource.gallery correctly on
+        // web (via a file input), the same as it already does for camera
+        // just above - so just reuse that instead of the broken stub.
+        final picker = ImagePicker();
+        final pickedFile = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 90,
+        );
+        if (pickedFile == null) {
           setState(() => _isUploadingProfilePicture = false);
           return;
         }
-        final base64Str = galleryData.replaceFirst(
-          RegExp(r'^data:image/\w+;base64,'),
-          '',
-        );
-        final originalBytes = base64Decode(base64Str);
+        final originalBytes = await pickedFile.readAsBytes();
         final compressed = await FlutterImageCompress.compressWithList(
           originalBytes,
           minWidth: 400,

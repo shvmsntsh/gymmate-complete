@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../services/member_membership_service.dart';
 import '../utils/currency_format.dart';
 import '../utils/date_format.dart';
+import '../utils/open_url.dart';
 import '../widgets/async_states.dart';
 import '../widgets/editorial_mobile.dart';
 
@@ -297,7 +298,12 @@ class _MemberMembershipPageState extends State<MemberMembershipPage> {
     final path = receipt['publicPath']?.toString() ?? '';
     final token = receipt['publicToken']?.toString() ?? '';
     if (kIsWeb && path.isNotEmpty) {
-      return '${Uri.base.origin}$path';
+      // The receipt-rendering page (PublicReceipt.vue) is built and served
+      // under the admin app's /admin/ base, not at the member app's own
+      // root - the production Vercel rewrites send anything else at root
+      // to this (the member) app's own index.html, which has no route for
+      // it and silently shows the dashboard instead. Point at /admin explicitly.
+      return '${Uri.base.origin}/admin$path';
     }
     if (token.isNotEmpty) {
       return '${ApiConfig.baseUrl}/api/receipts/$token';
@@ -341,20 +347,27 @@ class _ReceiptPanel extends StatelessWidget {
             const SizedBox(height: 8),
             SelectableText(link, style: theme.textTheme.bodySmall),
             const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: link));
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Receipt link copied.')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.copy_rounded),
-                label: const Text('Copy receipt link'),
-              ),
+            Wrap(
+              spacing: 4,
+              children: [
+                TextButton.icon(
+                  onPressed: () => openUrlInNewTab(link),
+                  icon: const Icon(Icons.download_rounded),
+                  label: const Text('Download receipt'),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: link));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Receipt link copied.')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.copy_rounded),
+                  label: const Text('Copy link'),
+                ),
+              ],
             ),
           ],
         ],

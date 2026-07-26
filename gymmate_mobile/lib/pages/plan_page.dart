@@ -1676,64 +1676,80 @@ class _PlanPageState extends State<PlanPage> {
     );
   }
 
+  // Card chrome shared by every block in this section, matching the
+  // theme-aware surfaceContainerHigh pattern used elsewhere on this page
+  // (EditorialSurface etc.) instead of a hardcoded Colors.white, which used
+  // to render as a jarring, low-contrast bright box in dark mode.
+  Widget _planCard(BuildContext context, Widget child) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 0),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHigh,
+        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1.5),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildBuildPlanPrompt(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    return _planCard(
+      context,
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Answer 8 quick questions and get a custom workout and meal plan.',
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MemberOnboardingPage()),
+              );
+              _loadPersonalisedPlan();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Build my plan →',
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPersonalisedPlanSection() {
     if (_memberPlanLoading) {
       return SkeletonLoader.list();
     }
     if (_memberPlanError != null) {
       if (_memberPlanError == '__onboarding_needed__') {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 0),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E5EA), width: 1.5),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Complete your fitness profile to get your personalised plan.',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Answer 8 quick questions and get a custom workout and meal plan.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF6E6E73)),
-              ),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MemberOnboardingPage(),
-                    ),
-                  );
-                  _loadPersonalisedPlan();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1d1d1f),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'Build my plan →',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        return _buildBuildPlanPrompt(
+          context,
+          'Complete your fitness profile to get your personalised plan.',
         );
       }
       return ErrorStateView(
@@ -1743,61 +1759,12 @@ class _PlanPageState extends State<PlanPage> {
       );
     }
     if (_memberProfile == null) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 0),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE5E5EA), width: 1.5),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your personalised plan is waiting.',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Answer 8 quick questions and get a custom workout and meal plan.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6E6E73)),
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const MemberOnboardingPage(),
-                  ),
-                );
-                _loadPersonalisedPlan();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 20,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1d1d1f),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'Build my plan →',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildBuildPlanPrompt(context, 'Your personalised plan is waiting.');
     }
 
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final onSurfaceMuted = theme.colorScheme.onSurfaceVariant;
     final widgets = <Widget>[];
 
     // Today's Workout card
@@ -1836,50 +1803,41 @@ class _PlanPageState extends State<PlanPage> {
           : '';
 
       widgets.add(
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E5EA), width: 1.5),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
+        _planCard(
+          context,
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Text(
+                  Text(
                     "Today's Workout",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF1d1d1f),
+                      color: onSurface,
                     ),
                   ),
                   const Spacer(),
                   Text(
                     dayName,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF6E6E73),
-                    ),
+                    style: TextStyle(fontSize: 13, color: onSurfaceMuted),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               if (todayWorkout == null)
-                const Text(
+                Text(
                   'Rest day — recover and prepare for tomorrow.',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF6E6E73)),
+                  style: TextStyle(fontSize: 14, color: onSurfaceMuted),
                 )
               else ...[
                 Text(
                   todayWorkout['name']?.toString() ?? 'Workout',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1d1d1f),
+                    color: onSurface,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1893,27 +1851,17 @@ class _PlanPageState extends State<PlanPage> {
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.circle,
-                          size: 6,
-                          color: Color(0xFF6E6E73),
-                        ),
+                        Icon(Icons.circle, size: 6, color: onSurfaceMuted),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             name,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF1d1d1f),
-                            ),
+                            style: TextStyle(fontSize: 13, color: onSurface),
                           ),
                         ),
                         Text(
                           '${sets}×$reps',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF6E6E73),
-                          ),
+                          style: TextStyle(fontSize: 13, color: onSurfaceMuted),
                         ),
                       ],
                     ),
@@ -1926,15 +1874,12 @@ class _PlanPageState extends State<PlanPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F7),
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     weekNote,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6E6E73),
-                    ),
+                    style: TextStyle(fontSize: 12, color: onSurfaceMuted),
                   ),
                 ),
               ],
@@ -1966,32 +1911,23 @@ class _PlanPageState extends State<PlanPage> {
       );
 
       widgets.add(
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFE5E5EA), width: 1.5),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
+        _planCard(
+          context,
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Today's Meals",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1d1d1f),
+                  color: onSurface,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 '${dailyCalories != null ? "$dailyCalories kcal" : ""}${macroLine.isNotEmpty ? " · $macroLine" : ""}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF6E6E73),
-                ),
+                style: TextStyle(fontSize: 12, color: onSurfaceMuted),
               ),
               const SizedBox(height: 14),
               if (todayMeals != null)
@@ -2005,18 +1941,15 @@ class _PlanPageState extends State<PlanPage> {
                       childrenPadding: const EdgeInsets.only(bottom: 8),
                       title: Text(
                         _formatMealType(mealType),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1d1d1f),
+                          color: onSurface,
                         ),
                       ),
                       subtitle: Text(
                         '${items.length} item${items.length == 1 ? "" : "s"}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6E6E73),
-                        ),
+                        style: TextStyle(fontSize: 12, color: onSurfaceMuted),
                       ),
                       children: items.map((item) {
                         final name = item['name']?.toString() ?? '';
@@ -2033,18 +1966,12 @@ class _PlanPageState extends State<PlanPage> {
                                   children: [
                                     Text(
                                       name,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Color(0xFF1d1d1f),
-                                      ),
+                                      style: TextStyle(fontSize: 13, color: onSurface),
                                     ),
                                     if (portion.isNotEmpty)
                                       Text(
                                         portion,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF6E6E73),
-                                        ),
+                                        style: TextStyle(fontSize: 12, color: onSurfaceMuted),
                                       ),
                                   ],
                                 ),
@@ -2052,10 +1979,7 @@ class _PlanPageState extends State<PlanPage> {
                               if (kcal.isNotEmpty)
                                 Text(
                                   '$kcal kcal',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF6E6E73),
-                                  ),
+                                  style: TextStyle(fontSize: 12, color: onSurfaceMuted),
                                 ),
                             ],
                           ),
@@ -2065,9 +1989,9 @@ class _PlanPageState extends State<PlanPage> {
                   );
                 })
               else
-                const Text(
+                Text(
                   'No meal data for today.',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF6E6E73)),
+                  style: TextStyle(fontSize: 13, color: onSurfaceMuted),
                 ),
             ],
           ),
