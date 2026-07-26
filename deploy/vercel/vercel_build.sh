@@ -28,6 +28,10 @@ flutter config --no-analytics --no-cli-animations
 flutter --version
 
 echo "Installing admin frontend dependencies..."
-(cd "$ROOT_DIR/gymmate_admin_vite" && npm ci)
+# --legacy-peer-deps: the lockfile pins vite@4.5.14 while
+# vite-plugin-vuetify@2.1.1 declares a peerDependency on vite>=5 - a
+# pre-existing mismatch in this project, not something introduced here.
+# The build works fine at vite@4; this just tells npm to trust the lock.
+(cd "$ROOT_DIR/gymmate_admin_vite" && npm ci --legacy-peer-deps)
 
 bash "$ROOT_DIR/deploy/vercel/assemble_site.sh"
