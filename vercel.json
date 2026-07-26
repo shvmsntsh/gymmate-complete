@@ -1,0 +1,12 @@
+{
+  "installCommand": "echo 'root install skipped, handled by deploy/vercel/vercel_build.sh'",
+  "buildCommand": "bash deploy/vercel/vercel_build.sh",
+  "outputDirectory": "deploy/vercel/output",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://gymmate-backend.vercel.app/api/$1" },
+    { "source": "/health", "destination": "https://gymmate-backend.vercel.app/health" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

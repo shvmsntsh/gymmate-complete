@@ -28,6 +28,7 @@ deploy/qa/qa-report.json
 deploy/qa/mobile-touch-errors.json
 deploy/qa/screenshots/
 deploy/vercel/output/
+.flutter-sdk/
 graphify-out/cache/
 # Added by code-review-graph
 .code-review-graph/
