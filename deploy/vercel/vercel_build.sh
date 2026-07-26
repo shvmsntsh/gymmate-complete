@@ -20,6 +20,10 @@ if [ ! -x "$FLUTTER_DIR/bin/flutter" ]; then
   tar -xf /tmp/flutter.tar.xz -C "$FLUTTER_DIR" --strip-components=1
 fi
 export PATH="$FLUTTER_DIR/bin:$PATH"
+# Vercel's build runs as root; git refuses to touch a directory it
+# doesn't own unless explicitly told it's safe, which breaks Flutter's
+# internal `git` calls for version/revision info.
+git config --global --add safe.directory '*'
 flutter config --no-analytics --no-cli-animations
 flutter --version
 
